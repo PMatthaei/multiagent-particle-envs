@@ -1,4 +1,29 @@
+import math
+from enum import Enum, IntEnum
+
 import numpy as np
+
+from multiagent.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError
+from multiagent.exceptions.world_exceptions import NoTeamFoundError
+import logging
+
+
+class SkillTypes(Enum):
+    HEAL = 0
+
+
+class UnitAttackTypes(Enum):
+    RANGED = 0,
+    MELEE = 1
+
+
+class ActionTypes(IntEnum):
+    NOOP = 0,
+    WEST = 1,
+    EAST = 2,
+    SOUTH = 3,
+    NORTH = 4,
+
 
 # physical/external base state of all entites
 class EntityState(object):
@@ -6,7 +31,16 @@ class EntityState(object):
         # physical position
         self.p_pos = None
         # physical velocity
-        self.p_vel = None
+        self.max_health = 0
+        self.max_shield = 0
+        self.health = 0
+        self.shield = 0
+
+    def reset(self, spawn_pos):
+        self.health = self.max_health
+        self.shield = self.max_shield
+        self.p_pos = spawn_pos
+
 
 # state of agents (including communication and internal/mental state)
 class AgentState(EntityState):
@@ -15,18 +49,50 @@ class AgentState(EntityState):
         # communication utterance
         self.c = None
 
+    def reset(self, spawn_pos):
+        super().reset(spawn_pos)
+        self.c = None
+
+
 # action of the agent
 class Action(object):
-    def __init__(self):
+    def __init__(self, index=None, owner=None, target=None, u=None, c=None):
+        """
+        # TODO
+        :param index:
+        :param owner:
+        :param target:
+        :param u: list containing all physical actions with the following assignment:
+        - Index 0: X-Axis direction (multiplied with step size)
+        - Index 1: Y-Axis direction (multiplied with step size)
+        - Index 2: Action target id (agent id)
+        :param c:
+        """
+        # index associated with the action
+        self.index = index
+        # id of agent who deployed action
+        self.owner = owner
+        # target of the action
+        self.target = target
         # physical action
-        self.u = None
+        self.u = u
         # communication action
-        self.c = None
+        self.c = c
+
 
 # properties and state of physical world entity
 class Entity(object):
     def __init__(self):
-        # name 
+        self.id = None
+        # ID of the current target
+        self.target_id = None
+        # how far can an entity attack
+        self.attack_range = 15
+        self.attack_damage = 20
+        # how far can the entity see
+        self.sight_range = 20
+        # radius defines entity`s collision and visuals
+        self.bounding_circle_radius = 4
         self.name = ''
         # properties:
         self.size = 0.050
@@ -46,20 +112,89 @@ class Entity(object):
         # mass
         self.initial_mass = 1.0
 
+    def can_see(self, other):
+        dist = np.linalg.norm(self.state.p_pos - other.state.p_pos)
+        return dist <= self.sight_range
+
+    def is_alive(self):
+        return self.state.health >= 0
+
+    def is_dead(self):
+        return not self.is_alive()
+
     @property
     def mass(self):
         return self.initial_mass
 
-# properties of landmark entities
-class Landmark(Entity):
-     def __init__(self):
-        super(Landmark, self).__init__()
+
+# properties of world objects
+class WorldObject(Entity):
+    def __init__(self):
+        super(WorldObject, self).__init__()
+
+
+class Team:
+    def __init__(self, tid, members):
+        """
+        :param tid:
+        :param members:
+        """
+        self.tid = tid
+        self.members = members
+        # Set ids in agents
+        [self.assign(agent) for agent in self.members]
+
+    def assign(self, agent):
+        agent.tid = self.tid
+
+
+class AgentStats:
+    def __init__(self, kills=0, assists=0, dmg_dealt=0, dmg_healed=0, attacks_performed=0, heals_performed=0,
+                 distance_traveled=0):
+        """
+        Holds the stats of an agent within an episode, representing it at the current time step t.
+        :param kills:
+        :param assists:
+        :param dmg_dealt:
+        :param dmg_healed:
+        :param attacks_performed:
+        :param heals_performed:
+        :param distance_traveled:
+        """
+        self.kills = kills
+        self.assists = assists
+        self.dmg_dealt = dmg_dealt
+        self.dmg_healed = dmg_healed
+        self.attacks_performed = attacks_performed
+        self.heals_performed = heals_performed
+        self.distance_traveled = distance_traveled
+
+        self.prev_t_stats: AgentStats = None
+
+    @property
+    def delta(self):
+        """
+        :return: Agents stats corresponding to the last registered time step.
+        """
+        return AgentStats(
+            kills=self.kills - self.prev_t_stats.kills,
+            assists=self.assists - self.prev_t_stats.assists,
+            dmg_dealt=self.dmg_dealt - self.prev_t_stats.dmg_dealt,
+            dmg_healed=self.dmg_healed - self.prev_t_stats.dmg_healed,
+            attacks_performed=self.attacks_performed - self.prev_t_stats.attacks_performed,
+            heals_performed=self.heals_performed - self.prev_t_stats.heals_performed,
+            distance_traveled=self.distance_traveled - self.prev_t_stats.distance_traveled,
+        )
+
 
 # properties of agent entities
 class Agent(Entity):
     def __init__(self):
         super(Agent, self).__init__()
+        # team id
+        self.tid = None
         # agents are movable by default
+        self.capabilities = []
         self.movable = True
         # cannot send communication signals
         self.silent = False
@@ -75,122 +210,153 @@ class Agent(Entity):
         self.state = AgentState()
         # action
         self.action = Action()
+        # stats
+        self.stats = AgentStats()
         # script behavior to execute
         self.action_callback = None
 
-# multi-agent world
+    def can_attack(self, other: Entity):
+        dist = np.linalg.norm(self.state.p_pos - other.state.p_pos)
+        return dist <= self.attack_range and other.is_alive()
+
+    def heal(self, other):
+        other.state.health += self.attack_damage
+        logging.debug("Agent {0} in team {1} healed Agent {2} in team {3} for {4}"
+                      .format(self.id, self.tid, other.id, other.tid, self.attack_damage))
+
+    def attack(self, other):
+        other.state.health -= self.attack_damage
+        logging.debug("Agent {0} in team {1} attacked Agent {2} in team {3} for {4}"
+                      .format(self.id, self.tid, other.id, other.tid, self.attack_damage))
+        if other.is_dead():
+            logging.debug("Agent {0} is dead.".format(other.id))
+
+    def can_heal(self, target=None):
+        """
+        Test if a unit can heal in general. If target provided test for healing that specific agent.
+        :param target:
+        :return:
+        """
+        return SkillTypes.HEAL in self.capabilities and (target is None or target.tid == self.tid) and target.is_alive()
+
+
 class World(object):
-    def __init__(self):
-        # list of agents and entities (can change at execution-time!)
+    def __init__(self, grid_size, bounds=(1280, 720)):
+        """
+        Multi-agent world
+        :param bounds: World bounds in which the agents can move
+        """
+        self.bounds = bounds
+        self.grid_size = grid_size
+        # indicates if the reward will be global(cooperative) or local
+        self.collaborative = False
+        # list of teams build by a subset of ...
+        self.teams = []
+        # list of agents
         self.agents = []
-        self.landmarks = []
+        # list of non-agent objects in the world
+        self.objects = []
         # communication channel dimensionality
         self.dim_c = 0
         # position dimensionality
         self.dim_p = 2
         # color dimensionality
         self.dim_color = 3
-        # simulation timestep
-        self.dt = 0.1
-        # physical damping
-        self.damping = 0.25
-        # contact response parameters
-        self.contact_force = 1e+2
-        self.contact_margin = 1e-3
 
-    # return all entities in the world
+    def get_team(self, tid):
+        """
+        Return the team with the given id
+        :param tid:
+        :return:
+        """
+        for team in self.teams:
+            if team.tid == tid:
+                return team
+        raise NoTeamFoundError(tid)
+
+    def get_opposing_teams(self, tid):
+        """
+        Return opposing teams of the team with the provided team id
+        :param tid:
+        :return:
+        """
+        return [team for team in self.teams if team.tid != tid]
+
+    @property
+    def alive_agents(self):
+        return [agent for agent in self.agents if agent.is_alive()]
+
+    @property
+    def grid_center(self):
+        center_x = self.bounds[0] / 2.0
+        center_y = self.bounds[1] / 2.0
+        return center_x - (center_x % self.grid_size), center_y - (center_y % self.grid_size)
+
+    @property
+    def center(self):
+        return self.bounds[0] / 2.0, self.bounds[1] / 2.0
+
     @property
     def entities(self):
-        return self.agents + self.landmarks
+        """
+        :return: all entities in the world
+        """
+        return self.agents + self.objects
 
-    # return all agents controllable by external policies
     @property
     def policy_agents(self):
+        """
+        :return: all agents controllable by external policies (trained AI)
+        """
         return [agent for agent in self.agents if agent.action_callback is None]
 
-    # return all agents controlled by world scripts
     @property
     def scripted_agents(self):
+        """
+        :return: all agents controlled by world scripts (heuristic, non-training AI)
+        """
         return [agent for agent in self.agents if agent.action_callback is not None]
 
-    # update state of the world
     def step(self):
-        # set actions for scripted agents 
+        """
+        Update state of the world
+        :return:
+        """
+        # Set actions for scripted/heuristic agents
         for agent in self.scripted_agents:
             agent.action = agent.action_callback(agent, self)
-        # gather forces applied to entities
-        p_force = [None] * len(self.entities)
-        # apply agent physical controls
-        p_force = self.apply_action_force(p_force)
-        # apply environment forces
-        p_force = self.apply_environment_force(p_force)
-        # integrate physical state
-        self.integrate_state(p_force)
-        # update agent state
-        for agent in self.agents:
-            self.update_agent_state(agent)
 
-    # gather agent action forces
-    def apply_action_force(self, p_force):
-        # set applied forces
-        for i,agent in enumerate(self.agents):
-            if agent.movable:
-                noise = np.random.randn(*agent.action.u.shape) * agent.u_noise if agent.u_noise else 0.0
-                p_force[i] = agent.action.u + noise                
-        return p_force
+        # Update each alive agent - agent action was set during environment.py step() function
+        # Shuffle randomly to prevent favoring
+        import random
+        agents = self.alive_agents
+        random.shuffle(agents)
+        for agent in agents:
+            # Set communication state directly
+            if agent.silent:
+                agent.state.c = np.zeros(self.dim_c)
+            else:
+                noise = np.random.randn(*agent.action.c.shape) * agent.c_noise if agent.c_noise else 0.0
+                agent.state.c = agent.action.c + noise
 
-    # gather physical forces acting on entities
-    def apply_environment_force(self, p_force):
-        # simple (but inefficient) collision response
-        for a,entity_a in enumerate(self.entities):
-            for b,entity_b in enumerate(self.entities):
-                if(b <= a): continue
-                [f_a, f_b] = self.get_collision_force(entity_a, entity_b)
-                if(f_a is not None):
-                    if(p_force[a] is None): p_force[a] = 0.0
-                    p_force[a] = f_a + p_force[a] 
-                if(f_b is not None):
-                    if(p_force[b] is None): p_force[b] = 0.0
-                    p_force[b] = f_b + p_force[b]        
-        return p_force
+            # Update position
+            move_by = agent.action.u[:2]
+            agent.state.p_pos += move_by
+            logging.debug("Agent {0} moved by {1}:".format(agent.id, move_by))
 
-    # integrate physical state
-    def integrate_state(self, p_force):
-        for i,entity in enumerate(self.entities):
-            if not entity.movable: continue
-            entity.state.p_vel = entity.state.p_vel * (1 - self.damping)
-            if (p_force[i] is not None):
-                entity.state.p_vel += (p_force[i] / entity.mass) * self.dt
-            if entity.max_speed is not None:
-                speed = np.sqrt(np.square(entity.state.p_vel[0]) + np.square(entity.state.p_vel[1]))
-                if speed > entity.max_speed:
-                    entity.state.p_vel = entity.state.p_vel / np.sqrt(np.square(entity.state.p_vel[0]) +
-                                                                  np.square(entity.state.p_vel[1])) * entity.max_speed
-            entity.state.p_pos += entity.state.p_vel * self.dt
-
-    def update_agent_state(self, agent):
-        # set communication state (directly for now)
-        if agent.silent:
-            agent.state.c = np.zeros(self.dim_c)
-        else:
-            noise = np.random.randn(*agent.action.c.shape) * agent.c_noise if agent.c_noise else 0.0
-            agent.state.c = agent.action.c + noise      
-
-    # get collision forces for any contact between two entities
-    def get_collision_force(self, entity_a, entity_b):
-        if (not entity_a.collide) or (not entity_b.collide):
-            return [None, None] # not a collider
-        if (entity_a is entity_b):
-            return [None, None] # don't collide against itself
-        # compute actual distance between entities
-        delta_pos = entity_a.state.p_pos - entity_b.state.p_pos
-        dist = np.sqrt(np.sum(np.square(delta_pos)))
-        # minimum allowable distance
-        dist_min = entity_a.size + entity_b.size
-        # softmax penetration
-        k = self.contact_margin
-        penetration = np.logaddexp(0, -(dist - dist_min)/k)*k
-        force = self.contact_force * delta_pos / dist * penetration
-        force_a = +force if entity_a.movable else None
-        force_b = -force if entity_b.movable else None
-        return [force_a, force_b]
+            # Influence entity if target set
+            agent_has_action_target = agent.action.u[2] != -1
+            if agent_has_action_target:
+                agent.target_id = int(agent.action.u[2])
+                if agent.target_id is None or math.isnan(agent.target_id):
+                    raise NoTargetFoundError()
+                target = self.agents[agent.target_id]
+                if agent.can_heal(target):
+                    agent.heal(target)
+                elif agent.can_attack(target):
+                    agent.attack(target)
+                    if target.is_dead():  # Target died due to the attack
+                        pass  # TODO what to do if more than one unit attacks the target and it dies by one of them?
+                else:
+                    # TODO: For now, illegal actions can be taken and are available but will not change environment
+                    logging.warning("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))

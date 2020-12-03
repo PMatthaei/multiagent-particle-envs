@@ -1,20 +1,17 @@
-**Status:** Archive (code is provided as-is, no updates expected)
+# Multi-Agent Environment
 
-# Multi-Agent Particle Environment
-
-A simple multi-agent particle world with a continuous observation and discrete action space, along with some basic simulated physics.
-Used in the paper [Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments](https://arxiv.org/pdf/1706.02275.pdf).
+A simple multi-agent environment, allowing for team-based micro-management tasks. Most prominent features:
+- Role-based agents (f.e. healer, tank, etc)
+- Rendering via PyGame (optional headless)
+- Recording via ffmpeg (optional headless)
 
 ## Getting started:
 
-- To install, `cd` into the root directory and type `pip install -e .`
+- To install, `cd` into the root directory and type `pip install -r requirements.txt`
 
-- To interactively view moving to landmark scenario (see others in ./scenarios/):
-`bin/interactive.py --scenario simple.py`
+- To start a simple example run: `bin/team_example.py`
 
-- Known dependencies: Python (3.5.4), OpenAI gym (0.10.5), numpy (1.14.5)
-
-- To use the environments, look at the code for importing them in `make_env.py`.
+- To use recording, install ffmpeg: `sudo apt-get install ffmpeg`
 
 ## Code structure
 
@@ -58,11 +55,10 @@ You can create new scenarios by implementing the first 4 functions above (`make_
 | `simple_tag.py` (Predator-prey) | N | Y | Predator-prey environment. Good agents (green) are faster and want to avoid being hit by adversaries (red). Adversaries are slower and want to hit good agents. Obstacles (large black circles) block the way. |
 | `simple_world_comm.py` | Y | Y | Environment seen in the video accompanying the paper. Same as simple_tag, except (1) there is food (small blue balls) that the good agents are rewarded for being near, (2) we now have ‘forests’ that hide agents inside from being seen from outside; (3) there is a ‘leader adversary” that can see the agents at all times, and can communicate with the other adversaries to help coordinate the chase. |
 
-## Paper citation
+## References
 
-If you used this environment for your experiments or found it helpful, consider citing the following papers:
+This repository is based on work of:
 
-Environments in this repo:
 <pre>
 @article{lowe2017multi,
   title={Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments},

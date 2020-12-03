@@ -1,22 +1,30 @@
-import gym
-from gym import spaces
-from gym.envs.registration import EnvSpec
-import numpy as np
-from multiagent.multi_discrete import MultiDiscrete
+import logging
+import sys
 
-# environment for all agents in the multiagent world
-# currently code assumes that no agents will be created/destroyed at runtime!
+import gym
+import numpy as np
+from gym import spaces
+
+from multiagent.core import World
+
+
 class MultiAgentEnv(gym.Env):
     metadata = {
-        'render.modes' : ['human', 'rgb_array']
+        'render.modes': ['human', 'rgb_array']
     }
 
-    def __init__(self, world, reset_callback=None, reward_callback=None,
+    def __init__(self, world: World, reset_callback=None, reward_callback=None,
                  observation_callback=None, info_callback=None,
-                 done_callback=None, shared_viewer=True):
+                 done_callback=None, log=False):
+        if log:
+            logging.basicConfig(filename='env.log', level=logging.DEBUG)
+            logging.getLogger().addHandler(logging.StreamHandler(sys.stderr))
+        else:
+            logging.basicConfig(level=logging.ERROR)
 
         self.world = world
         self.agents = self.world.policy_agents
+        self.movement_step_amount = self.world.grid_size  # move X pixels per action - de-facto grid size
         # set required vectorized gym env property
         self.n = len(world.policy_agents)
         # scenario callbacks
@@ -28,25 +36,29 @@ class MultiAgentEnv(gym.Env):
         # environment parameters
         self.discrete_action_space = True
         # if true, action is a number 0...N, otherwise action is a one-hot N-dimensional vector
-        self.discrete_action_input = False
+        self.discrete_action_input = True
         # if true, even the action is continuous, action will be performed discretely
         self.force_discrete_action = world.discrete_action if hasattr(world, 'discrete_action') else False
         # if true, every agent has the same reward
-        self.shared_reward = world.collaborative if hasattr(world, 'collaborative') else False
-        self.time = 0
-
+        self.global_reward = world.collaborative
+        self.t = 0
+        self.episode = 0
+        self.max_steps = 60
         # configure spaces
         self.action_space = []
         self.observation_space = []
         for agent in self.agents:
             total_action_space = []
+
             # physical action space
             if self.discrete_action_space:
-                u_action_space = spaces.Discrete(world.dim_p * 2 + 1)
+                u_action_space = spaces.Discrete(self._get_action_dim(agent))
             else:
-                u_action_space = spaces.Box(low=-agent.u_range, high=+agent.u_range, shape=(world.dim_p,), dtype=np.float32)
+                u_action_space = spaces.Box(low=-agent.u_range, high=+agent.u_range, shape=(world.dim_p,),
+                                            dtype=np.float32)
             if agent.movable:
                 total_action_space.append(u_action_space)
+
             # communication action space
             if self.discrete_action_space:
                 c_action_space = spaces.Discrete(world.dim_c)
@@ -54,56 +66,140 @@ class MultiAgentEnv(gym.Env):
                 c_action_space = spaces.Box(low=0.0, high=1.0, shape=(world.dim_c,), dtype=np.float32)
             if not agent.silent:
                 total_action_space.append(c_action_space)
+
             # total action space
             if len(total_action_space) > 1:
                 # all action spaces are discrete, so simplify to MultiDiscrete action space
                 if all([isinstance(act_space, spaces.Discrete) for act_space in total_action_space]):
-                    act_space = MultiDiscrete([[0, act_space.n - 1] for act_space in total_action_space])
+                    act_space = spaces.MultiDiscrete([[0, act_space.n - 1] for act_space in total_action_space])
                 else:
                     act_space = spaces.Tuple(total_action_space)
                 self.action_space.append(act_space)
             else:
                 self.action_space.append(total_action_space[0])
+
             # observation space
             obs_dim = len(observation_callback(agent, self.world))
             self.observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim,), dtype=np.float32))
             agent.action.c = np.zeros(self.world.dim_c)
 
         # rendering
-        self.shared_viewer = shared_viewer
-        if self.shared_viewer:
-            self.viewers = [None]
-        else:
-            self.viewers = [None] * self.n
+        self.viewer = None
         self._reset_render()
 
+    def get_available_actions(self, agent):
+        """
+        Calculate possible actions for an agent. These actions can be restricted by available agents to attack or
+        move-able directions if near a world bound. This functions currently does NOT provide available agents by
+        sight range. This means that a agent might be listed in the available actions array but in the world is not
+        accessible due being out of reach.
+        :param agent:
+        :return: array of available action indices
+        """
+        avail_actions = [0]  # always allow no-op action
+        if agent.is_dead():  # when dead only allow no-op action
+            return avail_actions
+        if self.world.bounds is not None:
+            x = agent.state.p_pos[0]
+            y = agent.state.p_pos[1]
+            if x - self.movement_step_amount >= 0:  # WEST would not exceed bounds
+                avail_actions.append(1)
+            if x + self.movement_step_amount <= self.world.bounds[0]:  # EAST would not exceed bounds
+                avail_actions.append(2)
+            if y - self.movement_step_amount >= 0:  # NORTH would not exceed bounds
+                avail_actions.append(3)
+            if y + self.movement_step_amount <= self.world.bounds[1]:  # SOUTH would not exceed bounds
+                avail_actions.append(4)
+        else:  # unbounded map -> always add all movement directions
+            avail_actions.append([1, 2, 3, 4])
+
+        act_ind_offset = 5  # Attack actions begin at index 5
+
+        # All alive agents (except self) can be taken a action against f.e heal, attack etc
+        avail_actions = avail_actions + [ag.id + act_ind_offset for ag in self.world.alive_agents if
+                                         # Do not include the agent itself -> TODO: Remove if self-heal needed
+                                         agent.id != ag.id or
+                                         # If team mates only allow targeting if the agent can heal
+                                         (agent.tid == ag.tid and agent.can_heal())]
+
+        logging.debug("Agent {} has available actions with ids: {}".format(agent.id, avail_actions))
+        return avail_actions
+
+    def _get_action_dim(self, agent):
+        """
+        Define how many actions can be taken by a given agent in a a given world.
+        The action is constructed like the following:
+        0 = No-op
+        1 = Go west
+        2 = Go east
+        3 = Go north
+        4 = Go south
+        5 until 5 + #a (= of attackable enemies) = attack agent with id x
+        5 + #a until (5 + #a) + #h = heal agent with id y
+        :param agent: considered agent
+        :return: action space available for this agent
+        """
+        movement_dims = self.world.dim_p * 2
+        attack_dims = 0
+        heal_dims = 0
+        # get amount of attack-able and heal-able agents in other/own team(s)
+        for team in self.world.teams:
+            if team.tid == agent.tid and agent.can_heal():
+                heal_dims += len(team.members)
+            if team.tid != agent.tid:
+                attack_dims += len(team.members)
+        return movement_dims + attack_dims + 1  # no-op
+
     def step(self, action_n):
+        """
+        Perform multi-agent environment step
+        :param action_n:
+        :return:
+        """
+        self.t += 1
+        logging.debug("--- Step {0}".format(self.t))
+        logging.debug("Actions: {0}".format(action_n))
+
         obs_n = []
         reward_n = []
         done_n = []
         info_n = {'n': []}
         self.agents = self.world.policy_agents
-        # set action for each agent
-        for i, agent in enumerate(self.agents):
-            self._set_action(action_n[i], agent, self.action_space[i])
+        # set action for each agent - this needs to be performed before stepping world !
+        for aid, agent in enumerate(self.agents):
+            self._set_action(action_n[aid], agent, self.action_space[aid])
         # advance world state
         self.world.step()
-        # record observation for each agent
+        # record observation for each agent - this needs to happen after stepping world !
         for agent in self.agents:
             obs_n.append(self._get_obs(agent))
             reward_n.append(self._get_reward(agent))
             done_n.append(self._get_done(agent))
-
             info_n['n'].append(self._get_info(agent))
 
-        # all agents get total reward in cooperative case
-        reward = np.sum(reward_n)
-        if self.shared_reward:
-            reward_n = [reward] * self.n
+        logging.debug("Obs: {0}".format(obs_n))
+
+        if self.global_reward:
+            # Implementation see: On local rewards and scaling distributed reinforcement learning
+            global_reward = np.mean(reward_n)
+            reward_n = [global_reward] * self.n
+
+        logging.debug("Rewards: {0}".format(reward_n))
+
+        if any(done_n):
+            logging.debug("------ Done: {0}".format(done_n))
+
+        if self.max_steps == self.t:
+            done_n = [True] * len(done_n)
 
         return obs_n, reward_n, done_n, info_n
 
     def reset(self):
+        """
+        Reset environment
+        :return:
+        """
+        self.t = 0
         # reset world
         self.reset_callback(self.world)
         # reset renderer
@@ -115,94 +211,117 @@ class MultiAgentEnv(gym.Env):
             obs_n.append(self._get_obs(agent))
         return obs_n
 
-    # get info used for benchmarking
     def _get_info(self, agent):
+        """
+        Get info used for benchmarking
+        :param agent:
+        :return:
+        """
         if self.info_callback is None:
             return {}
         return self.info_callback(agent, self.world)
 
-    # get observation for a particular agent
     def _get_obs(self, agent):
+        """
+        Get observation for a particular agent
+        :param agent:
+        :return:
+        """
         if self.observation_callback is None:
             return np.zeros(0)
         return self.observation_callback(agent, self.world)
 
-    # get dones for a particular agent
-    # unused right now -- agents are allowed to go beyond the viewing screen
     def _get_done(self, agent):
+        """
+        Get dones for a particular agent. A environment is done if it reached its max steps
+        :param agent:
+        :return:
+        """
+        if self.max_steps is not None and self.max_steps == self.t:
+            self.episode += 1
+            logging.debug("------ Episode: {0}".format(self.episode))
+            return True
         if self.done_callback is None:
             return False
+        if self.done_callback(agent, self.world):
+            self.episode += 1
+            logging.debug("------ Episode: {0}".format(self.episode))
         return self.done_callback(agent, self.world)
 
-    # get reward for a particular agent
     def _get_reward(self, agent):
+        """
+        Get local reward for a particular agent.
+        This reward should evaluate only the provided agents action, not the team performance.
+        :param agent:
+        :return:
+        """
         if self.reward_callback is None:
             return 0.0
         return self.reward_callback(agent, self.world)
 
-    # set env action for a particular agent
     def _set_action(self, action, agent, action_space, time=None):
-        agent.action.u = np.zeros(self.world.dim_p)
+        """
+        Set env action for a particular agent. Convert action index to environment/world state update and
+        provide these state changes to the agent for later update f.e of position and stats.
+        :param action: the performed action by
+        :param agent: the corresponding agent
+        :param action_space: the action space of the agent
+        :param time: the current time step
+        :return: None
+        """
+        # set default actions (physical and communication)
+        agent.action.u = np.zeros(self.world.dim_p + 1)
         agent.action.c = np.zeros(self.world.dim_c)
-        # process action
-        if isinstance(action_space, MultiDiscrete):
-            act = []
-            size = action_space.high - action_space.low + 1
-            index = 0
-            for s in size:
-                act.append(action[index:(index+s)])
-                index += s
-            action = act
-        else:
-            action = [action]
 
-        if agent.movable:
-            # physical action
-            if self.discrete_action_input:
-                agent.action.u = np.zeros(self.world.dim_p)
-                # process discrete action
-                if action[0] == 1: agent.action.u[0] = -1.0
-                if action[0] == 2: agent.action.u[0] = +1.0
-                if action[0] == 3: agent.action.u[1] = -1.0
-                if action[0] == 4: agent.action.u[1] = +1.0
-            else:
-                if self.force_discrete_action:
-                    d = np.argmax(action[0])
-                    action[0][:] = 0.0
-                    action[0][d] = 1.0
-                if self.discrete_action_space:
-                    agent.action.u[0] += action[0][1] - action[0][2]
-                    agent.action.u[1] += action[0][3] - action[0][4]
-                else:
-                    agent.action.u = action[0]
-            sensitivity = 5.0
-            if agent.accel is not None:
-                sensitivity = agent.accel
-            agent.action.u *= sensitivity
-            action = action[1:]
+        # physical action index
+        act_ind = action[0]
+
+        agent.action.u[2] = -1  # index 2(=attack) => default no attack(= -1)
+
+        if act_ind == 0:
+            return  # no-op
+        elif act_ind == 1:
+            agent.action.u[0] = -1.0  # x-axis left == 1 --> index 0
+        elif act_ind == 2:
+            agent.action.u[0] = +1.0  # x-axis right == 2 --> index 0
+        elif act_ind == 3:
+            agent.action.u[1] = -1.0  # y-axis up == 3 --> index 1
+        elif act_ind == 4:
+            agent.action.u[1] = +1.0  # y-axis down == 4 --> index 1
+        else:
+            target_id = act_ind - 5  # convert action index into target id
+            agent.action.u[2] = target_id  # attack >= 5 --> index 2
+
+        # first two dimensions hold x and y axis movement -> multiply with movement step amount
+        agent.action.u[:2] *= self.movement_step_amount
+
+        # communication action
         if not agent.silent:
-            # communication action
             if self.discrete_action_input:
                 agent.action.c = np.zeros(self.world.dim_c)
                 agent.action.c[action[0]] = 1.0
             else:
                 agent.action.c = action[0]
-            action = action[1:]
-        # make sure we used all elements of action
-        assert len(action) == 0
 
-    # reset rendering assets
     def _reset_render(self):
-        self.render_geoms = None
-        self.render_geoms_xform = None
+        """
+        Reset rendering assets
+        :return:
+        """
+        if self.viewer is not None:
+            self.viewer.entities = None
+            self.viewer.clear()
 
-    # render environment
     def render(self, mode='human'):
+        """
+        Render the environment via the defined PyGameViewer.
+        :param mode:
+        :return:
+        """
         if mode == 'human':
             alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
             message = ''
             for agent in self.world.agents:
-                comm = []
                 for other in self.world.agents:
                     if other is agent: continue
                     if np.all(other.state.c == 0):
@@ -210,88 +329,43 @@ class MultiAgentEnv(gym.Env):
                     else:
                         word = alphabet[np.argmax(other.state.c)]
                     message += (other.name + ' to ' + agent.name + ': ' + word + '   ')
-            print(message)
+            if message is not None and not message and message != '':
+                print("Communicated message: ", message)
 
-        for i in range(len(self.viewers)):
-            # create viewers (if necessary)
-            if self.viewers[i] is None:
-                # import rendering only if we need it (and don't import for headless machines)
-                #from gym.envs.classic_control import rendering
-                from multiagent import rendering
-                self.viewers[i] = rendering.Viewer(700,700)
-
-        # create rendering geometry
-        if self.render_geoms is None:
+        if self.viewer is None:
             # import rendering only if we need it (and don't import for headless machines)
-            #from gym.envs.classic_control import rendering
-            from multiagent import rendering
-            self.render_geoms = []
-            self.render_geoms_xform = []
-            for entity in self.world.entities:
-                geom = rendering.make_circle(entity.size)
-                xform = rendering.Transform()
-                if 'agent' in entity.name:
-                    geom.set_color(*entity.color, alpha=0.5)
-                else:
-                    geom.set_color(*entity.color)
-                geom.add_attr(xform)
-                self.render_geoms.append(geom)
-                self.render_geoms_xform.append(xform)
+            from multiagent import pygame_rendering
+            self.viewer = pygame_rendering.PyGameViewer(self)
 
-            # add geoms to viewer
-            for viewer in self.viewers:
-                viewer.geoms = []
-                for geom in self.render_geoms:
-                    viewer.add_geom(geom)
+        # create rendered entities
+        if self.viewer.entities is None:
+            # import rendering only if we need it (and don't import for headless machines)
+            from multiagent import pygame_rendering
+            self.viewer.init(self.world.entities)
 
-        results = []
-        for i in range(len(self.viewers)):
-            from multiagent import rendering
-            # update bounds to center around agent
-            cam_range = 1
-            if self.shared_viewer:
-                pos = np.zeros(self.world.dim_p)
-            else:
-                pos = self.agents[i].state.p_pos
-            self.viewers[i].set_bounds(pos[0]-cam_range,pos[0]+cam_range,pos[1]-cam_range,pos[1]+cam_range)
-            # update geometry positions
-            for e, entity in enumerate(self.world.entities):
-                self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
-            # render to display or array
-            results.append(self.viewers[i].render(return_rgb_array = mode=='rgb_array'))
+        #
+        # main render loop part
+        #
+        self.viewer.clear()
 
-        return results
+        self.viewer.update()
 
-    # create receptor field locations in local coordinate frame
-    def _make_receptor_locations(self, agent):
-        receptor_type = 'polar'
-        range_min = 0.05 * 2.0
-        range_max = 1.00
-        dx = []
-        # circular receptive field
-        if receptor_type == 'polar':
-            for angle in np.linspace(-np.pi, +np.pi, 8, endpoint=False):
-                for distance in np.linspace(range_min, range_max, 3):
-                    dx.append(distance * np.array([np.cos(angle), np.sin(angle)]))
-            # add origin
-            dx.append(np.array([0.0, 0.0]))
-        # grid receptive field
-        if receptor_type == 'grid':
-            for x in np.linspace(-range_max, +range_max, 5):
-                for y in np.linspace(-range_max, +range_max, 5):
-                    dx.append(np.array([x,y]))
-        return dx
+        self.viewer.render()
+        return None
 
 
-# vectorized wrapper for a batch of multi-agent environments
-# assumes all environments have the same observation and action space
 class BatchMultiAgentEnv(gym.Env):
     metadata = {
         'runtime.vectorized': True,
-        'render.modes' : ['human', 'rgb_array']
+        'render.modes': ['human', 'rgb_array']
     }
 
     def __init__(self, env_batch):
+        """
+        Vectorized wrapper for a batch of multi-agent environments.
+        Assumes all environments have the same observation and action space.
+        :param env_batch:
+        """
         self.env_batch = env_batch
 
     @property
@@ -313,7 +387,7 @@ class BatchMultiAgentEnv(gym.Env):
         info_n = {'n': []}
         i = 0
         for env in self.env_batch:
-            obs, reward, done, _ = env.step(action_n[i:(i+env.n)], time)
+            obs, reward, done, _ = env.step(action_n[i:(i + env.n)], time)
             i += env.n
             obs_n += obs
             # reward = [r / len(self.env_batch) for r in reward]
@@ -324,10 +398,9 @@ class BatchMultiAgentEnv(gym.Env):
     def reset(self):
         obs_n = []
         for env in self.env_batch:
-            obs_n += env.reset()
+            obs_n += env.clear()
         return obs_n
 
-    # render environment
     def render(self, mode='human', close=True):
         results_n = []
         for env in self.env_batch:
