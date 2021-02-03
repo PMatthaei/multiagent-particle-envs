@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name='multiagent-rts',
+setup(name='multiagent',
       version='0.0.1',
       description='Multi-Agent RTS Environment',
       url='https://github.com/PMatthaei/ma-env',
