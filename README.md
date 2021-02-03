@@ -6,6 +6,7 @@ This is a fork of: https://github.com/openai/multiagent-particle-envs
 
 A simple multi-agent environment, allowing for team-based micro-management tasks. Most prominent features:
 - Role-based agents (f.e. healer, tank, etc)
+- Heterogeneous/homogeneous and symmetric/asymmetric team compositions
 - Rendering via PyGame (optional headless)
 - Recording via ffmpeg (optional headless)
 
@@ -17,7 +18,7 @@ A simple multi-agent environment, allowing for team-based micro-management tasks
 
 - To use recording, install ffmpeg: `sudo apt-get install ffmpeg`
 
-The following fffmpeg version was used:
+The following ffmpeg version was used:
 ```
 ffmpeg version 4.2.4-1ubuntu0.1 Copyright (c) 2000-2020 the FFmpeg developers
   built with gcc 9 (Ubuntu 9.3.0-10ubuntu2)
