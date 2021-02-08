@@ -216,8 +216,8 @@ class Agent(Entity):
         if self.can_see(other):
             rel_pos = self.state.pos - other.state.pos
             return [
-                rel_pos[0],  # x position relative to observer
-                rel_pos[1],  # x position relative to observer
+                rel_pos[0] / self.sight_range,  # x position relative to observer
+                rel_pos[1] / self.sight_range,  # y position relative to observer
                 self.state.health / self.state.max_health,  # relative health
                 self.state.shield / self.state.max_shield if self.state.max_shield != 0 else 0.0  # relative shield
             ]
@@ -306,6 +306,23 @@ class World(object):
         if entity.sight_range is None or entity.sight_range == 0:
             return []
         return [e for e in self.entities if entity.can_see(e)]
+
+    def get_available_movement(self, agent):
+        if self.bounds is not None:
+            avail_movement = [0] * 4  # four movement dims
+            x = agent.state.pos[0]
+            y = agent.state.pos[1]
+            if x - self.grid_size >= 0:  # WEST would not exceed bounds
+                avail_movement[0] = 1
+            if x + self.grid_size <= self.bounds[0]:  # EAST would not exceed bounds
+                avail_movement[1] = 1
+            if y - self.grid_size >= 0:  # NORTH would not exceed bounds
+                avail_movement[2] = 1
+            if y + self.grid_size <= self.bounds[1]:  # SOUTH would not exceed bounds
+                avail_movement[3] = 1
+            return avail_movement
+        else:
+            return [1] * 4  # four movement dims
 
     @property
     def alive_agents(self):
