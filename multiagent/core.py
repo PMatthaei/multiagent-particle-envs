@@ -382,9 +382,10 @@ class World(object):
                 agent.state.c = agent.action.c + noise
 
             # Update position
-            move_by = agent.action.u[:2]
-            agent.state.pos += move_by
-            logging.debug("Agent {0} moved by {1}:".format(agent.id, move_by))
+            move_vector = agent.action.u[:2]
+            agent.state.pos += move_vector
+            if any([dim > 0 for dim in move_vector]):  # is there movement greater zero?
+                logging.debug("Agent {0} moved by {1}:".format(agent.id, move_vector))
 
             # Influence entity if target set
             agent_has_action_target = agent.action.u[2] != -1
