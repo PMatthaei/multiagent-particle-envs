@@ -28,10 +28,8 @@ class ActionTypes(IntEnum):
 # physical/external base state of all entites
 class EntityState(object):
     def __init__(self):
-        # physical position
-        self.p_pos = None
-        # physical velocity
-        self.max_health = 0
+        self.pos = None
+        self.max_health = 100
         self.max_shield = 0
         self.health = 0
         self.shield = 0
@@ -39,7 +37,7 @@ class EntityState(object):
     def reset(self, spawn_pos):
         self.health = self.max_health
         self.shield = self.max_shield
-        self.p_pos = spawn_pos
+        self.pos = spawn_pos
 
 
 # state of agents (including communication and internal/mental state)
@@ -90,30 +88,21 @@ class Entity(object):
         self.attack_range = 15
         self.attack_damage = 20
         # how far can the entity see
-        self.sight_range = 20
+        self.sight_range = 25
         # radius defines entity`s collision and visuals
         self.bounding_circle_radius = 4
         self.name = ''
-        # properties:
-        self.size = 0.050
         # entity can move / be pushed
         self.movable = False
-        # entity collides with others
-        self.collide = True
-        # material density (affects mass)
-        self.density = 25.0
         # color
         self.color = None
-        # max speed and accel
-        self.max_speed = None
-        self.accel = None
         # state
         self.state = EntityState()
         # mass
         self.initial_mass = 1.0
 
     def can_see(self, other):
-        dist = np.linalg.norm(self.state.p_pos - other.state.p_pos)
+        dist = np.linalg.norm(self.state.pos - other.state.pos)
         return dist <= self.sight_range
 
     def is_alive(self):
@@ -136,8 +125,8 @@ class WorldObject(Entity):
 class Team:
     def __init__(self, tid, members):
         """
-        :param tid:
-        :param members:
+        :param tid: Identifier for this team
+        :param members: Members in this team
         """
         self.tid = tid
         self.members = members
@@ -145,10 +134,13 @@ class Team:
         [self.assign(agent) for agent in self.members]
 
     def assign(self, agent):
+        """
+        Assign a member to this team
+        """
         agent.tid = self.tid
 
 
-class AgentStats:
+class PerformanceStatistics:
     def __init__(self, kills=0, assists=0, dmg_dealt=0, dmg_healed=0, attacks_performed=0, heals_performed=0,
                  distance_traveled=0):
         """
@@ -169,14 +161,14 @@ class AgentStats:
         self.heals_performed = heals_performed
         self.distance_traveled = distance_traveled
 
-        self.prev_t_stats: AgentStats = None
+        self.prev_t_stats: PerformanceStatistics = None
 
     @property
     def delta(self):
         """
         :return: Agents stats corresponding to the last registered time step.
         """
-        return AgentStats(
+        return PerformanceStatistics(
             kills=self.kills - self.prev_t_stats.kills,
             assists=self.assists - self.prev_t_stats.assists,
             dmg_dealt=self.dmg_dealt - self.prev_t_stats.dmg_dealt,
@@ -211,12 +203,29 @@ class Agent(Entity):
         # action
         self.action = Action()
         # stats
-        self.stats = AgentStats()
+        self.stats = PerformanceStatistics()
         # script behavior to execute
         self.action_callback = None
 
+    def observe(self, other):
+        """
+        Observe another agent.
+        @param other: Agent which is observed by this agent
+        @return: The observation made of the provided agent
+        """
+        if self.can_see(other):
+            rel_pos = self.state.pos - other.state.pos
+            return [
+                rel_pos[0],  # x position relative to observer
+                rel_pos[1],  # x position relative to observer
+                self.state.health / self.state.max_health,  # relative health
+                self.state.shield / self.state.max_shield if self.state.max_shield != 0 else 0.0  # relative shield
+            ]
+        else:
+            return [0] * 4
+
     def can_attack(self, other: Entity):
-        dist = np.linalg.norm(self.state.p_pos - other.state.p_pos)
+        dist = np.linalg.norm(self.state.pos - other.state.pos)
         return dist <= self.attack_range and other.is_alive()
 
     def heal(self, other):
@@ -231,13 +240,16 @@ class Agent(Entity):
         if other.is_dead():
             logging.debug("Agent {0} is dead.".format(other.id))
 
+    def _has_heal(self):
+        return SkillTypes.HEAL in self.capabilities
+
     def can_heal(self, target=None):
         """
         Test if a unit can heal in general. If target provided test for healing that specific agent.
         :param target:
         :return:
         """
-        return SkillTypes.HEAL in self.capabilities and (target is None or target.tid == self.tid) and target.is_alive()
+        return self._has_heal() and (target is None or target.tid == self.tid) and target.is_alive()
 
 
 class World(object):
@@ -263,11 +275,14 @@ class World(object):
         # color dimensionality
         self.dim_color = 3
 
+    def get_team_members(self, agent):
+        return [member for member in self.get_team(agent.tid).members if member.id != agent.id]
+
     def get_team(self, tid):
         """
         Return the team with the given id
-        :param tid:
-        :return:
+        :param tid: Identifier for a team
+        :return: Team belonging to the identifier
         """
         for team in self.teams:
             if team.tid == tid:
@@ -277,10 +292,20 @@ class World(object):
     def get_opposing_teams(self, tid):
         """
         Return opposing teams of the team with the provided team id
-        :param tid:
-        :return:
+        :param tid: Identifier for a team
+        :return: Teams NOT belonging to the identifier
         """
         return [team for team in self.teams if team.tid != tid]
+
+    def get_visible_entities(self, entity: Entity):
+        """
+        Return all entities visible to the provided entity. If no range given or zero return empty list.
+        @param entity: The entity from which to apply a range query onto its neighbor entities.
+        @return: List of visible entities for the provided entity
+        """
+        if entity.sight_range is None or entity.sight_range == 0:
+            return []
+        return [e for e in self.entities if entity.can_see(e)]
 
     @property
     def alive_agents(self):
@@ -341,7 +366,7 @@ class World(object):
 
             # Update position
             move_by = agent.action.u[:2]
-            agent.state.p_pos += move_by
+            agent.state.pos += move_by
             logging.debug("Agent {0} moved by {1}:".format(agent.id, move_by))
 
             # Influence entity if target set

@@ -32,4 +32,4 @@ def reward_agent_health(agent: Agent):
 
 
 def reward_distance(agent: Agent, other: Entity):
-    return np.linalg.norm(agent.state.p_pos - other.state.p_pos)
+    return np.linalg.norm(agent.state.pos - other.state.pos)

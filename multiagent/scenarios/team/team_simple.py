@@ -30,13 +30,11 @@ class TeamSimpleScenario(BaseTeamScenario):
         for i, agent in enumerate(world.agents):
             agent.id = i
             agent.name = 'agent %d' % i
-            agent.collide = False
             agent.silent = True
         # add landmarks
         world.objects = [WorldObject() for i in range(1)]
         for i, landmark in enumerate(world.objects):
             landmark.name = 'landmark %d' % i
-            landmark.collide = False
             landmark.movable = False
         return world
 
@@ -51,11 +49,11 @@ class TeamSimpleScenario(BaseTeamScenario):
                 spawn = np.array([world.grid_center[0] + 4 * world.grid_size * side, world.grid_center[1]])
                 agent.state.reset(spawn)
         for i, landmark in enumerate(world.objects):
-            landmark.state.p_pos = np.array([world.grid_center[0], world.grid_center[1]])
+            landmark.state.pos = np.array([world.grid_center[0], world.grid_center[1]])
 
     def reward(self, agent, world):
-        max_distance = np.linalg.norm(world.bounds - world.objects[0].state.p_pos)
-        r = np.linalg.norm(agent.state.p_pos - world.objects[0].state.p_pos) / max_distance
+        max_distance = np.linalg.norm(world.bounds - world.objects[0].state.pos)
+        r = np.linalg.norm(agent.state.pos - world.objects[0].state.pos) / max_distance
         r = 1 - r
         if agent.can_see(world.objects[0]):
             r += 100
@@ -65,8 +63,9 @@ class TeamSimpleScenario(BaseTeamScenario):
         return agent.can_see(world.objects[0])
 
     def observation(self, agent, world):
-        # get positions of all entities in this agent's reference frame
-        entity_pos = []
-        for entity in world.objects:
-            entity_pos.append(entity.state.p_pos - agent.state.p_pos)
-        return np.concatenate(entity_pos)
+        obs = []
+        for member in world.get_team_members(agent):
+            obs.append(agent.observe(member))
+        for enemy in np.concatenate([team.members for team in world.get_opposing_teams(agent.tid)]):
+            obs.append(agent.observe(enemy))
+        return np.concatenate(obs)

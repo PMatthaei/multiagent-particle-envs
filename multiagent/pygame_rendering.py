@@ -199,5 +199,5 @@ class PyGameEntity(pygame.sprite.Sprite):
         pygame.draw.circle(self.surf, color=hsl_to_rgb(color, alpha), center=(sight_range, sight_range), radius=attack_range, width=1)
         # Core is updating with a move_by update while here we set the resulted new pos
         # TODO: if move_by needed the update needs to be saved in entity so we can recreate it here visually
-        self.rect.centerx = self.entity.state.p_pos[0]
-        self.rect.centery = self.entity.state.p_pos[1]
+        self.rect.centerx = self.entity.state.pos[0]
+        self.rect.centery = self.entity.state.pos[1]

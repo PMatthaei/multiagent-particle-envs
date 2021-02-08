@@ -100,8 +100,8 @@ class MultiAgentEnv(gym.Env):
         if agent.is_dead():  # when dead only allow no-op action
             return avail_actions
         if self.world.bounds is not None:
-            x = agent.state.p_pos[0]
-            y = agent.state.p_pos[1]
+            x = agent.state.pos[0]
+            y = agent.state.pos[1]
             if x - self.movement_step_amount >= 0:  # WEST would not exceed bounds
                 avail_actions.append(1)
             if x + self.movement_step_amount <= self.world.bounds[0]:  # EAST would not exceed bounds
