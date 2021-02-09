@@ -10,8 +10,8 @@ import logging
 
 class RoleTypes(Enum):
     TANK = 0
-    ADC = 0
-    HEALER = 0
+    ADC = 1
+    HEALER = 2
 
 
 class UnitAttackTypes(Enum):
@@ -92,7 +92,7 @@ class Entity(object):
         # how far can the entity see
         self.sight_range = 25
         # radius defines entity`s collision and visuals
-        self.bounding_circle_radius = 4
+        self.bounding_circle_radius = 6
         self.name = ''
         # entity can move / be pushed
         self.movable = False

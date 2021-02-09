@@ -5,7 +5,7 @@ import subprocess as sp
 import pygame
 from pygame.rect import Rect
 
-from multiagent.core import Entity
+from multiagent.core import Entity, RoleTypes, Agent
 from multiagent.utils.colors import hsl_to_rgb
 
 
@@ -176,11 +176,11 @@ class PyGameViewer(object):
 
 
 class PyGameEntity(pygame.sprite.Sprite):
-    def __init__(self, entity: Entity):
+    def __init__(self, agent: Agent):
         super(PyGameEntity, self).__init__()
         # This reference is updated in world step
-        self.entity = entity
-        radius = entity.sight_range
+        self.agent = agent
+        radius = agent.sight_range
         # This is its visual representation
         self.surf = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA, 32).convert_alpha()
         self.rect: Rect = self.surf.get_rect()
@@ -189,15 +189,41 @@ class PyGameEntity(pygame.sprite.Sprite):
 
     def update(self):
         # Draw entity as dot. A outline circle indicates its action range. Alpha colors indicate death
-        alpha = 80 if self.entity.is_dead() else 255
-        color = self.entity.color
-        sight_range = self.entity.sight_range
-        attack_range = self.entity.attack_range
-        body_radius = self.entity.bounding_circle_radius
-        pygame.draw.circle(self.surf, color=hsl_to_rgb(color, alpha), center=(sight_range, sight_range), radius=body_radius)
-        pygame.draw.circle(self.surf, color=hsl_to_rgb(color, alpha), center=(sight_range, sight_range), radius=sight_range, width=1)
-        pygame.draw.circle(self.surf, color=hsl_to_rgb(color, alpha), center=(sight_range, sight_range), radius=attack_range, width=1)
+        alpha = 80 if self.agent.is_dead() else 255
+        color = self.agent.color
+        sight_range = self.agent.sight_range
+        attack_range = self.agent.attack_range
+        body_radius = self.agent.bounding_circle_radius
+        if RoleTypes.TANK in self.agent.capabilities:
+            self.draw_tank(alpha, body_radius, color, sight_range)
+        elif RoleTypes.HEALER in self.agent.capabilities:
+            self.draw_healer(alpha, body_radius, color, sight_range)
+        else:
+            self.draw_adc(alpha, body_radius, color, sight_range)
+
+        self.draw_ranges(alpha, attack_range, color, sight_range)
         # Core is updating with a move_by update while here we set the resulted new pos
         # TODO: if move_by needed the update needs to be saved in entity so we can recreate it here visually
-        self.rect.centerx = self.entity.state.pos[0]
-        self.rect.centery = self.entity.state.pos[1]
+        self.rect.centerx = self.agent.state.pos[0]
+        self.rect.centery = self.agent.state.pos[1]
+
+    def draw_ranges(self, alpha, attack_range, color, sight_range):
+        pygame.draw.circle(self.surf, color=hsl_to_rgb(color, alpha), center=(sight_range, sight_range),
+                           radius=sight_range, width=1)
+        pygame.draw.circle(self.surf, color=hsl_to_rgb(color, alpha), center=(sight_range, sight_range),
+                           radius=attack_range, width=1)
+
+    def draw_adc(self, alpha, body_radius, color, sight_range):
+        pygame.draw.circle(self.surf, color=hsl_to_rgb(color, alpha), center=(sight_range, sight_range),
+                           radius=body_radius)
+
+    def draw_tank(self, alpha, body_radius, color, sight_range):
+        rect = Rect(sight_range - body_radius, sight_range - body_radius, body_radius * 2, body_radius * 2)
+        pygame.draw.rect(self.surf, color=hsl_to_rgb(color, alpha), rect=rect)
+
+    def draw_healer(self, alpha, body_radius, color, sight_range):
+        c = sight_range
+        w = (body_radius * 2) * 1.0 / 3.0
+        h = w * 3
+        pygame.draw.rect(self.surf, color=hsl_to_rgb(color, alpha), rect=Rect(c - w / 2, c - h / 2, w, h))
+        pygame.draw.rect(self.surf, color=hsl_to_rgb(color, alpha), rect=Rect(c - h / 2, c - w / 2, h, w))

@@ -14,7 +14,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     teams = [
-        [
+        [  # Team 1
             {
                 "roles": [RoleTypes.ADC],
                 "attack": [UnitAttackTypes.MELEE]
@@ -27,8 +27,8 @@ if __name__ == '__main__':
                 "roles": [RoleTypes.TANK],
                 "attack": [UnitAttackTypes.RANGED]
             }
-        ],  # Team 1
-        [
+        ],
+        [  # Team 2
             {
                 "roles": [RoleTypes.ADC],
                 "attack": [UnitAttackTypes.MELEE]
@@ -37,13 +37,13 @@ if __name__ == '__main__':
                 "roles": [RoleTypes.ADC],
                 "attack": [UnitAttackTypes.RANGED]
             }
-        ],  # Team 2
-        [
+        ],
+        [  # Team 3
             {
-                "roles": [RoleTypes.ADC],
+                "roles": [RoleTypes.HEALER],
                 "attack": [UnitAttackTypes.MELEE]
             },
-        ],  # Team 3
+        ],
     ]
 
     # load scenario from script
