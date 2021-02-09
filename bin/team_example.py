@@ -2,6 +2,7 @@ import argparse
 
 import pygame
 
+from multiagent.core import RoleTypes, UnitAttackTypes
 from multiagent.environment import MultiAgentEnv
 from multiagent.interfaces.policy import RandomPolicy
 from multiagent.scenarios import team
@@ -12,8 +13,41 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--scenario', default='symmetric_teams.py', help='Path of the scenario Python script.')
     args = parser.parse_args()
 
+    teams = [
+        [
+            {
+                "roles": [RoleTypes.ADC],
+                "attack": [UnitAttackTypes.MELEE]
+            },
+            {
+                "roles": [RoleTypes.TANK],
+                "attack": [UnitAttackTypes.RANGED]
+            },
+            {
+                "roles": [RoleTypes.TANK],
+                "attack": [UnitAttackTypes.RANGED]
+            }
+        ],  # Team 1
+        [
+            {
+                "roles": [RoleTypes.ADC],
+                "attack": [UnitAttackTypes.MELEE]
+            },
+            {
+                "roles": [RoleTypes.ADC],
+                "attack": [UnitAttackTypes.RANGED]
+            }
+        ],  # Team 2
+        [
+            {
+                "roles": [RoleTypes.ADC],
+                "attack": [UnitAttackTypes.MELEE]
+            },
+        ],  # Team 3
+    ]
+
     # load scenario from script
-    scenario = team.load(args.scenario).SymmetricTeamsScenario()
+    scenario = team.load(args.scenario).SymmetricTeamsScenario(teams)
     # create world
     world = scenario.make_teams_world(grid_size=10.0)
     # create multi-agent environment

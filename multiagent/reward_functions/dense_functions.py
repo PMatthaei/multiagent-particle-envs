@@ -23,12 +23,12 @@ def reward_agent_stats(agent: Agent):
     return reward
 
 
+def reward_team_damage(team: Team):
+    return sum([agent.stats.dmg_dealt / agent.attack_damage for agent in team.members])
+
+
 def reward_team_health(team: Team):
-    return sum([reward_agent_health(agent) for agent in team.members])
-
-
-def reward_agent_health(agent: Agent):
-    return agent.state.health / agent.state.max_health
+    return sum([agent.state.health / agent.state.max_health for agent in team.members])
 
 
 def reward_distance(agent: Agent, other: Entity):

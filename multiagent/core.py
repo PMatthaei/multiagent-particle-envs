@@ -8,8 +8,10 @@ from multiagent.exceptions.world_exceptions import NoTeamFoundError
 import logging
 
 
-class SkillTypes(Enum):
-    HEAL = 0
+class RoleTypes(Enum):
+    TANK = 0
+    ADC = 0
+    HEALER = 0
 
 
 class UnitAttackTypes(Enum):
@@ -177,7 +179,7 @@ class PerformanceStatistics:
 
 # properties of agent entities
 class Agent(Entity):
-    def __init__(self, id, name, tid, color):
+    def __init__(self, id, name, tid, color, capabilities):
         super(Agent, self).__init__()
         self.id = id
         # team id
@@ -185,7 +187,7 @@ class Agent(Entity):
         self.name = name
         self.color = color
         # agents are movable by default
-        self.capabilities = []
+        self.capabilities = capabilities
         self.movable = True
         # cannot send communication signals
         self.silent = True
@@ -236,6 +238,7 @@ class Agent(Entity):
 
     def heal(self, other):
         other.state.health += self.attack_damage
+        self.stats.dmg_healed += self.attack_damage
         logging.debug("Agent {0} in team {1} healed Agent {2} in team {3} for {4}"
                       .format(self.id, self.tid, other.id, other.tid, self.attack_damage))
 
@@ -243,11 +246,13 @@ class Agent(Entity):
         other.state.health -= self.attack_damage
         logging.debug("Agent {0} in team {1} attacked Agent {2} in team {3} for {4}"
                       .format(self.id, self.tid, other.id, other.tid, self.attack_damage))
+        self.stats.dmg_dealt += self.attack_damage
         if other.is_dead():
+            self.stats.kills += 1
             logging.debug("Agent {0} is dead.".format(other.id))
 
     def _has_heal(self):
-        return SkillTypes.HEAL in self.capabilities
+        return RoleTypes.HEALER in self.capabilities
 
     def can_heal(self, target=None):
         """
@@ -255,7 +260,7 @@ class Agent(Entity):
         :param target:
         :return:
         """
-        return self._has_heal() and (target is None or target.tid == self.tid) and target.is_alive()
+        return self._has_heal() and (target is not None and target.tid != self.tid) and target.is_alive()
 
 
 class World(object):
