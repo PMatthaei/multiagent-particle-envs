@@ -207,6 +207,13 @@ class Agent(Entity):
         # script behavior to execute
         self.action_callback = None
 
+    @property
+    def self_observation(self):
+        return [
+            self.state.health / self.state.max_health,  # relative health
+            self.state.shield / self.state.max_shield if self.state.max_shield != 0 else 0.0  # relative shield
+        ]
+
     def observe(self, other):
         """
         Observe another agent.
