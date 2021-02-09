@@ -95,7 +95,8 @@ class Entity(object):
         # entity can move / be pushed
         self.movable = False
         # color
-        self.color = None
+        self.color = [0.75, 0, 0]
+
         # state
         self.state = EntityState()
         # mass
@@ -130,14 +131,9 @@ class Team:
         """
         self.tid = tid
         self.members = members
-        # Set ids in agents
-        [self.assign(agent) for agent in self.members]
 
-    def assign(self, agent):
-        """
-        Assign a member to this team
-        """
-        agent.tid = self.tid
+    def is_wiped(self):
+        return all([agent.is_dead() for agent in self.members])
 
 
 class PerformanceStatistics:
@@ -181,15 +177,18 @@ class PerformanceStatistics:
 
 # properties of agent entities
 class Agent(Entity):
-    def __init__(self):
+    def __init__(self, id, name, tid, color):
         super(Agent, self).__init__()
+        self.id = id
         # team id
-        self.tid = None
+        self.tid = tid
+        self.name = name
+        self.color = color
         # agents are movable by default
         self.capabilities = []
         self.movable = True
         # cannot send communication signals
-        self.silent = False
+        self.silent = True
         # cannot observe the world
         self.blind = False
         # physical motor noise amount

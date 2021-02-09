@@ -53,18 +53,9 @@ class BaseTeamScenario(object):
         :return:
         """
         world = self._make_world(grid_size)
-        self._build_teams(world)
         # make initial conditions
         self.reset_world(world)
         return world
-
-    def _build_teams(self, world):
-        """
-        Define team compositions
-        :param world:
-        :return: None
-        """
-        raise NotImplementedError()
 
     # create elements of the world
     def _make_world(self, grid_size) -> World:

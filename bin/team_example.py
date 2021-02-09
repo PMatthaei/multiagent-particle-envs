@@ -9,11 +9,11 @@ from multiagent.scenarios import team
 if __name__ == '__main__':
     # parse arguments
     parser = argparse.ArgumentParser(description=None)
-    parser.add_argument('-s', '--scenario', default='team_simple.py', help='Path of the scenario Python script.')
+    parser.add_argument('-s', '--scenario', default='symmetric_teams.py', help='Path of the scenario Python script.')
     args = parser.parse_args()
 
     # load scenario from script
-    scenario = team.load(args.scenario).TeamSimpleScenario()
+    scenario = team.load(args.scenario).SymmetricTeamsScenario()
     # create world
     world = scenario.make_teams_world(grid_size=10.0)
     # create multi-agent environment
