@@ -194,9 +194,9 @@ class PyGameEntity(pygame.sprite.Sprite):
         sight_range = self.agent.sight_range
         attack_range = self.agent.attack_range
         body_radius = self.agent.bounding_circle_radius
-        if RoleTypes.TANK in self.agent.roles:
+        if RoleTypes.TANK in self.agent.role:
             self.draw_tank(alpha, body_radius, color, sight_range)
-        elif RoleTypes.HEALER in self.agent.roles:
+        elif RoleTypes.HEALER in self.agent.role:
             self.draw_healer(alpha, body_radius, color, sight_range)
         else:
             self.draw_adc(alpha, body_radius, color, sight_range)

@@ -33,10 +33,9 @@ class TeamsScenario(BaseTeamScenario):
             members = [
                 Agent(
                     id=aid,  # is not reset per team. aid identifying all units globally
-                    name='Agent %d' % aid,
                     tid=tid,
                     color=colors[tid],
-                    roles=self.team_build_plan[tid][index]['roles']
+                    build_plan=self.team_build_plan[tid][index]
                 ) for index, aid in  # index is the team internal identifier
                 enumerate(range(agent_count, agent_count + self.n_agents[tid]))
             ]

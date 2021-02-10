@@ -9,14 +9,14 @@ import logging
 
 
 class RoleTypes(Enum):
-    TANK = 0
-    ADC = 1
-    HEALER = 2
+    TANK = {"max_health": 100, "attack_damage": 5}
+    ADC = {"max_health": 50, "attack_damage": 20}
+    HEALER = {"max_health": 75, "attack_damage": 20, "can_heal": True}
 
 
 class UnitAttackTypes(Enum):
-    RANGED = 0,
-    MELEE = 1
+    RANGED = {"attack_range": 35}
+    MELEE = {"attack_range": 1}
 
 
 class ActionTypes(IntEnum):
@@ -179,15 +179,21 @@ class PerformanceStatistics:
 
 # properties of agent entities
 class Agent(Entity):
-    def __init__(self, id, name, tid, color, roles):
+    def __init__(self, id, tid, color, build_plan):
         super(Agent, self).__init__()
         self.id = id
         # team id
         self.tid = tid
-        self.name = name
+        self.name = 'Agent %d' % id
         self.color = color
-        # agents are movable by default
-        self.roles = roles
+        self.attack_type = build_plan['attack_type'].value
+        self.role = build_plan['role'].value
+
+        self.attack_range = self.attack_type['attack_range']
+        self.sight_range = max(self.attack_range, self.sight_range)
+        self.attack_damage = self.role['attack_damage']
+        self.max_health = self.role['max_health']
+
         self.movable = True
         # cannot send communication signals
         self.silent = True
@@ -252,7 +258,7 @@ class Agent(Entity):
             logging.debug("Agent {0} is dead.".format(other.id))
 
     def _has_heal(self):
-        return RoleTypes.HEALER in self.roles
+        return 'can_heal' in self.role and self.role['can_heal']
 
     def can_heal(self, target=None):
         """
