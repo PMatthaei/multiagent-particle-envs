@@ -1,28 +1,28 @@
-import random
-
 import numpy as np
-from multiagent.core import World, Agent, WorldObject, Team
-from multiagent.exceptions.scenario_exceptions import SymmetricScenarioSetupError
+
+from multiagent.core import World, Agent, Team, RoleTypes
+from multiagent.exceptions.scenario_exceptions import ScenarioNotSymmetricError, SymmetricScenarioTeamsExceededError
 from multiagent.interfaces.scenario import BaseTeamScenario
 from multiagent.reward_functions.dense_functions import reward_team_health, reward_team_damage
 from multiagent.utils.colors import generate_colors
 from multiagent.utils.spawn_generator import generate_spawns
 
 
-class SymmetricTeamsScenario(BaseTeamScenario):
-    def __init__(self, teams):
+class TeamsScenario(BaseTeamScenario):
+    def __init__(self, build_plan):
         """
-        Constructor for a simple symmetric team scenario.
-        @param teams: Team setup supplied as needed
+        Constructor for a team scenario.
+        @param build_plan: Team setup supplied as needed
         n_agents: How many agents per team
         n_teams: How many teams
         """
-        self.team_build_plan = teams
-        self.n_agents = [len(team) for team in teams]
-        self.n_teams = len(teams)
-        self.is_symmetric = False
+        self.team_build_plan = build_plan
+        self.n_teams = len(build_plan)
+        self.n_agents = [len(team) for team in build_plan]
+        self.is_symmetric = build_plan.count(build_plan[0]) == len(build_plan)
+
         if self.is_symmetric and sum(self.n_agents) % self.n_teams != 0:
-            raise SymmetricScenarioSetupError(self.n_agents, self.n_teams)
+            raise ScenarioNotSymmetricError(self.n_agents, self.n_teams)
 
     def _make_world(self, grid_size):
         world = World(grid_size=grid_size)
@@ -32,12 +32,12 @@ class SymmetricTeamsScenario(BaseTeamScenario):
         for tid in range(self.n_teams):
             members = [
                 Agent(
-                    id=aid,  # This identifier is not reset per team. It is identifying all units unrelated to teams
+                    id=aid,  # is not reset per team. aid identifying all units globally
                     name='Agent %d' % aid,
                     tid=tid,
                     color=colors[tid],
-                    capabilities=self.team_build_plan[tid][index]['roles']
-                ) for index, aid in
+                    roles=self.team_build_plan[tid][index]['roles']
+                ) for index, aid in  # index is the team internal identifier
                 enumerate(range(agent_count, agent_count + self.n_agents[tid]))
             ]
             agent_count += self.n_agents[tid]

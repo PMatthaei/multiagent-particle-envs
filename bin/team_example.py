@@ -2,6 +2,7 @@ import argparse
 
 import pygame
 
+from bin.team_plans_example import THREE_TEAMS_ASYMMETRIC_HETEROGENEOUS, TWO_TEAMS_SYMMETRIC_HETEROGENEOUS
 from multiagent.core import RoleTypes, UnitAttackTypes
 from multiagent.environment import MultiAgentEnv
 from multiagent.interfaces.policy import RandomPolicy
@@ -10,44 +11,10 @@ from multiagent.scenarios import team
 if __name__ == '__main__':
     # parse arguments
     parser = argparse.ArgumentParser(description=None)
-    parser.add_argument('-s', '--scenario', default='symmetric_teams.py', help='Path of the scenario Python script.')
+    parser.add_argument('-s', '--scenario', default='teams.py', help='Path of the scenario Python script.')
     args = parser.parse_args()
-
-    teams = [
-        [  # Team 1
-            {
-                "roles": [RoleTypes.ADC],
-                "attack": [UnitAttackTypes.MELEE]
-            },
-            {
-                "roles": [RoleTypes.TANK],
-                "attack": [UnitAttackTypes.RANGED]
-            },
-            {
-                "roles": [RoleTypes.TANK],
-                "attack": [UnitAttackTypes.RANGED]
-            }
-        ],
-        [  # Team 2
-            {
-                "roles": [RoleTypes.ADC],
-                "attack": [UnitAttackTypes.MELEE]
-            },
-            {
-                "roles": [RoleTypes.ADC],
-                "attack": [UnitAttackTypes.RANGED]
-            }
-        ],
-        [  # Team 3
-            {
-                "roles": [RoleTypes.HEALER],
-                "attack": [UnitAttackTypes.MELEE]
-            },
-        ],
-    ]
-
     # load scenario from script
-    scenario = team.load(args.scenario).SymmetricTeamsScenario(teams)
+    scenario = team.load(args.scenario).TeamsScenario(TWO_TEAMS_SYMMETRIC_HETEROGENEOUS)
     # create world
     world = scenario.make_teams_world(grid_size=10.0)
     # create multi-agent environment

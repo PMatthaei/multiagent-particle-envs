@@ -179,7 +179,7 @@ class PerformanceStatistics:
 
 # properties of agent entities
 class Agent(Entity):
-    def __init__(self, id, name, tid, color, capabilities):
+    def __init__(self, id, name, tid, color, roles):
         super(Agent, self).__init__()
         self.id = id
         # team id
@@ -187,7 +187,7 @@ class Agent(Entity):
         self.name = name
         self.color = color
         # agents are movable by default
-        self.capabilities = capabilities
+        self.roles = roles
         self.movable = True
         # cannot send communication signals
         self.silent = True
@@ -252,7 +252,7 @@ class Agent(Entity):
             logging.debug("Agent {0} is dead.".format(other.id))
 
     def _has_heal(self):
-        return RoleTypes.HEALER in self.capabilities
+        return RoleTypes.HEALER in self.roles
 
     def can_heal(self, target=None):
         """
