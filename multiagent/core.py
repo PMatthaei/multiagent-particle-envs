@@ -249,7 +249,7 @@ class Agent(Entity):
             self.stats.kills += 1
             logging.debug("Agent {0} is dead.".format(other.id))
 
-    def _has_heal(self):
+    def has_heal(self):
         return 'can_heal' in self.role and self.role['can_heal']
 
     def can_heal(self, target=None):
@@ -258,7 +258,7 @@ class Agent(Entity):
         :param target:
         :return:
         """
-        return self._has_heal() and (target is not None and target.tid != self.tid) and target.is_alive()
+        return self.has_heal() and (target is not None and target.tid != self.tid) and target.is_alive()
 
 
 class World(object):

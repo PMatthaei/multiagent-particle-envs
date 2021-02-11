@@ -112,11 +112,11 @@ class MultiAgentEnv(gym.Env):
         heal_dims = 0
         # get amount of attack-able and heal-able agents in other/own team(s)
         for team in self.world.teams:
-            if team.tid == agent.tid and agent.can_heal():
+            if team.tid == agent.tid and agent.has_heal():
                 heal_dims += len(team.members)
             if team.tid != agent.tid:
                 attack_dims += len(team.members)
-        return movement_dims + attack_dims + 1  # no-op
+        return movement_dims + attack_dims + heal_dims + 1  # no-op
 
     def step(self, action_n):
         """

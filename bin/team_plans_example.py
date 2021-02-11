@@ -30,7 +30,7 @@ TWO_TEAMS_SIZE_TWO_SYMMETRIC_HETEROGENEOUS = [
             "attack_type": UnitAttackTypes.MELEE
         },
         {
-            "role": RoleTypes.TANK,
+            "role": RoleTypes.HEALER,
             "attack_type": UnitAttackTypes.RANGED
         },
     ],
@@ -40,7 +40,7 @@ TWO_TEAMS_SIZE_TWO_SYMMETRIC_HETEROGENEOUS = [
             "attack_type": UnitAttackTypes.MELEE
         },
         {
-            "role": RoleTypes.TANK,
+            "role": RoleTypes.HEALER,
             "attack_type": UnitAttackTypes.RANGED
         },
     ],
