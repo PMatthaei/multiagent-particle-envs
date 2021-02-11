@@ -16,7 +16,7 @@ class RoleTypes(Enum):
 
 class UnitAttackTypes(Enum):
     RANGED = {"attack_range": 35}
-    MELEE = {"attack_range": 1}
+    MELEE = {"attack_range": 5}
 
 
 class ActionTypes(IntEnum):
@@ -190,6 +190,7 @@ class Agent(Entity):
         self.role = build_plan['role'].value
 
         self.attack_range = self.attack_type['attack_range']
+        # sight range cannot be smaller than attack range
         self.sight_range = max(self.attack_range, self.sight_range)
         self.attack_damage = self.role['attack_damage']
         self.max_health = self.role['max_health']

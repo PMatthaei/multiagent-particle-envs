@@ -48,7 +48,7 @@ class TeamsScenario(BaseTeamScenario):
 
     def reset_world(self, world):
         # random team spawns
-        team_spawns = generate_spawns(*world.grid_center, self.n_teams, mean_radius=200)
+        team_spawns = generate_spawns(*world.grid_center, self.n_teams, mean_radius=world.grid_size * 3)
         # scatter agents of a team a little
         for team, team_spawn in zip(world.teams, team_spawns):
             spawns = generate_spawns(*team_spawn, self.n_agents[team.tid], mean_radius=world.grid_size)

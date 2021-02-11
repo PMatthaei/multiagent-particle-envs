@@ -8,6 +8,10 @@ from pygame.rect import Rect
 from multiagent.core import Entity, RoleTypes, Agent
 from multiagent.utils.colors import hsl_to_rgb
 
+HEALTH_BAR_HEIGHT = 4
+
+HEALTH_BAR_WIDTH = 25
+
 
 def check_ffmpeg():
     ffmpeg_available = True
@@ -185,10 +189,19 @@ class PyGameEntity(pygame.sprite.Sprite):
         self.surf = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA, 32).convert_alpha()
         self.rect: Rect = self.surf.get_rect()
         # Move to initial position
+        self.draw()
         self.update()
 
     def update(self):
-        # Draw entity as dot. A outline circle indicates its action range. Alpha colors indicate death
+        # Only redraw if visible state changed
+        if self.agent.is_dead():
+            self.draw()
+        # Important: The simulation is updating with a move_by update while here we set the resulted new pos
+        # TODO: if move_by needed the update needs to be saved in entity so we can recreate it here visually
+        self.rect.centerx = self.agent.state.pos[0]
+        self.rect.centery = self.agent.state.pos[1]
+
+    def draw(self):
         alpha = 80 if self.agent.is_dead() else 255
         color = self.agent.color
         sight_range = self.agent.sight_range
@@ -200,12 +213,21 @@ class PyGameEntity(pygame.sprite.Sprite):
             self.draw_healer(alpha, body_radius, color, sight_range)
         else:
             self.draw_adc(alpha, body_radius, color, sight_range)
-
+        self.draw_health_bar(alpha, body_radius, color, sight_range)
         self.draw_ranges(alpha, attack_range, color, sight_range)
-        # Core is updating with a move_by update while here we set the resulted new pos
-        # TODO: if move_by needed the update needs to be saved in entity so we can recreate it here visually
-        self.rect.centerx = self.agent.state.pos[0]
-        self.rect.centery = self.agent.state.pos[1]
+
+    def draw_health_bar(self, alpha, body_radius, color, sight_range):
+        rel_health = self.agent.state.health / self.agent.state.max_health
+        health_bar = HEALTH_BAR_WIDTH * rel_health
+        missing_health = HEALTH_BAR_WIDTH * (1 - rel_health)
+        center_x = sight_range - HEALTH_BAR_WIDTH / 2.0
+        center_y = sight_range - HEALTH_BAR_HEIGHT / 2.0
+        pygame.draw.rect(self.surf, color=hsl_to_rgb(color, alpha),
+                         rect=Rect(center_x, center_y - body_radius - HEALTH_BAR_HEIGHT, health_bar,
+                                   HEALTH_BAR_HEIGHT))
+        pygame.draw.rect(self.surf, color=hsl_to_rgb((61, 61, 61), alpha),
+                         rect=Rect(center_x + health_bar, center_y - body_radius - HEALTH_BAR_HEIGHT, missing_health,
+                                   HEALTH_BAR_HEIGHT))
 
     def draw_ranges(self, alpha, attack_range, color, sight_range):
         pygame.draw.circle(self.surf, color=hsl_to_rgb(color, alpha), center=(sight_range, sight_range),
