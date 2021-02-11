@@ -196,16 +196,7 @@ class Agent(Entity):
         self.max_health = self.role['max_health']
 
         self.movable = True
-        # cannot send communication signals
-        self.silent = True
-        # cannot observe the world
-        self.blind = False
-        # physical motor noise amount
-        self.u_noise = None
-        # communication noise amount
-        self.c_noise = None
         # control range
-        self.u_range = 1.0
         # state
         self.state = AgentState()
         # action
@@ -392,12 +383,6 @@ class World(object):
         agents = self.alive_agents
         random.shuffle(agents)
         for agent in agents:
-            # Set communication state directly
-            if agent.silent:
-                agent.state.c = np.zeros(self.dim_c)
-            else:
-                noise = np.random.randn(*agent.action.c.shape) * agent.c_noise if agent.c_noise else 0.0
-                agent.state.c = agent.action.c + noise
 
             # Update position
             move_vector = agent.action.u[:2]
@@ -417,7 +402,8 @@ class World(object):
                 elif agent.can_attack(target):
                     agent.attack(target)
                     if target.is_dead():  # Target died due to the attack
-                        pass  # TODO what to do if more than one unit attacks the target and it dies by one of them?
+                        # TODO what to do if more than one unit attacks the target in the same step and it dies by one of them?
+                        pass
                 else:
                     # TODO: For now, illegal actions can be taken and are available but will not change environment
                     logging.warning("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
