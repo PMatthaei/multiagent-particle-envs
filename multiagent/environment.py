@@ -231,7 +231,7 @@ class MultiAgentEnv(gym.Env):
 
     def get_avail_actions(self):
         """Returns the available actions of all agents in a list."""
-        avail_actions = [self.get_available_action_ids(agent) for agent in self.agents]
+        avail_actions = [self.get_available_actions(agent) for agent in self.agents]
         return avail_actions
 
     def _get_obs(self, agent):
