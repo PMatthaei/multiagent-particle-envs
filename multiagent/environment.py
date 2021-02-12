@@ -38,7 +38,7 @@ class MultiAgentEnv(gym.Env):
         self.global_reward = world.collaborative
         self.t = 0
         self.episode = 0
-        self.max_steps = 60
+        self.episode_limit = 60
         # configure spaces
         self.state_n = self.n * 4  # Four features per agent
         self.action_space = []
@@ -55,6 +55,13 @@ class MultiAgentEnv(gym.Env):
         # rendering
         self.viewer = None
         self._reset_render()
+
+    def get_env_info(self):
+        return {"state_shape": self.state_n,
+                "obs_shape": self.observation_space[0].shape[0],
+                "n_actions": self.action_space[0].n,
+                "n_agents": self.n,
+                "episode_limit": self.episode_limit}
 
     def get_available_actions(self, agent):
         """
@@ -128,7 +135,7 @@ class MultiAgentEnv(gym.Env):
         # get amount of attack-able and heal-able agents in other/own team(s)
         for team in self.world.teams:
             if team.tid == agent.tid and agent.has_heal():
-                heal_dims += len(team.members) # cannot heal himself
+                heal_dims += len(team.members)  # cannot heal himself
             if team.tid != agent.tid and not agent.has_heal():
                 attack_dims += len(team.members)
         return movement_dims + len(self.world.agents) + 1  # no-op
@@ -176,7 +183,7 @@ class MultiAgentEnv(gym.Env):
         if any(done_n):
             logging.debug("------ Done: {0}".format(done_n))
 
-        if self.max_steps == self.t:
+        if self.episode_limit == self.t:
             done_n = [True] * len(done_n)
 
         return obs_n, reward_n, done_n, info_n
@@ -250,7 +257,7 @@ class MultiAgentEnv(gym.Env):
         :param agent:
         :return:
         """
-        if self.max_steps is not None and self.max_steps == self.t:
+        if self.episode_limit is not None and self.episode_limit == self.t:
             self.episode += 1
             logging.debug("------ Episode: {0}".format(self.episode))
             return True
