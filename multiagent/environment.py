@@ -287,7 +287,7 @@ class MultiAgentEnv(gym.Env):
         agent.action.c = np.zeros(self.world.dim_c)
 
         # physical action index
-        act_ind = action[0]
+        act_ind = action
 
         agent.action.u[2] = -1  # index 2(=attack) => default no attack(= -1)
 
