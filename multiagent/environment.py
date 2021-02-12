@@ -64,9 +64,9 @@ class MultiAgentEnv(gym.Env):
         :param agent:
         :return: array of available action indices
         """
-        avail_actions = [0]  # always allow no-op action
+        avail_actions = []
         if agent.is_dead():  # when dead only allow no-op action
-            return avail_actions
+            return [0]
         if self.world.bounds is not None:
             x = agent.state.pos[0]
             y = agent.state.pos[1]
@@ -85,10 +85,13 @@ class MultiAgentEnv(gym.Env):
 
         # All alive agents (except self) can be taken a action against f.e heal, attack etc
         avail_actions = avail_actions + [ag.id + act_ind_offset for ag in self.world.alive_agents if
-                                         # Do not include the agent itself -> TODO: Remove if self-heal needed
-                                         agent.id != ag.id or
-                                         # If team mates only allow targeting if the agent can heal
-                                         (agent.tid == ag.tid and agent.can_heal())]
+                                         # Include the following agents ids as action encoded ids
+                                         # NOT the agent itself -> TODO: Remove if self-heal needed
+                                         agent.id != ag.id and
+                                         # enemy ids if the agent is not a healer
+                                         ((agent.tid != ag.tid and not agent.has_heal()) or
+                                          # team mates ids if the agent is a healer
+                                          (agent.has_heal() and agent.tid == ag.tid))]
 
         logging.debug("Agent {} has available actions with ids: {}".format(agent.id, avail_actions))
         return avail_actions
@@ -114,7 +117,7 @@ class MultiAgentEnv(gym.Env):
         for team in self.world.teams:
             if team.tid == agent.tid and agent.has_heal():
                 heal_dims += len(team.members)
-            if team.tid != agent.tid:
+            if team.tid != agent.tid and not agent.has_heal():
                 attack_dims += len(team.members)
         return movement_dims + attack_dims + heal_dims + 1  # no-op
 
