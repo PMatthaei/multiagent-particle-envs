@@ -40,6 +40,7 @@ class MultiAgentEnv(gym.Env):
         self.episode = 0
         self.max_steps = 60
         # configure spaces
+        self.state_n = self.n * 4  # Four features per agent
         self.action_space = []
         self.observation_space = []
         for agent in self.agents:
@@ -191,6 +192,20 @@ class MultiAgentEnv(gym.Env):
         if self.info_callback is None:
             return {}
         return self.info_callback(agent, self.world)
+
+    def get_state(self):
+        """Returns the global state.
+        NOTE: This function should not be used during decentralised execution.
+        """
+        cx, cy = self.world.center
+        state = np.array([])
+        for agent in self.agents:
+            x = (agent.state.pos[0] - cx) / self.world.bounds[0]  # relative X
+            y = (agent.state.pos[1] - cy) / self.world.bounds[1]  # relative Y
+            agent_state = np.array([[x, y], agent.self_observation]).flatten()
+            state = np.append(state, agent_state)
+
+        return state
 
     def _get_obs(self, agent):
         """

@@ -40,7 +40,9 @@ if __name__ == '__main__':
                 act_n.append(agent_policy.action(obs_n[aid]))
 
         # step environment
+        state = env.get_state()
         obs_n, reward_n, done_n, _ = env.step(act_n)
+        state = env.get_state()
         # render all agent views
         env.render()
 
