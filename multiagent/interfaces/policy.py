@@ -26,6 +26,6 @@ class RandomPolicy(Policy):
 
     def action(self, obs):
         agent = self.env.agents[self.agent_index]
-        avail_actions = self.env.get_available_actions(agent)
+        avail_actions = self.env.get_available_action_ids(agent)
         u = [random.choice(avail_actions)]
         return np.concatenate([u, np.zeros(self.env.world.dim_c)])

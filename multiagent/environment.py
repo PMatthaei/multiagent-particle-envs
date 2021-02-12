@@ -58,6 +58,17 @@ class MultiAgentEnv(gym.Env):
 
     def get_available_actions(self, agent):
         """
+        Vector form of @get_available_action_ids
+        @param agent:
+        @return:
+        """
+        avail_actions = np.zeros((self._get_action_dim(agent),))
+        ids = self.get_available_action_ids(agent)
+        avail_actions[ids] = 1
+        return avail_actions
+
+    def get_available_action_ids(self, agent):
+        """
         Calculate possible actions for an agent. These actions can be restricted by available agents to attack or
         move-able directions if near a world bound. This functions currently does NOT provide available agents by
         sight range. This means that a agent might be listed in the available actions array but in the world is not
@@ -82,7 +93,7 @@ class MultiAgentEnv(gym.Env):
         else:  # unbounded map -> always add all movement directions
             avail_actions.append([1, 2, 3, 4])
 
-        act_ind_offset = 5  # Attack actions begin at index 5
+        act_ind_offset = 5  # Attack/Heal actions begin at index 5
 
         # All alive agents (except self) can be taken a action against f.e heal, attack etc
         avail_actions = avail_actions + [ag.id + act_ind_offset for ag in self.world.alive_agents if
@@ -117,10 +128,14 @@ class MultiAgentEnv(gym.Env):
         # get amount of attack-able and heal-able agents in other/own team(s)
         for team in self.world.teams:
             if team.tid == agent.tid and agent.has_heal():
-                heal_dims += len(team.members)
+                heal_dims += len(team.members) # cannot heal himself
             if team.tid != agent.tid and not agent.has_heal():
                 attack_dims += len(team.members)
-        return movement_dims + attack_dims + heal_dims + 1  # no-op
+        return movement_dims + len(self.world.agents) + 1  # no-op
+        # TODO: Current impl assumes same action space for all agents but some actions will always be unavailable:
+        #   - Healers cannot attack enemies
+        #   - Team mates cannot be attacked
+        # return movement_dims + attack_dims + heal_dims + 1  # no-op
 
     def step(self, action_n):
         """
@@ -204,8 +219,20 @@ class MultiAgentEnv(gym.Env):
             y = (agent.state.pos[1] - cy) / self.world.bounds[1]  # relative Y
             agent_state = np.array([[x, y], agent.self_observation]).flatten()
             state = np.append(state, agent_state)
-
+        logging.debug("State: {0}".format(state))
         return state
+
+    def get_obs(self):
+        """Returns all agent observations in a list.
+        NOTE: Agents should have access only to their local observations
+        during decentralised execution.
+        """
+        return [self._get_obs(agent) for agent in self.agents]
+
+    def get_avail_actions(self):
+        """Returns the available actions of all agents in a list."""
+        avail_actions = [self.get_available_action_ids(agent) for agent in self.agents]
+        return avail_actions
 
     def _get_obs(self, agent):
         """
