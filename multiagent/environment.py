@@ -8,19 +8,23 @@ from gym import spaces
 from multiagent.core import World
 
 
-class MultiAgentEnv(gym.Env):
+class MAEnv(gym.Env):
     metadata = {
         'render.modes': ['human', 'rgb_array']
     }
 
     def __init__(self, world: World, reset_callback=None, reward_callback=None,
                  observation_callback=None, info_callback=None,
-                 done_callback=None, log=False):
+                 done_callback=None, log=False, log_level=logging.DEBUG):
         if log:
-            logging.basicConfig(filename='env.log', level=logging.DEBUG)
-            logging.getLogger().addHandler(logging.StreamHandler(sys.stderr))
-        else:
-            logging.basicConfig(level=logging.ERROR)
+            logging.basicConfig(filename='env.log', level=log_level)
+            self.logger = logging.getLogger("ma-env")
+            self.logger.handlers = []
+            ch = logging.StreamHandler()
+            formatter = logging.Formatter('[%(levelname)s %(asctime)s] %(name)s %(message)s', '%H:%M:%S')
+            ch.setFormatter(formatter)
+            self.logger.addHandler(ch)
+            self.logger.setLevel(log_level)
 
         self.world = world
         self.agents = self.world.policy_agents
@@ -112,7 +116,7 @@ class MultiAgentEnv(gym.Env):
                                           # team mates ids if the agent is a healer
                                           (agent.has_heal() and agent.tid == ag.tid))]
 
-        logging.debug("Agent {} has available actions with ids: {}".format(agent.id, avail_actions))
+        self.logger.debug("Agent {} has available actions with ids: {}".format(agent.id, avail_actions))
         return avail_actions
 
     def _get_action_dim(self, agent):
@@ -151,8 +155,8 @@ class MultiAgentEnv(gym.Env):
         :return:
         """
         self.t += 1
-        logging.debug("--- Step {0}".format(self.t))
-        logging.debug("Actions: {0}".format(action_n))
+        self.logger.debug("--- Step {0}".format(self.t))
+        self.logger.debug("Actions: {0}".format(action_n))
 
         obs_n = []
         reward_n = []
@@ -171,17 +175,17 @@ class MultiAgentEnv(gym.Env):
             done_n.append(self._get_done(agent))
             info_n['n'].append(self._get_info(agent))
 
-        logging.debug("Obs: {0}".format(obs_n))
+        self.logger.debug("Obs: {0}".format(obs_n))
 
         if self.global_reward:
             # Implementation see: On local rewards and scaling distributed reinforcement learning
             global_reward = np.mean(reward_n)
             reward_n = [global_reward] * self.n
 
-        logging.debug("Rewards: {0}".format(reward_n))
+        self.logger.debug("Rewards: {0}".format(reward_n))
 
         if any(done_n):
-            logging.debug("------ Done: {0}".format(done_n))
+            self.logger.debug("------ Done: {0}".format(done_n))
 
         if self.episode_limit == self.t:
             done_n = [True] * len(done_n)
@@ -226,7 +230,7 @@ class MultiAgentEnv(gym.Env):
             y = (agent.state.pos[1] - cy) / self.world.bounds[1]  # relative Y
             agent_state = np.array([[x, y], agent.self_observation]).flatten()
             state = np.append(state, agent_state)
-        logging.debug("State: {0}".format(state))
+        self.logger.debug("State: {0}".format(state))
         return state
 
     def get_obs(self):
@@ -259,13 +263,13 @@ class MultiAgentEnv(gym.Env):
         """
         if self.episode_limit is not None and self.episode_limit == self.t:
             self.episode += 1
-            logging.debug("------ Episode: {0}".format(self.episode))
+            self.logger.debug("------ Episode: {0}".format(self.episode))
             return True
         if self.done_callback is None:
             return False
         if self.done_callback(agent, self.world):
             self.episode += 1
-            logging.debug("------ Episode: {0}".format(self.episode))
+            self.logger.debug("------ Episode: {0}".format(self.episode))
         return self.done_callback(agent, self.world)
 
     def _get_reward(self, agent):

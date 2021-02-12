@@ -117,7 +117,7 @@ class PyGameViewer(object):
             dt = self.font.render("FPS: " + str(self.fps), False, (0, 0, 0))
             t = self.font.render("Time step: " + str(self.env.t), False, (0, 0, 0))
             episode = self.font.render("Episode: " + str(self.env.episode), False, (0, 0, 0))
-            max_step = self.font.render("Max. Step: " + str(self.env.max_steps), False, (0, 0, 0))
+            max_step = self.font.render("Max. Step: " + str(self.env.episode_limit), False, (0, 0, 0))
             self.screen.blit(dt, (0, 0))
             self.screen.blit(t, (0, 20))
             self.screen.blit(episode, (0, 40))

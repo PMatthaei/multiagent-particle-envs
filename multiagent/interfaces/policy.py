@@ -3,7 +3,7 @@ import random
 import numpy as np
 
 # individual agent policy interface
-from multiagent.environment import MultiAgentEnv
+from multiagent.environment import MAEnv
 
 
 class Policy(object):
@@ -19,7 +19,7 @@ class Policy(object):
 #
 # random agent policy
 class RandomPolicy(Policy):
-    def __init__(self, env: MultiAgentEnv, agent_index):
+    def __init__(self, env: MAEnv, agent_index):
         super(RandomPolicy, self).__init__()
         self.env = env
         self.agent_index = agent_index

@@ -267,6 +267,7 @@ class World(object):
         Multi-agent world
         :param bounds: World bounds in which the agents can move
         """
+        self.logger = logging.getLogger("ma-env")
         self.bounds = bounds
         self.grid_size = grid_size
         # indicates if the reward will be global(cooperative) or local
@@ -388,7 +389,7 @@ class World(object):
             move_vector = agent.action.u[:2]
             agent.state.pos += move_vector
             if any([dim > 0 for dim in move_vector]):  # is there movement greater zero?
-                logging.debug("Agent {0} moved by {1}:".format(agent.id, move_vector))
+                self.logger.debug("Agent {0} moved by {1}:".format(agent.id, move_vector))
 
             # Influence entity if target set
             agent_has_action_target = agent.action.u[2] != -1
@@ -406,4 +407,4 @@ class World(object):
                         pass
                 else:
                     # TODO: For now, illegal actions can be taken and are available but will not change environment
-                    logging.warning("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
+                    self.logger.warning("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))

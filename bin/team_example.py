@@ -3,7 +3,7 @@ import argparse
 import pygame
 
 from bin.team_plans_example import TWO_TEAMS_SIZE_TWO_SYMMETRIC_HOMOGENEOUS
-from multiagent.environment import MultiAgentEnv
+from multiagent.environment import MAEnv
 from multiagent.interfaces.policy import RandomPolicy
 from multiagent.scenarios import team
 
@@ -17,13 +17,13 @@ if __name__ == '__main__':
     # create world
     world = scenario.make_teams_world(grid_size=10.0)
     # create multi-agent environment
-    env = MultiAgentEnv(world=world,
-                        reset_callback=scenario.reset_world,
-                        reward_callback=scenario.reward,
-                        observation_callback=scenario.observation,
-                        info_callback=None,
-                        done_callback=scenario.done,
-                        log=True)
+    env = MAEnv(world=world,
+                reset_callback=scenario.reset_world,
+                reward_callback=scenario.reward,
+                observation_callback=scenario.observation,
+                info_callback=None,
+                done_callback=scenario.done,
+                log=True)
     # render call to create viewer window (necessary only for interactive policies)
     env.render()
     # create random policies for each agent in each team
