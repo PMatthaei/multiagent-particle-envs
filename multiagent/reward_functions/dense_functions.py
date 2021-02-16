@@ -24,7 +24,7 @@ def reward_agent_stats(agent: Agent):
 
 
 def reward_team_damage(team: Team):
-    return sum([agent.stats.dmg_dealt / agent.attack_damage for agent in team.members])
+    return sum([agent.stats.dmg_dealt for agent in team.members])
 
 
 def reward_team_health(team: Team):

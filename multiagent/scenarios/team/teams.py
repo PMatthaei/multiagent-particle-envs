@@ -58,8 +58,8 @@ class TeamsScenario(BaseTeamScenario):
 
     def reward(self, agent, world):
         reward = 0
-        reward += reward_team_health(world.get_team(agent.tid))
-        reward += reward_team_damage(world.get_team(agent.tid))
+        reward += agent.state.health / agent.state.max_health
+        reward += agent.stats.dmg_dealt
         return reward
 
     def done(self, agent, world):

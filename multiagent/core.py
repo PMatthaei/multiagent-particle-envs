@@ -1,4 +1,5 @@
 import math
+from copy import copy
 from enum import Enum, IntEnum
 
 import numpy as np
@@ -159,22 +160,14 @@ class PerformanceStatistics:
         self.heals_performed = heals_performed
         self.distance_traveled = distance_traveled
 
-        self.prev_t_stats: PerformanceStatistics = None
-
-    @property
-    def delta(self):
-        """
-        :return: Agents stats corresponding to the last registered time step.
-        """
-        return PerformanceStatistics(
-            kills=self.kills - self.prev_t_stats.kills,
-            assists=self.assists - self.prev_t_stats.assists,
-            dmg_dealt=self.dmg_dealt - self.prev_t_stats.dmg_dealt,
-            dmg_healed=self.dmg_healed - self.prev_t_stats.dmg_healed,
-            attacks_performed=self.attacks_performed - self.prev_t_stats.attacks_performed,
-            heals_performed=self.heals_performed - self.prev_t_stats.heals_performed,
-            distance_traveled=self.distance_traveled - self.prev_t_stats.distance_traveled,
-        )
+    def reset(self):
+        self.kills = 0
+        self.assists = 0
+        self.dmg_dealt = 0
+        self.dmg_healed = 0
+        self.attacks_performed = 0
+        self.heals_performed = 0
+        self.distance_traveled = 0
 
 
 # properties of agent entities
@@ -407,4 +400,5 @@ class World(object):
                         pass
                 else:
                     # TODO: For now, illegal actions can be taken and are available but will not change environment
-                    self.logger.warning("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
+                    self.logger.warning(
+                        "Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))

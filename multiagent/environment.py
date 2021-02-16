@@ -1,5 +1,6 @@
 import logging
 import sys
+from copy import copy
 
 import gym
 import numpy as np
@@ -169,18 +170,23 @@ class MAEnv(gym.Env):
         # advance world state
         self.world.step()
         # record observation for each agent - this needs to happen after stepping world !
-        for agent in self.agents:
-            obs_n.append(self._get_obs(agent))
-            reward_n.append(self._get_reward(agent))
-            done_n.append(self._get_done(agent))
-            info_n['n'].append(self._get_info(agent))
+        all_rewards = []
+        for team in self.world.teams:
+            team_rewards = []
+            for agent in team.members:
+                obs_n.append(self._get_obs(agent))
+                team_rewards.append(self._get_reward(agent))
+                done_n.append(self._get_done(agent))
+                info_n['n'].append(self._get_info(agent))
+            all_rewards.append(team_rewards)
 
         self.logger.debug("Obs: {0}".format(obs_n))
 
         if self.global_reward:
             # Implementation see: On local rewards and scaling distributed reinforcement learning
-            global_reward = np.mean(reward_n)
-            reward_n = [global_reward] * self.n
+            reward_n = np.concatenate([[np.mean(team_rewards)] * len(team_rewards) for team_rewards in all_rewards])
+        else:
+            reward_n = np.concatenate(all_rewards)
 
         self.logger.debug("Rewards: {0}".format(reward_n))
 
@@ -281,7 +287,9 @@ class MAEnv(gym.Env):
         """
         if self.reward_callback is None:
             return 0.0
-        return self.reward_callback(agent, self.world)
+        reward = self.reward_callback(agent, self.world)
+        agent.stats.reset()  # reset agent stats which were used to calculate step reward for next step
+        return reward
 
     def _set_action(self, action, agent, action_space, time=None):
         """
