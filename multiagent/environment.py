@@ -162,7 +162,7 @@ class MAEnv(gym.Env):
         obs_n = []
         reward_n = []
         done_n = []
-        info_n = {'n': []}
+        info_n = {'n': [], "battle_won": False}
         self.agents = self.world.policy_agents
         # set action for each agent - this needs to be performed before stepping world !
         for aid, agent in enumerate(self.agents):
@@ -191,6 +191,7 @@ class MAEnv(gym.Env):
         self.logger.debug("Rewards: {0}".format(reward_n))
 
         if any(done_n):
+            info_n["battle_won"] = True
             self.logger.debug("------ Done: {0}".format(done_n))
 
         if self.episode_limit == self.t:

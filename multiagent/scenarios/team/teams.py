@@ -67,14 +67,14 @@ class TeamsScenario(BaseTeamScenario):
         return [team.is_wiped() for team in world.teams].count(False) == 1
 
     def observation(self, agent, world):
-        # Movement obs
+        # Movement observation of the agent
         obs = [world.get_available_movement(agent)]
-        # Ally obs
+        # Ally observation
         for member in world.get_team_members(agent):
             obs.append(agent.observe(member))
-        # Enemy obs
+        # Enemy observation
         for enemy in np.concatenate([team.members for team in world.get_opposing_teams(agent.tid)]):
             obs.append(agent.observe(enemy))
-        # Self obs
+        # Self observation
         obs.append(agent.self_observation)
         return np.concatenate(obs)

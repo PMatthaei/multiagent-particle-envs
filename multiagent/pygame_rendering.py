@@ -68,7 +68,6 @@ class PyGameViewer(object):
         self.draw_grid = draw_grid
         self.record = record
         self.proc = None
-        self.fps = 30
         self.headless = headless
 
         if self.headless:
@@ -141,6 +140,8 @@ class PyGameViewer(object):
         self.entities.add(*[PyGameEntity(entity) for entity in world_entities])
 
     def render(self):
+        if self.headless:
+            return
         """
         Render current data and handle events
         :return:
