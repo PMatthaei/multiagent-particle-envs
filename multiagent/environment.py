@@ -61,6 +61,7 @@ class MAEnv(gym.Env):
             agent.action.c = np.zeros(self.world.dim_c)
 
         # rendering
+        self.headless = headless
         if not headless:  # import rendering only if we need it (and don't import for headless machines)
             from multiagent import pygame_rendering
             self.viewer = pygame_rendering.PyGameViewer(self, fps=fps, infos=infos, draw_grid=draw_grid, record=record,
@@ -372,27 +373,28 @@ class MAEnv(gym.Env):
                     message += (other.name + ' to ' + agent.name + ': ' + word + '   ')
             if message is not None and not message and message != '':
                 print("Communicated message: ", message)
+                
+        if not self.headless:
+            if self.viewer is None:
+                # import rendering only if we need it (and don't import for headless machines)
+                from multiagent import pygame_rendering
+                self.viewer = pygame_rendering.PyGameViewer(self, fps=30, infos=True, draw_grid=True, record=True,
+                                                            headless=self.h)
 
-        if self.viewer is None:
-            # import rendering only if we need it (and don't import for headless machines)
-            from multiagent import pygame_rendering
-            self.viewer = pygame_rendering.PyGameViewer(self, fps=30, infos=True, draw_grid=True, record=True,
-                                                        headless=self.h)
+            # create rendered entities
+            if self.viewer.entities is None:
+                # import rendering only if we need it (and don't import for headless machines)
+                from multiagent import pygame_rendering
+                self.viewer.init(self.world.entities)
 
-        # create rendered entities
-        if self.viewer.entities is None:
-            # import rendering only if we need it (and don't import for headless machines)
-            from multiagent import pygame_rendering
-            self.viewer.init(self.world.entities)
+            #
+            # main render loop part
+            #
+            self.viewer.clear()
 
-        #
-        # main render loop part
-        #
-        self.viewer.clear()
+            self.viewer.update()
 
-        self.viewer.update()
-
-        self.viewer.render()
+            self.viewer.render()
         return None
 
 
