@@ -15,9 +15,11 @@ class MAEnv(gym.Env):
         'render.modes': ['human', 'rgb_array']
     }
 
-    def __init__(self, world: World, reset_callback=None, reward_callback=None,
-                 observation_callback=None, info_callback=None,
-                 done_callback=None, log=False, log_level=logging.DEBUG):
+    def __init__(self, world: World,
+                 reset_callback=None, reward_callback=None, observation_callback=None,
+                 info_callback=None, done_callback=None,
+                 log=False, log_level=logging.DEBUG,
+                 fps=30, infos=True, draw_grid=True, record=True, headless=False):
         if log:
             logging.basicConfig(filename='env.log', level=log_level)
             self.logger = logging.getLogger("ma-env")
@@ -59,7 +61,10 @@ class MAEnv(gym.Env):
             agent.action.c = np.zeros(self.world.dim_c)
 
         # rendering
-        self.viewer = None
+        if not headless:  # import rendering only if we need it (and don't import for headless machines)
+            from multiagent import pygame_rendering
+            self.viewer = pygame_rendering.PyGameViewer(self, fps=fps, infos=infos, draw_grid=draw_grid, record=record,
+                                                        headless=headless)
         self._reset_render()
 
     def get_env_info(self):
@@ -371,7 +376,8 @@ class MAEnv(gym.Env):
         if self.viewer is None:
             # import rendering only if we need it (and don't import for headless machines)
             from multiagent import pygame_rendering
-            self.viewer = pygame_rendering.PyGameViewer(self)
+            self.viewer = pygame_rendering.PyGameViewer(self, fps=30, infos=True, draw_grid=True, record=True,
+                                                        headless=self.h)
 
         # create rendered entities
         if self.viewer.entities is None:
