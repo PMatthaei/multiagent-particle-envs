@@ -6,7 +6,8 @@ import gym
 import numpy as np
 from gym import spaces
 
-from multiagent.core import World
+from multiagent.core import World, Team
+from multiagent.exceptions.environment_exceptions import TooManyWinners
 
 
 class MAEnv(gym.Env):
@@ -32,7 +33,7 @@ class MAEnv(gym.Env):
         self.movement_step_amount = self.world.grid_size  # move X pixels per action - de-facto grid size
         # set required vectorized gym env property
         self.n = len(world.policy_agents)
-        # scenario callbacks
+        # scenario callbacks - TODO: type unsafety here
         self.reset_callback = reset_callback
         self.reward_callback = reward_callback
         self.observation_callback = observation_callback
@@ -162,7 +163,7 @@ class MAEnv(gym.Env):
         obs_n = []
         reward_n = []
         done_n = []
-        info_n = {"battle_won": False}
+        info_n = {"battle_won": []}
         self.agents = self.world.policy_agents
         # set action for each agent - this needs to be performed before stepping world !
         for aid, agent in enumerate(self.agents):
@@ -176,25 +177,35 @@ class MAEnv(gym.Env):
             for agent in team.members:
                 obs_n.append(self._get_obs(agent))
                 team_rewards.append(self._get_reward(agent))
-                done_n.append(self._get_done(agent))
-                #info_n['n'].append(self._get_info(agent))
+                # info_n['n'].append(self._get_info(agent))
+
+            done_n.append(self._get_done(team))
+
             all_rewards.append(team_rewards)
+
+        info_n["battle_won"] = done_n
 
         self.logger.debug("Obs: {0}".format(obs_n))
 
         if self.global_reward:
-            # Implementation see: On local rewards and scaling distributed reinforcement learning
+            # Implementation as seen in: On local rewards and scaling distributed reinforcement learning
             reward_n = np.concatenate([[np.mean(team_rewards)] * len(team_rewards) for team_rewards in all_rewards])
         else:
             reward_n = np.concatenate(all_rewards)
 
         self.logger.debug("Rewards: {0}".format(reward_n))
 
-        if any(done_n):
-            info_n["battle_won"] = True
-            self.logger.debug("------ Done: {0}".format(done_n))
+        winner = np.where(done_n)[0]
+        if len(winner) == 1:
+            self.logger.debug("------ Done - Team with id {0} won the battle: {0}".format(winner[0]))
+        # Too many winners are prohibited (prevent case of episode limit reached)
+        elif len(winner) >= 1 and self.t != self.episode_limit:
+            raise TooManyWinners(winner)
 
+        # Place this code block after winner check !
         if self.episode_limit == self.t:
+            # TODO: what should happen with result of match - draw or lose/win for all teams?
+            self.logger.debug("------ Done - Episode limit reached.")
             done_n = [True] * len(done_n)
 
         return obs_n, reward_n, done_n, info_n
@@ -262,7 +273,7 @@ class MAEnv(gym.Env):
             return np.zeros(0)
         return self.observation_callback(agent, self.world)
 
-    def _get_done(self, agent):
+    def _get_done(self, team: Team):
         """
         Get dones for a particular agent. A environment is done if it reached its max steps
         :param agent:
@@ -274,10 +285,10 @@ class MAEnv(gym.Env):
             return True
         if self.done_callback is None:
             return False
-        if self.done_callback(agent, self.world):
+        if self.done_callback(team, self.world):
             self.episode += 1
             self.logger.debug("------ Episode: {0}".format(self.episode))
-        return self.done_callback(agent, self.world)
+        return self.done_callback(team, self.world)
 
     def _get_reward(self, agent):
         """

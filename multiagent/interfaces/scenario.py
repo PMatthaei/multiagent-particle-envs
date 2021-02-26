@@ -1,5 +1,5 @@
 # defines scenario upon which the world is built
-from multiagent.core import World
+from multiagent.core import World, Team, Agent
 
 
 class BaseScenario(object):
@@ -10,7 +10,7 @@ class BaseScenario(object):
         """
         raise NotImplementedError()
 
-    def reset_world(self, world):
+    def reset_world(self, world: World):
         """
         Create initial conditions of the world
         :param world:
@@ -18,7 +18,7 @@ class BaseScenario(object):
         """
         raise NotImplementedError()
 
-    def reward(self, agent, world):
+    def reward(self, agent: Agent, world: World):
         """
         Reward an agents action with a individual/local reward based on world and agent data
         :param agent:
@@ -27,7 +27,7 @@ class BaseScenario(object):
         """
         raise NotImplementedError()
 
-    def observation(self, agent, world):
+    def observation(self, agent: Agent, world: World):
         """
         Return observation of the agent in the given world
         :param agent:
@@ -36,7 +36,7 @@ class BaseScenario(object):
         """
         raise NotImplementedError()
 
-    def done(self, agent, world):
+    def done(self, agent: Agent, world: World):
         """
         Return if this agent has achieved his goal
         :param agent:
@@ -47,7 +47,7 @@ class BaseScenario(object):
 
 
 class BaseTeamScenario(object):
-    def make_teams_world(self, grid_size=10.0):
+    def make_teams_world(self, grid_size=10):
         """
         This function needs to be called instead of make_world to create a team-based setup
         :return:
@@ -58,14 +58,14 @@ class BaseTeamScenario(object):
         return world
 
     # create elements of the world
-    def _make_world(self, grid_size) -> World:
+    def _make_world(self, grid_size: int) -> World:
         """
         Create elements of the world
         :return: world
         """
         raise NotImplementedError()
 
-    def reset_world(self, world):
+    def reset_world(self, world: World):
         """
         Create initial conditions of the world
         :param world:
@@ -73,7 +73,7 @@ class BaseTeamScenario(object):
         """
         raise NotImplementedError()
 
-    def reward(self, agent, world):
+    def reward(self, agent: Agent, world: World):
         """
         Reward an agents action individual/local based on world and agent data
         :param agent:
@@ -82,7 +82,7 @@ class BaseTeamScenario(object):
         """
         raise NotImplementedError()
 
-    def observation(self, agent, world):
+    def observation(self, agent: Agent, world: World):
         """
         Return observation of the agent in the given world
         :param agent:
@@ -91,10 +91,10 @@ class BaseTeamScenario(object):
         """
         raise NotImplementedError()
 
-    def done(self, agent, world):
+    def done(self, team: Team, world: World):
         """
-        Return if this agent has achieved his goal
-        :param agent:
+        Return if this team has achieved his goal
+        :param team:
         :param world:
         :return:
         """

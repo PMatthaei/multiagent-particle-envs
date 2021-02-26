@@ -24,7 +24,7 @@ class TeamsScenario(BaseTeamScenario):
         if self.is_symmetric and sum(self.n_agents) % self.n_teams != 0:
             raise ScenarioNotSymmetricError(self.n_agents, self.n_teams)
 
-    def _make_world(self, grid_size):
+    def _make_world(self, grid_size: int):
         world = World(grid_size=grid_size)
         world.collaborative = True
         colors = generate_colors(self.n_teams)
@@ -46,27 +46,26 @@ class TeamsScenario(BaseTeamScenario):
 
         return world
 
-    def reset_world(self, world):
+    def reset_world(self, world: World):
         # random team spawns
         team_spawns = generate_spawns(*world.grid_center, self.n_teams, mean_radius=world.grid_size * 3)
         # scatter agents of a team a little
         for team, team_spawn in zip(world.teams, team_spawns):
-            spawns = generate_spawns(*team_spawn, self.n_agents[team.tid], mean_radius=world.grid_size)
+            agent_spawns = generate_spawns(*team_spawn, self.n_agents[team.tid], mean_radius=world.grid_size)
             for i, agent in enumerate(team.members):
-                spawn = np.array(spawns[i])
-                agent.state.reset(spawn)
+                agent.state.reset(np.array(agent_spawns[i]))
 
-    def reward(self, agent, world):
+    def reward(self, agent: Agent, world: World):
         reward = 0
         reward += agent.state.health / agent.state.max_health
         reward += agent.stats.dmg_dealt
         return reward
 
-    def done(self, agent, world):
-        # if only one team left
-        return [team.is_wiped() for team in world.teams].count(False) == 1
+    def done(self, team: Team, world: World):
+        # if only one team is not wiped and this team is the team under testing -> winner winner chicken dinner
+        return not team.is_wiped() and world.teams_wiped.count(False) == 1
 
-    def observation(self, agent, world):
+    def observation(self, agent: Agent, world: World):
         # Movement observation of the agent
         obs = [world.get_available_movement(agent)]
         # Ally observation

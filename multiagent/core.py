@@ -11,7 +11,7 @@ import logging
 
 class RoleTypes(Enum):
     TANK = {"max_health": 100, "attack_damage": 5}
-    ADC = {"max_health": 50, "attack_damage": 20}
+    ADC = {"max_health": 50, "attack_damage": 50}
     HEALER = {"max_health": 75, "attack_damage": 20, "can_heal": True}
 
 
@@ -255,7 +255,7 @@ class Agent(Entity):
 
 
 class World(object):
-    def __init__(self, grid_size, bounds=(1280, 720)):
+    def __init__(self, grid_size: int, bounds=(1280, 720)):
         """
         Multi-agent world
         :param bounds: World bounds in which the agents can move
@@ -267,6 +267,7 @@ class World(object):
         self.collaborative = False
         # list of teams build by a subset of ...
         self.teams = []
+        self.teams_wiped = []
         # list of agents
         self.agents = []
         # list of non-agent objects in the world
@@ -278,7 +279,7 @@ class World(object):
         # color dimensionality
         self.dim_color = 3
 
-    def get_team_members(self, agent):
+    def get_team_members(self, agent: Agent):
         return [member for member in self.get_team(agent.tid).members if member.id != agent.id]
 
     def get_team(self, tid):
@@ -292,7 +293,7 @@ class World(object):
                 return team
         raise NoTeamFoundError(tid)
 
-    def get_opposing_teams(self, tid):
+    def get_opposing_teams(self, tid: int):
         """
         Return opposing teams of the team with the provided team id
         :param tid: Identifier for a team
@@ -310,7 +311,7 @@ class World(object):
             return []
         return [e for e in self.entities if entity.can_see(e)]
 
-    def get_available_movement(self, agent):
+    def get_available_movement(self, agent: Agent):
         if self.bounds is not None:
             avail_movement = [0] * 4  # four movement dims
             x = agent.state.pos[0]
@@ -395,10 +396,12 @@ class World(object):
                     agent.heal(target)
                 elif agent.can_attack(target):
                     agent.attack(target)
+                    # TODO what to do if more than one unit attacks the target in the same step and it dies by one of them?
                     if target.is_dead():  # Target died due to the attack
-                        # TODO what to do if more than one unit attacks the target in the same step and it dies by one of them?
                         pass
+                # TODO: For now, illegal actions can be taken and are available but will not influence the environment
                 else:
-                    # TODO: For now, illegal actions can be taken and are available but will not change environment
                     self.logger.warning(
                         "Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
+        # After update test if world is done aka only one team left
+        self.teams_wiped = [team.is_wiped() for team in self.teams]
