@@ -62,6 +62,7 @@ class MAEnv(gym.Env):
 
         # rendering
         self.headless = headless
+        self.viewer = None
         if not headless:  # import rendering only if we need it (and don't import for headless machines)
             from multiagent import pygame_rendering
             self.viewer = pygame_rendering.PyGameViewer(self, fps=fps, infos=infos, draw_grid=draw_grid, record=record,
