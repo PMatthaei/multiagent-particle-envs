@@ -355,6 +355,9 @@ class MAEnv(gym.Env):
             self.viewer.entities = None
             self.viewer.clear()
 
+    def close(self):
+        self.viewer.close()
+
     def render(self, mode='human'):
         """
         Render the environment via the defined PyGameViewer.
