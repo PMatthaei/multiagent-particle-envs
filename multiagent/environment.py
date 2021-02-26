@@ -373,7 +373,7 @@ class MAEnv(gym.Env):
                     message += (other.name + ' to ' + agent.name + ': ' + word + '   ')
             if message is not None and not message and message != '':
                 print("Communicated message: ", message)
-                
+
         if not self.headless:
             if self.viewer is None:
                 # import rendering only if we need it (and don't import for headless machines)
