@@ -186,7 +186,10 @@ class MAEnv(gym.Env):
                 local_rewards.append(self._get_reward(agent))
                 # info_n['n'].append(self._get_info(agent))
 
-            done_n.append(self._get_done(team))
+            won = self._get_done(team)
+            if won:
+                local_rewards.append(100)  # Add win reward. This is why we are not using np.mean in global reward calc
+            done_n.append(won)
 
             team_rewards.append(local_rewards)
 
@@ -197,7 +200,7 @@ class MAEnv(gym.Env):
         if self.global_reward:
             # Implementation as seen in: On local rewards and scaling distributed reinforcement learning
             # Take the mean over all local rewards per team. Each agent receives this global reward
-            reward_n = np.concatenate([[np.mean(team_reward)] * len(team_reward) for team_reward in team_rewards])
+            reward_n = np.concatenate([[np.sum(team_rewards[team.tid]) / team.size] * team.size for team in self.world.teams])
         else:
             reward_n = np.concatenate(team_rewards)
 
@@ -357,6 +360,7 @@ class MAEnv(gym.Env):
             self.viewer.clear()
 
     def close(self):
+        # TODO: better clean up of environment
         self.viewer.close()
 
     def render(self, mode='human'):

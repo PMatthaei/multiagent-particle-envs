@@ -178,6 +178,7 @@ class PyGameViewer(object):
         if self.proc is not None:
             self.proc.stdin.close()
             self.proc.wait()
+            self.proc.terminate()
 
 
 class PyGameEntity(pygame.sprite.Sprite):

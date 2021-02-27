@@ -140,6 +140,10 @@ class Team:
     def is_wiped(self):
         return all([agent.is_dead() for agent in self.members])
 
+    @property
+    def size(self):
+        return len(self.members)
+
 
 class PerformanceStatistics:
     def __init__(self, kills=0, assists=0, dmg_dealt=0, dmg_healed=0, attacks_performed=0, heals_performed=0,
