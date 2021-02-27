@@ -178,17 +178,17 @@ class MAEnv(gym.Env):
         # advance world state
         self.world.step()
         # record observation for each agent - this needs to happen after stepping world !
-        all_rewards = []
+        team_rewards = []
         for team in self.world.teams:
-            team_rewards = []
+            local_rewards = []
             for agent in team.members:
                 obs_n.append(self._get_obs(agent))
-                team_rewards.append(self._get_reward(agent))
+                local_rewards.append(self._get_reward(agent))
                 # info_n['n'].append(self._get_info(agent))
 
             done_n.append(self._get_done(team))
 
-            all_rewards.append(team_rewards)
+            team_rewards.append(local_rewards)
 
         info_n["battle_won"] = done_n
 
@@ -196,9 +196,10 @@ class MAEnv(gym.Env):
 
         if self.global_reward:
             # Implementation as seen in: On local rewards and scaling distributed reinforcement learning
-            reward_n = np.concatenate([[np.mean(team_rewards)] * len(team_rewards) for team_rewards in all_rewards])
+            # Take the mean over all local rewards per team. Each agent receives this global reward
+            reward_n = np.concatenate([[np.mean(team_reward)] * len(team_reward) for team_reward in team_rewards])
         else:
-            reward_n = np.concatenate(all_rewards)
+            reward_n = np.concatenate(team_rewards)
 
         self.logger.debug("Rewards: {0}".format(reward_n))
 

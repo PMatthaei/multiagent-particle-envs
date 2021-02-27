@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 from copy import copy
 from enum import Enum, IntEnum
@@ -141,7 +143,7 @@ class Team:
 
 class PerformanceStatistics:
     def __init__(self, kills=0, assists=0, dmg_dealt=0, dmg_healed=0, attacks_performed=0, heals_performed=0,
-                 distance_traveled=0):
+                 distance_traveled=0, dmg_received=0):
         """
         Holds the stats of an agent within an episode, representing it at the current time step t.
         :param kills:
@@ -154,6 +156,7 @@ class PerformanceStatistics:
         """
         self.kills = kills
         self.assists = assists
+        self.dmg_received = dmg_received
         self.dmg_dealt = dmg_dealt
         self.dmg_healed = dmg_healed
         self.attacks_performed = attacks_performed
@@ -163,6 +166,7 @@ class PerformanceStatistics:
     def reset(self):
         self.kills = 0
         self.assists = 0
+        self.dmg_received = 0
         self.dmg_dealt = 0
         self.dmg_healed = 0
         self.attacks_performed = 0
@@ -227,17 +231,18 @@ class Agent(Entity):
         dist = np.linalg.norm(self.state.pos - other.state.pos)
         return dist <= self.attack_range and other.is_alive()
 
-    def heal(self, other):
+    def heal(self, other: Agent):
         other.state.health += self.attack_damage
         self.stats.dmg_healed += self.attack_damage
         logging.debug("Agent {0} in team {1} healed Agent {2} in team {3} for {4}"
                       .format(self.id, self.tid, other.id, other.tid, self.attack_damage))
 
-    def attack(self, other):
+    def attack(self, other: Agent):
         other.state.health -= self.attack_damage
         logging.debug("Agent {0} in team {1} attacked Agent {2} in team {3} for {4}"
                       .format(self.id, self.tid, other.id, other.tid, self.attack_damage))
         self.stats.dmg_dealt += self.attack_damage
+        other.stats.dmg_received += self.attack_damage
         if other.is_dead():
             self.stats.kills += 1
             logging.debug("Agent {0} is dead.".format(other.id))

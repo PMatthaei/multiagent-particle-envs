@@ -75,7 +75,7 @@ class BaseTeamScenario(object):
 
     def reward(self, agent: Agent, world: World):
         """
-        Reward an agents action individual/local based on world and agent data
+        Reward an agents action individually/locally based on world and agent state
         :param agent:
         :param world:
         :return:
