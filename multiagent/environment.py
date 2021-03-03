@@ -168,24 +168,26 @@ class MAEnv(gym.Env):
         self.t += 1
         self.logger.debug("--- Step {0}".format(self.t))
         self.logger.debug("Actions: {0}".format(action_n))
-
-        obs_n = []
-        reward_n = []
-        done_n = []
-        info_n = {"battle_won": []}
+        # Only consider policy agents when calling self.agents
         self.agents = self.world.policy_agents
-        # set action for each agent - this needs to be performed before stepping world !
-        if len(self.agents) != len(action_n):
+        # Set action for each agent - this needs to be performed before stepping world !
+        if len(self.agents) != len(action_n):  # Make sure we received an action for every agent
             raise MissingActions()
 
         for aid, agent in enumerate(self.agents):
             self._set_action(action_n[aid], agent, self.action_space[aid])
-        # advance world state
+
+        # Advance world state - this also sets actions in the scripted agents
         self.world.step()
-        # record observation for each agent - this needs to happen after stepping world !
-        team_rewards = []
+
+        # Record observation and reward for each agent - this needs to happen after stepping world !
+        team_rewards = []  # 2-d array holding all the rewards of a policy teams members
+        obs_n = []  # 2-d array holding all policy agents obs (which are arrays themselves)
+        done_n = []  # 1-d array holding all termination (goal) booleans for policy teams
+        info_n = {"battle_won": []}  # Extra info
+        # Go over all policy teams aka all policy agents
         for team in self.world.policy_teams:
-            local_rewards = []
+            local_rewards = [] # 1-d array holding all rewards of team members
             for agent in team.members:
                 obs_n.append(self._get_obs(agent))
                 local_rewards.append(self._get_reward(agent))
@@ -193,22 +195,21 @@ class MAEnv(gym.Env):
 
             won = self._get_done(team)
             if won:
-                local_rewards.append(100)  # Add win reward. This is why we are not using np.mean in global reward calc
+                # Add win reward. This is why we are not using np.mean in global reward since it would cause division by (n+1)
+                local_rewards.append(100)
             done_n.append(won)
 
-            team_rewards.append(local_rewards)
+            if self.global_reward:
+                global_rewards = [np.sum(local_rewards) / team.size] * team.size
+                team_rewards.append(global_rewards)
+            else:
+                team_rewards.append(local_rewards)
 
         info_n["battle_won"] = done_n
 
         self.logger.debug("Obs: {0}".format(obs_n))
 
-        if self.global_reward:
-            # Implementation as seen in: On local rewards and scaling distributed reinforcement learning
-            # Take the mean over all local rewards per team. Each agent receives this global reward
-            reward_n = np.concatenate(
-                [[np.sum(team_rewards[team.tid]) / team.size] * team.size for team in self.world.teams])
-        else:
-            reward_n = np.concatenate(team_rewards)  # TODO fix won reward for global and local case
+        reward_n = np.concatenate(team_rewards)  # TODO fix won reward for global and local case
 
         self.logger.debug("Rewards: {0}".format(reward_n))
 
