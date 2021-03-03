@@ -202,7 +202,7 @@ class MAEnv(gym.Env):
             # Take the mean over all local rewards per team. Each agent receives this global reward
             reward_n = np.concatenate([[np.sum(team_rewards[team.tid]) / team.size] * team.size for team in self.world.teams])
         else:
-            reward_n = np.concatenate(team_rewards)
+            reward_n = np.concatenate(team_rewards) # TODO fix won reward for global and local case
 
         self.logger.debug("Rewards: {0}".format(reward_n))
 
