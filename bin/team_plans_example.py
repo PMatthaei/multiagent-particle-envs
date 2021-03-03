@@ -24,6 +24,34 @@ TWO_TEAMS_SIZE_TWO_ASYMMETRIC_HETEROGENEOUS = [
         ]
     },
 ]
+TWO_TEAMS_SIZE_TWO_SYMMETRIC_HOMOGENEOUS_ADC = [
+    {
+        "is_scripted": False,
+        "units": [  # Team 1
+            {
+                "role": RoleTypes.ADC,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+            {
+                "role": RoleTypes.ADC,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+        ],
+    },
+    {
+        "is_scripted": False,
+        "units": [  # Team 2
+            {
+                "role": RoleTypes.ADC,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+            {
+                "role": RoleTypes.ADC,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+        ],
+    },
+]
 
 TWO_TEAMS_SIZE_TWO_SYMMETRIC_HOMOGENEOUS = [
     {

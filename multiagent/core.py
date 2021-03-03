@@ -108,13 +108,15 @@ class Entity(object):
         self.initial_mass = 1.0
 
     def can_see(self, other):
+        logging.debug("Agent {0} can see {1}.".format(self.id, other.id))
         dist = np.linalg.norm(self.state.pos - other.state.pos)
         return dist <= self.sight_range
 
     def is_alive(self):
-        return self.state.health >= 0
+        return self.state.health > 0
 
     def is_dead(self):
+        logging.debug("Agent {0} is dead.".format(self.id))
         return not self.is_alive()
 
     @property
@@ -232,17 +234,23 @@ class Agent(Entity):
         else:
             return [0] * 4
 
-    def can_attack(self, other: Entity):
+    def can_attack(self, other: Agent):
+        if other.tid == self.tid:
+            return False
         dist = np.linalg.norm(self.state.pos - other.state.pos)
         return dist <= self.attack_range and other.is_alive()
 
-    def heal(self, other: Agent):
-        other.state.health += self.attack_damage
+    def heal(self, target: Agent):
+        if target.tid != self.tid:  # Agents can not heal their enemies. This indicates a bug.
+            raise IllegalTargetError(self)
+        target.state.health += self.attack_damage
         self.stats.dmg_healed += self.attack_damage
         logging.debug("Agent {0} in team {1} healed Agent {2} in team {3} for {4}"
-                      .format(self.id, self.tid, other.id, other.tid, self.attack_damage))
+                      .format(self.id, self.tid, target.id, target.tid, self.attack_damage))
 
     def attack(self, other: Agent):
+        if other.tid == self.tid:  # Agents can not attack their team mates. This indicates a bug.
+            raise IllegalTargetError(self)
         other.state.health -= self.attack_damage
         logging.debug("Agent {0} in team {1} attacked Agent {2} in team {3} for {4}"
                       .format(self.id, self.tid, other.id, other.tid, self.attack_damage))
@@ -399,7 +407,7 @@ class World(object):
             if any([dim > 0 for dim in move_vector]):  # is there movement greater zero?
                 self.logger.debug("Agent {0} moved by {1}:".format(agent.id, move_vector))
 
-            # Influence entity if target set
+            # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1
             if agent_has_action_target:
                 agent.target_id = int(agent.action.u[2])
@@ -415,7 +423,8 @@ class World(object):
                         pass
                 # TODO: For now, illegal actions can be taken and are available but will not influence the environment
                 else:
-                    self.logger.warning(
-                        "Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
+                    self.logger.warning("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
+                agent.target_id = None # Reset target after processing
+
         # After update test if world is done aka only one team left
         self.teams_wiped = [team.is_wiped() for team in self.teams]
