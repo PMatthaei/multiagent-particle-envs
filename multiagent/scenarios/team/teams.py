@@ -74,10 +74,10 @@ class TeamsScenario(BaseTeamScenario):
         obs = [world.get_available_movement(agent)]
         # Ally observation
         for member in world.get_team_members(agent):
-            obs.append(agent.observe(member))
+            obs.append(world.get_obs_of(agent, member))
         # Enemy observation
         for enemy in np.concatenate([team.members for team in world.get_opposing_teams(agent.tid)]):
-            obs.append(agent.observe(enemy))
+            obs.append(world.get_obs_of(agent, enemy))
         # Self observation
         obs.append(agent.self_observation)
         return np.concatenate(obs)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 from copy import copy
 from enum import Enum, IntEnum
@@ -8,7 +9,8 @@ import numpy as np
 
 from multiagent.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError
 from multiagent.exceptions.world_exceptions import NoTeamFoundError
-import logging
+
+logger = logging.getLogger("ma-env")
 
 
 class RoleTypes(Enum):
@@ -107,17 +109,14 @@ class Entity(object):
         # mass
         self.initial_mass = 1.0
 
-    def can_see(self, other):
-        logging.debug("Agent {0} can see {1}.".format(self.id, other.id))
-        dist = np.linalg.norm(self.state.pos - other.state.pos)
-        return dist <= self.sight_range
-
     def is_alive(self):
         return self.state.health > 0
 
     def is_dead(self):
-        logging.debug("Agent {0} is dead.".format(self.id))
-        return not self.is_alive()
+        is_dead = not self.is_alive()
+        if is_dead:
+            logger.debug("Agent {0} is dead.".format(self.id))
+        return is_dead
 
     @property
     def mass(self):
@@ -217,48 +216,25 @@ class Agent(Entity):
             self.state.shield / self.state.max_shield if self.state.max_shield != 0 else 0.0  # relative shield
         ]
 
-    def observe(self, other):
-        """
-        Observe another agent.
-        @param other: Agent which is observed by this agent
-        @return: The observation made of the provided agent
-        """
-        if self.can_see(other):
-            rel_pos = self.state.pos - other.state.pos
-            return [
-                rel_pos[0] / self.sight_range,  # x position relative to observer
-                rel_pos[1] / self.sight_range,  # y position relative to observer
-                self.state.health / self.state.max_health,  # relative health
-                self.state.shield / self.state.max_shield if self.state.max_shield != 0 else 0.0  # relative shield
-            ]
-        else:
-            return [0] * 4
-
-    def can_attack(self, other: Agent):
-        if other.tid == self.tid:
-            return False
-        dist = np.linalg.norm(self.state.pos - other.state.pos)
-        return dist <= self.attack_range and other.is_alive()
-
     def heal(self, target: Agent):
         if target.tid != self.tid:  # Agents can not heal their enemies. This indicates a bug.
             raise IllegalTargetError(self)
         target.state.health += self.attack_damage
         self.stats.dmg_healed += self.attack_damage
-        logging.debug("Agent {0} in team {1} healed Agent {2} in team {3} for {4}"
-                      .format(self.id, self.tid, target.id, target.tid, self.attack_damage))
+        logger.debug("Agent {0} in team {1} healed Agent {2} in team {3} for {4}"
+                     .format(self.id, self.tid, target.id, target.tid, self.attack_damage))
 
     def attack(self, other: Agent):
         if other.tid == self.tid:  # Agents can not attack their team mates. This indicates a bug.
             raise IllegalTargetError(self)
         other.state.health -= self.attack_damage
-        logging.debug("Agent {0} in team {1} attacked Agent {2} in team {3} for {4}"
-                      .format(self.id, self.tid, other.id, other.tid, self.attack_damage))
+        logger.debug("Agent {0} in team {1} attacked Agent {2} in team {3} for {4}"
+                     .format(self.id, self.tid, other.id, other.tid, self.attack_damage))
         self.stats.dmg_dealt += self.attack_damage
         other.stats.dmg_received += self.attack_damage
         if other.is_dead():
             self.stats.kills += 1
-            logging.debug("Agent {0} is dead.".format(other.id))
+            logger.debug("Agent {0} is dead.".format(other.id))
 
     def has_heal(self):
         return 'can_heal' in self.role and self.role['can_heal']
@@ -278,7 +254,6 @@ class World(object):
         Multi-agent world
         :param bounds: World bounds in which the agents can move
         """
-        self.logger = logging.getLogger("ma-env")
         self.bounds = bounds
         self.grid_size = grid_size
         # indicates if the reward will be global(cooperative) or local
@@ -296,6 +271,8 @@ class World(object):
         self.dim_p = 2
         # color dimensionality
         self.dim_color = 3
+
+        self.distance_matrix = []
 
     def get_team_members(self, agent: Agent):
         return [member for member in self.get_team(agent.tid).members if member.id != agent.id]
@@ -319,15 +296,23 @@ class World(object):
         """
         return [team for team in self.teams if team.tid != tid]
 
-    def get_visible_entities(self, entity: Entity):
+    def is_visible_to(self, agent: Agent, target: Agent):
+        if len(self.distance_matrix) == 0:
+            return False
+        can_see = self.distance_matrix[agent.id][target.id] <= agent.sight_range
+        if can_see:
+            logger.debug("Agent {0} can see {1}.".format(agent.id, target.id))
+        return can_see
+
+    def get_visible_entities(self, agent: Agent):
         """
         Return all entities visible to the provided entity. If no range given or zero return empty list.
         @param entity: The entity from which to apply a range query onto its neighbor entities.
         @return: List of visible entities for the provided entity
         """
-        if entity.sight_range is None or entity.sight_range == 0:
+        if agent.sight_range is None or agent.sight_range == 0:
             return []
-        return [e for e in self.entities if entity.can_see(e)]
+        return self.distance_matrix[agent.id]
 
     def get_available_movement(self, agent: Agent):
         if self.bounds is not None:
@@ -345,6 +330,24 @@ class World(object):
             return avail_movement
         else:
             return [1] * 4  # four movement dims
+
+    def get_obs_of(self, agent: Agent, target: Agent):
+        """
+        Retrieve observation conducted by an agent on another agent.
+        @param agent: the agent observing his environment
+        @param target: agent which is observed
+        @return: the observation made of the provided agent
+        """
+        if self.is_visible_to(agent, target):
+            rel_pos = agent.state.pos - target.state.pos
+            return [
+                rel_pos[0] / agent.sight_range,  # x position relative to observer
+                rel_pos[1] / agent.sight_range,  # y position relative to observer
+                agent.state.health / agent.state.max_health,  # relative health
+                agent.state.shield / agent.state.max_shield if agent.state.max_shield != 0 else 0.0  # relative shield
+            ]
+        else:  # TODO obs dim for default case
+            return [0] * 4
 
     @property
     def alive_agents(self):
@@ -385,6 +388,11 @@ class World(object):
         """
         return [agent for agent in self.agents if agent.action_callback is not None]
 
+    def can_attack(self, agent: Agent, target: Agent):
+        if target.tid == agent.tid:
+            return False
+        return self.distance_matrix[agent.id][target.id] <= agent.attack_range and target.is_alive()
+
     def step(self):
         """
         Update state of the world
@@ -397,15 +405,20 @@ class World(object):
         # Update each alive agent - agent action was set during environment.py step() function
         # Shuffle randomly to prevent favoring
         import random
-        agents = self.alive_agents
-        random.shuffle(agents)
-        for agent in agents:
+        shuffled_agents = self.alive_agents
+        random.shuffle(shuffled_agents)
+        for agent in shuffled_agents:
 
             # Update position
             move_vector = agent.action.u[:2]
             agent.state.pos += move_vector
             if any([dim > 0 for dim in move_vector]):  # is there movement greater zero?
-                self.logger.debug("Agent {0} moved by {1}:".format(agent.id, move_vector))
+                logger.debug("Agent {0} moved by {1}:".format(agent.id, move_vector))
+
+            # Calculate all distances - 1. Position difference matrix 2. Distance matrix via matrix norm
+            pos_diff_matrix = np.array([[t.state.pos - a.state.pos for t in self.agents] for a in self.agents])
+            # Our actual position is defined via the position array at dimension 2
+            self.distance_matrix = np.linalg.norm(pos_diff_matrix, axis=2)
 
             # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1
@@ -416,15 +429,15 @@ class World(object):
                 target = self.agents[agent.target_id]
                 if agent.can_heal(target):
                     agent.heal(target)
-                elif agent.can_attack(target):
+                elif self.can_attack(agent, target):
                     agent.attack(target)
                     # TODO what to do if more than one unit attacks the target in the same step and it dies by one of them?
                     if target.is_dead():  # Target died due to the attack
                         pass
                 # TODO: For now, illegal actions can be taken and are available but will not influence the environment
                 else:
-                    self.logger.warning("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
-                agent.target_id = None # Reset target after processing
+                    logger.warning("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
+                agent.target_id = None  # Reset target after processing
 
         # After update test if world is done aka only one team left
         self.teams_wiped = [team.is_wiped() for team in self.teams]

@@ -94,7 +94,7 @@ class MAEnv(gym.Env):
         sight range. This means that a agent might be listed in the available actions array but in the world is not
         accessible due being out of reach.
         :param agent:
-        :return: array of available action indices
+        :return: array of available action ids
         """
         avail_actions = []
         if agent.is_dead():  # when dead only allow no-op action
@@ -117,12 +117,14 @@ class MAEnv(gym.Env):
 
         # All alive agents (except self) can be taken a action against f.e heal, attack etc
         avail_actions = avail_actions + [ag.id + act_ind_offset for ag in self.world.alive_agents if
-                                         # Include the following agents ids as action encoded ids
-                                         # NOT the agent itself -> TODO: Remove if self-heal needed
+                                         # Include the following agents ids as action encoded ids if:
+                                         # ... it is NOT the agent itself -> TODO: Remove if self-heal needed
                                          agent.id != ag.id and
-                                         # enemy ids if the agent is not a healer
+                                         # ... the agent is visible
+                                         self.world.is_visible_to(agent, ag) and
+                                         # ... if the agent is not a healer include enemy ids
                                          ((agent.tid != ag.tid and not agent.has_heal()) or
-                                          # team mates ids if the agent is a healer
+                                          # ... if the agent is a healer include team mate ids
                                           (agent.has_heal() and agent.tid == ag.tid))]
 
         self.logger.debug("Agent {} has available actions with ids: {}".format(agent.id, avail_actions))
