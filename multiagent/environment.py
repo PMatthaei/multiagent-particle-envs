@@ -184,7 +184,7 @@ class MAEnv(gym.Env):
         self.world.step()
         # record observation for each agent - this needs to happen after stepping world !
         team_rewards = []
-        for team in self.world.teams:
+        for team in self.world.policy_teams:
             local_rewards = []
             for agent in team.members:
                 obs_n.append(self._get_obs(agent))

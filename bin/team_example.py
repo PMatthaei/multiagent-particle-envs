@@ -27,7 +27,7 @@ if __name__ == '__main__':
     # render call to create viewer window (necessary only for interactive policies)
     env.render()
     # create random policies for each agent in each team
-    all_policies = [[RandomPolicy(env, agent.id) for agent in team.members] for team in world.policy_teams]
+    all_policies = [[RandomPolicy(env, agent) for agent in team.members] for team in world.policy_teams]
     # execution loop
     obs_n = env.reset()
     while True:
@@ -37,7 +37,7 @@ if __name__ == '__main__':
             team_policy = all_policies[tid]
             for aid, agent in enumerate(team.members):
                 agent_policy = team_policy[aid]
-                act_n.append(agent_policy.action(obs_n[aid]))
+                act_n.append(agent_policy.action())
 
         # step environment
         obs_n, reward_n, done_n, _ = env.step(act_n)

@@ -19,13 +19,12 @@ class Policy(object):
 #
 # random agent policy
 class RandomPolicy(Policy):
-    def __init__(self, env: MAEnv, agent_index):
+    def __init__(self, env: MAEnv, agent):
         super(RandomPolicy, self).__init__()
         self.env = env
-        self.agent_index = agent_index
+        self.agent = agent
 
-    def action(self, obs):
-        agent = self.env.agents[self.agent_index]
-        avail_actions = self.env.get_available_action_ids(agent)
+    def action(self, obs=None):
+        avail_actions = self.env.get_available_action_ids(self.agent)
         u = random.choice(avail_actions)
         return u
