@@ -1,6 +1,6 @@
 import numpy as np
 
-from multiagent.core import World, Agent, Team, RoleTypes
+from multiagent.core import World, Agent, Team, RoleTypes, Action
 from multiagent.exceptions.scenario_exceptions import ScenarioNotSymmetricError, SymmetricScenarioTeamsExceededError
 from multiagent.interfaces.scenario import BaseTeamScenario
 from multiagent.reward_functions.dense_functions import reward_team_health, reward_team_damage
@@ -18,7 +18,7 @@ class TeamsScenario(BaseTeamScenario):
         """
         self.team_build_plan = build_plan
         self.n_teams = len(build_plan)
-        self.n_agents = [len(team) for team in build_plan]
+        self.n_agents = [len(team["units"]) for team in build_plan]
         self.is_symmetric = build_plan.count(build_plan[0]) == len(build_plan)
 
         if self.is_symmetric and sum(self.n_agents) % self.n_teams != 0:
@@ -30,18 +30,20 @@ class TeamsScenario(BaseTeamScenario):
         colors = generate_colors(self.n_teams)
         agent_count = 0
         for tid in range(self.n_teams):
+            is_scripted = self.team_build_plan[tid]["is_scripted"]
             members = [
                 Agent(
                     id=aid,  # is not reset per team. aid identifying all units globally
                     tid=tid,
                     color=colors[tid],
-                    build_plan=self.team_build_plan[tid][index]
+                    build_plan=self.team_build_plan[tid]["units"][index],
+                    action_callback=self.scripted_agent_callback if is_scripted else None
                 ) for index, aid in  # index is the team internal identifier
                 enumerate(range(agent_count, agent_count + self.n_agents[tid]))
             ]
             agent_count += self.n_agents[tid]
             world.agents += members
-            team = Team(tid=tid, members=members)
+            team = Team(tid=tid, members=members, is_scripted=is_scripted)
             world.teams.append(team)
 
         return world
@@ -79,3 +81,10 @@ class TeamsScenario(BaseTeamScenario):
         # Self observation
         obs.append(agent.self_observation)
         return np.concatenate(obs)
+
+    def scripted_agent_callback(self, agent: Agent, world: World) -> Action:
+        action = Action()
+        action.u = np.zeros(world.dim_p + 1)
+        action.u[0] = -1.0  # x-axis left == 1 --> index 0
+        action.u[1] = -1.0  # y-axis up == 3 --> index 1
+        return action

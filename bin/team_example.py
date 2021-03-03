@@ -2,7 +2,7 @@ import argparse
 
 import pygame
 
-from bin.team_plans_example import TWO_TEAMS_SIZE_TWO_SYMMETRIC_HOMOGENEOUS
+from bin.team_plans_example import TWO_TEAMS_SIZE_TWO_ASYMMETRIC_HETEROGENEOUS
 from multiagent.environment import MAEnv
 from multiagent.interfaces.policy import RandomPolicy
 from multiagent.scenarios import team
@@ -13,7 +13,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--scenario', default='teams.py', help='Path of the scenario Python script.')
     args = parser.parse_args()
     # load scenario from script
-    scenario = team.load(args.scenario).TeamsScenario(TWO_TEAMS_SIZE_TWO_SYMMETRIC_HOMOGENEOUS)
+    scenario = team.load(args.scenario).TeamsScenario(TWO_TEAMS_SIZE_TWO_ASYMMETRIC_HETEROGENEOUS)
     # create world
     world = scenario.make_teams_world(grid_size=10.0)
     # create multi-agent environment
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     while True:
         # query for action from each agent's policy
         act_n = []
-        for tid, team in enumerate(world.teams):
+        for tid, team in enumerate(world.policy_teams):
             team_policy = all_policies[tid]
             for aid, agent in enumerate(team.members):
                 test = env.get_available_actions(agent)

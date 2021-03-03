@@ -129,13 +129,14 @@ class WorldObject(Entity):
 
 
 class Team:
-    def __init__(self, tid, members):
+    def __init__(self, tid, members, is_scripted=False):
         """
         :param tid: Identifier for this team
         :param members: Members in this team
         """
         self.tid = tid
         self.members = members
+        self.is_scripted = is_scripted
 
     def is_wiped(self):
         return all([agent.is_dead() for agent in self.members])
@@ -180,7 +181,7 @@ class PerformanceStatistics:
 
 # properties of agent entities
 class Agent(Entity):
-    def __init__(self, id, tid, color, build_plan):
+    def __init__(self, id, tid, color, build_plan, action_callback=None):
         super(Agent, self).__init__()
         self.id = id
         # team id
@@ -205,7 +206,7 @@ class Agent(Entity):
         # stats
         self.stats = PerformanceStatistics()
         # script behavior to execute
-        self.action_callback = None
+        self.action_callback = action_callback
 
     @property
     def self_observation(self):
@@ -357,6 +358,10 @@ class World(object):
         :return: all entities in the world
         """
         return self.agents + self.objects
+
+    @property
+    def policy_teams(self):
+        return [team for team in self.teams if not team.is_scripted]
 
     @property
     def policy_agents(self):

@@ -1,5 +1,5 @@
 # defines scenario upon which the world is built
-from multiagent.core import World, Team, Agent
+from multiagent.core import World, Team, Agent, Action
 
 
 class BaseScenario(object):
@@ -95,6 +95,15 @@ class BaseTeamScenario(object):
         """
         Return if this team has achieved his goal
         :param team:
+        :param world:
+        :return:
+        """
+        raise NotImplementedError()
+
+    def scripted_agent_callback(self, agent: Agent, world: World) -> Action:
+        """
+        Scripted action
+        :param agent:
         :param world:
         :return:
         """
