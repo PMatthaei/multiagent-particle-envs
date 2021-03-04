@@ -261,14 +261,15 @@ class MAEnv(gym.Env):
         NOTE: This function should not be used during decentralised execution.
         """
         cx, cy = self.world.center
-        state = np.array([])
-        for agent in self.agents:
+        state = []
+        # State includes ALL agents. Even scripted ones !
+        for agent in self.world.agents:
             x = (agent.state.pos[0] - cx) / self.world.bounds[0]  # relative X
             y = (agent.state.pos[1] - cy) / self.world.bounds[1]  # relative Y
             agent_state = np.array([[x, y], agent.self_observation]).flatten()
             state = np.append(state, agent_state)
         self.logger.debug("State: {0}".format(state))
-        return state
+        return np.array(state)
 
     def get_obs(self):
         """Returns all agent observations in a list.
