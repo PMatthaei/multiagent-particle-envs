@@ -195,7 +195,8 @@ class MAEnv(gym.Env):
 
             won = self._get_done(team)
             if won:
-                # Add win reward. This is why we are not using np.mean in global reward since it would cause division by (n+1)
+                # Add win reward
+                # This is why we are not using np.mean in global reward since it would cause division by (n+1)
                 local_rewards.append(100)
             done_n.append(won)
 

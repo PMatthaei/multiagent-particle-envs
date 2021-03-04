@@ -1,8 +1,5 @@
 import random
 
-import numpy as np
-
-# individual agent policy interface
 from multiagent.environment import MAEnv
 
 

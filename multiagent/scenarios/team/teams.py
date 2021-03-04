@@ -1,5 +1,6 @@
 import numpy as np
 
+from multiagent.ai.basic_ai import BasicScriptedAI
 from multiagent.core import World, Agent, Team, RoleTypes, Action
 from multiagent.exceptions.scenario_exceptions import ScenarioNotSymmetricError, SymmetricScenarioTeamsExceededError
 from multiagent.interfaces.scenario import BaseTeamScenario
@@ -20,6 +21,8 @@ class TeamsScenario(BaseTeamScenario):
         self.n_teams = len(build_plan)
         self.n_agents = [len(team["units"]) for team in build_plan]
         self.is_symmetric = build_plan.count(build_plan[0]) == len(build_plan)
+
+        self.scripted_ai = BasicScriptedAI()
 
         if self.is_symmetric and sum(self.n_agents) % self.n_teams != 0:
             raise ScenarioNotSymmetricError(self.n_agents, self.n_teams)
@@ -83,8 +86,4 @@ class TeamsScenario(BaseTeamScenario):
         return np.concatenate(obs)
 
     def scripted_agent_callback(self, agent: Agent, world: World) -> Action:
-        action = Action()
-        action.u = np.zeros(world.dim_p + 1)
-        action.u[0] = -1.0  # x-axis left == 1 --> index 0
-        action.u[1] = -1.0  # y-axis up == 3 --> index 1
-        return action
+        return self.scripted_ai.act(agent, world)
