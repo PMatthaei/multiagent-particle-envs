@@ -48,7 +48,7 @@ class MAEnv(gym.Env):
         self.episode = 0
         self.episode_limit = 60
         # configure spaces
-        self.state_n = self.n * 4  # Four features per agent
+        self.state_n = (self.n + len(world.scripted_agents)) * 4  # Four features per agent
         self.action_space = []
         self.observation_space = []
         for agent in self.agents:
@@ -187,7 +187,7 @@ class MAEnv(gym.Env):
         info_n = {"battle_won": []}  # Extra info
         # Go over all policy teams aka all policy agents
         for team in self.world.policy_teams:
-            local_rewards = [] # 1-d array holding all rewards of team members
+            local_rewards = []  # 1-d array holding all rewards of team members
             for agent in team.members:
                 obs_n.append(self._get_obs(agent))
                 local_rewards.append(self._get_reward(agent))
