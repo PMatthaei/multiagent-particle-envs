@@ -206,10 +206,10 @@ class MAEnv(gym.Env):
             done_n.append(won)
 
             if self.global_reward:
-                global_rewards = [np.sum(local_rewards) / team.size] * team.size
-                team_rewards.append(global_rewards)
+                global_reward = np.sum(local_rewards) / team.size
+                team_rewards.append(global_reward)  # float
             else:
-                team_rewards.append(local_rewards)
+                team_rewards.append(local_rewards)  # list of floats
 
         info_n["battle_won"] = done_n
 
