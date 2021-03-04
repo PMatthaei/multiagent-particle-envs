@@ -48,9 +48,9 @@ class MAEnv(gym.Env):
         self.episode = 0
         self.episode_limit = 60
         # configure spaces
-        self.state_n = (self.n + len(world.scripted_agents)) * 4  # Four features per agent
         self.action_space = []
         self.observation_space = []
+
         for agent in self.agents:
             # physical action space
             self.action_space.append(spaces.Discrete(self._get_action_dim(agent)))
@@ -59,6 +59,9 @@ class MAEnv(gym.Env):
             obs_dim = len(observation_callback(agent, self.world))
             self.observation_space.append(spaces.Box(low=0.0, high=1.0, shape=(obs_dim,), dtype=np.float32))
             agent.action.c = np.zeros(self.world.dim_c)
+        # TODO: prone to different obs/state agents of choosing just the first!
+        pos_n = len(self.agents[0].state.pos)
+        self.state_n = (self.n + len(self.world.scripted_agents)) * (len(self.agents[0].self_observation) + pos_n)
 
         # rendering
         self.headless = headless
@@ -70,11 +73,13 @@ class MAEnv(gym.Env):
         self._reset_render()
 
     def get_env_info(self):
-        return {"state_shape": self.state_n,
-                "obs_shape": self.observation_space[0].shape[0],
-                "n_actions": self.action_space[0].n,
-                "n_agents": self.n,
-                "episode_limit": self.episode_limit}
+        return {
+            "state_shape": self.state_n,
+            "obs_shape": self.observation_space[0].shape[0],
+            "n_actions": self.action_space[0].n,
+            "n_agents": self.n,
+            "episode_limit": self.episode_limit
+        }
 
     def get_available_actions(self, agent):
         """
@@ -266,10 +271,11 @@ class MAEnv(gym.Env):
         for agent in self.world.agents:
             x = (agent.state.pos[0] - cx) / self.world.bounds[0]  # relative X
             y = (agent.state.pos[1] - cy) / self.world.bounds[1]  # relative Y
-            agent_state = np.array([[x, y], agent.self_observation]).flatten()
-            state = np.append(state, agent_state)
+            state.append([[x, y], agent.self_observation])
+        state = np.array(state).flatten()
         self.logger.debug("State: {0}".format(state))
-        return np.array(state)
+        assert self.state_n == len(state)
+        return state
 
     def get_obs(self):
         """Returns all agent observations in a list.
