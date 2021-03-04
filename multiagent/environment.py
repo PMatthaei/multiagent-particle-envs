@@ -215,9 +215,12 @@ class MAEnv(gym.Env):
 
         self.logger.debug("Obs: {0}".format(obs_n))
 
-        reward_n = np.concatenate(team_rewards)  # TODO fix won reward for global and local case
-
-        self.logger.debug("Rewards: {0}".format(reward_n))
+        if self.global_reward:
+            reward_n = team_rewards
+            self.logger.debug("Global Rewards per team: {0}".format(team_rewards))
+        else:
+            reward_n = np.concatenate(team_rewards)  # TODO fix won reward for global and local case
+            self.logger.debug("Local Rewards per team: {0}".format(team_rewards))
 
         winner = np.where(done_n)[0]
         if len(winner) == 1:
