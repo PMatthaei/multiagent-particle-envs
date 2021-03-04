@@ -18,15 +18,6 @@ class ScriptedAI(object):
 
 
 class BasicScriptedAI(ScriptedAI):
-    """
-                agent.action.u[0] = -1.0  # x-axis left == 1 --> index 0
-        elif act_ind == 2:
-            agent.action.u[0] = +1.0  # x-axis right == 2 --> index 0
-        elif act_ind == 3:
-            agent.action.u[1] = -1.0  # y-axis up == 3 --> index 1
-        elif act_ind == 4:
-            agent.action.u[1] = +1.0  # y-axis down == 4 --> index 1
-    """
 
     def act(self, agent: Agent, world: World) -> Action:
         action = Action()
@@ -40,13 +31,13 @@ class BasicScriptedAI(ScriptedAI):
             else:
                 mask = [a.tid == agent.tid for a in world.agents]  # mask out all teammates
 
-            masked_distances[mask] = np.inf
-            closest_id = np.argmin(masked_distances)
-            closest_agent = world.agents[closest_id]
-            distance = masked_distances[closest_id]
+            masked_distances[mask] = np.inf  # infinite distance all non-targetable agents
+            target_id = np.argmin(masked_distances)
+            closest_agent = world.agents[target_id]
+            distance = masked_distances[target_id]
 
             if distance <= agent.sight_range:  # set enemy as target if in range
-                action.u[2] = closest_id  # attack >= 5 --> index 2
+                action.u[2] = target_id  # attack >= 5 --> index 2
             else:  # move towards the closest agent if not in range
                 d_pos = agent.state.pos - closest_agent.state.pos
                 max_difference_dimension = np.argmax(np.abs(d_pos))
