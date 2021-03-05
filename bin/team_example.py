@@ -11,6 +11,7 @@ if __name__ == '__main__':
     # parse arguments
     parser = argparse.ArgumentParser(description=None)
     parser.add_argument('-s', '--scenario', default='teams.py', help='Path of the scenario Python script.')
+    parser.add_argument('-stream_key', '--stream_key', default=None, help='Stream Key for Twitch.')
     args = parser.parse_args()
     # load scenario from script
     scenario = team.load(args.scenario).TeamsScenario(TWO_TEAMS_SIZE_TWO_ASYMMETRIC_HETEROGENEOUS)
@@ -23,6 +24,7 @@ if __name__ == '__main__':
                 observation_callback=scenario.observation,
                 info_callback=None,
                 done_callback=scenario.done,
+                stream_key=args.stream_key,
                 log=True)
     # render call to create viewer window (necessary only for interactive policies)
     env.render()

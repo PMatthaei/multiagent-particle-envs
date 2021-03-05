@@ -1,6 +1,4 @@
 import logging
-import sys
-from copy import copy
 
 import gym
 import numpy as np
@@ -19,7 +17,8 @@ class MAEnv(gym.Env):
                  reset_callback=None, reward_callback=None, observation_callback=None,
                  info_callback=None, done_callback=None,
                  log=False, log_level=logging.DEBUG,
-                 fps=30, infos=True, draw_grid=True, record=True, headless=False):
+                 fps=30, infos=True, draw_grid=True,
+                 record=False, headless=False, stream_key=None):
         if log:
             logging.basicConfig(filename='env.log', level=log_level)
             self.logger = logging.getLogger("ma-env")
@@ -67,9 +66,10 @@ class MAEnv(gym.Env):
         self.headless = headless
         self.viewer = None
         if not headless:  # import rendering only if we need it (and don't import for headless machines)
-            from multiagent import pygame_rendering
-            self.viewer = pygame_rendering.PyGameViewer(self, fps=fps, infos=infos, draw_grid=draw_grid, record=record,
-                                                        headless=headless)
+            from multiagent.viewers import pygame_viewer
+            self.viewer = pygame_viewer.PyGameViewer(self, fps=fps, infos=infos, draw_grid=draw_grid, record=record,
+                                                     stream_key=stream_key,
+                                                     headless=headless)
         self._reset_render()
 
     def get_env_info(self):
@@ -146,6 +146,11 @@ class MAEnv(gym.Env):
         4 = Go south
         5 until 5 + #a (= of attackable enemies) = attack agent with id x
         5 + #a until (5 + #a) + #h = heal agent with id y
+
+        TODO: Current impl assumes same action space for all agents but some actions will always be unavailable:
+        - Healers cannot attack enemies
+        - Team mates cannot be attacked
+
         :param agent: considered agent
         :return: action space available for this agent
         """
@@ -159,9 +164,6 @@ class MAEnv(gym.Env):
             if team.tid != agent.tid and not agent.has_heal():
                 attack_dims += len(team.members)
         return movement_dims + len(self.world.agents) + 1  # no-op
-        # TODO: Current impl assumes same action space for all agents but some actions will always be unavailable:
-        #   - Healers cannot attack enemies
-        #   - Team mates cannot be attacked
         # return movement_dims + attack_dims + heal_dims + 1  # no-op
 
     def step(self, action_n, heuristic_opponent=False):
@@ -189,7 +191,7 @@ class MAEnv(gym.Env):
         team_rewards = []  # 2-d array holding all the rewards of a policy teams members
         obs_n = []  # 2-d array holding all policy agents obs (which are arrays themselves)
         done_n = []  # 1-d array holding all termination (goal) booleans for policy teams
-        info_n = {"battle_won": []}  # Extra info
+        info_n = {"battle_won": []}  # Extra info which does not fit into gym interface f.e. who won -> not included in done bool
         # Go over all policy teams aka all policy agents
         for team in self.world.policy_teams:
             local_rewards = []  # 1-d array holding all rewards of team members
@@ -217,10 +219,10 @@ class MAEnv(gym.Env):
 
         if self.global_reward:
             reward_n = team_rewards
-            self.logger.debug("Global Rewards per team: {0}".format(team_rewards))
+            self.logger.debug("Global Rewards per policy controlled team: {0}".format(team_rewards))
         else:
             reward_n = np.concatenate(team_rewards)  # TODO fix won reward for global and local case
-            self.logger.debug("Local Rewards per team: {0}".format(team_rewards))
+            self.logger.debug("Local Rewards per policy controlled team: {0}".format(team_rewards))
 
         winner = np.where(done_n)[0]
         if len(winner) == 1:
@@ -404,14 +406,14 @@ class MAEnv(gym.Env):
         if not self.headless:
             if self.viewer is None:
                 # import rendering only if we need it (and don't import for headless machines)
-                from multiagent import pygame_rendering
-                self.viewer = pygame_rendering.PyGameViewer(self, fps=30, infos=True, draw_grid=True, record=True,
-                                                            headless=self.h)
+                from multiagent.viewers import pygame_viewer
+                self.viewer = pygame_viewer.PyGameViewer(self, fps=30, infos=True, draw_grid=True, record=True,
+                                                         headless=self.h)
 
             # create rendered entities
             if self.viewer.entities is None:
                 # import rendering only if we need it (and don't import for headless machines)
-                from multiagent import pygame_rendering
+                from multiagent.viewers import pygame_viewer
                 self.viewer.init(self.world.entities)
 
             #

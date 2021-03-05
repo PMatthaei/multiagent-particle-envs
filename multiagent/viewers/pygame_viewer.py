@@ -2,11 +2,14 @@ import math
 import os
 
 import subprocess as sp
+
+import numpy as np
 import pygame
 from pygame.rect import Rect
 
 from multiagent.core import Entity, RoleTypes, Agent
 from multiagent.utils.colors import hsl_to_rgb
+from multiagent.viewers.twitch_viewer import TwitchViewer
 
 HEALTH_BAR_HEIGHT = 4
 
@@ -51,7 +54,14 @@ class Grid:
 
 
 class PyGameViewer(object):
-    def __init__(self, env, caption="Multi-Agent Environment", fps=30, infos=True, draw_grid=True, record=True,
+    def __init__(self,
+                 env,
+                 caption="Multi-Agent Environment",
+                 fps=30,
+                 infos=True,
+                 draw_grid=True,
+                 record=False,
+                 stream_key=None,
                  headless=False):
         """
         Create new PyGameViewer for the environment
@@ -67,6 +77,7 @@ class PyGameViewer(object):
         self.entities = None
         self.draw_grid = draw_grid
         self.record = record
+        self.stream = stream_key is not None
         self.proc = None
         self.headless = headless
 
@@ -102,6 +113,9 @@ class PyGameViewer(object):
                                   '-i', '-',
                                   '-an',
                                   'env-recording.mov'], stdin=sp.PIPE)
+        elif self.stream and check_ffmpeg():
+            self.twitch = TwitchViewer(stream_key=stream_key,
+                                       width=width, height=height)
         pass
 
     def update(self):
@@ -155,6 +169,9 @@ class PyGameViewer(object):
 
         if self.record:
             self.proc.stdin.write(self.screen.get_buffer())
+        elif self.stream:
+            frame = pygame.surfarray.array3d(self.screen)
+            self.twitch.send_frame(np.true_divide(frame, 255))
 
         self.dt = self.clock.tick(self.fps)
 
