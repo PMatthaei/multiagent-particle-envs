@@ -375,6 +375,10 @@ class World(object):
         return [team for team in self.teams if not team.is_scripted]
 
     @property
+    def scripted_teams(self):
+        return [team for team in self.teams if team.is_scripted]
+
+    @property
     def policy_agents(self):
         """
         :return: all agents controllable by external policies (trained AI)

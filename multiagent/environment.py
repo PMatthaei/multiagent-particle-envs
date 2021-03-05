@@ -188,10 +188,15 @@ class MAEnv(gym.Env):
         self.world.step()
 
         # Record observation and reward for each agent - this needs to happen after stepping world !
-        team_rewards = []  # 2-d array holding all the rewards of a policy teams members
-        obs_n = []  # 2-d array holding all policy agents obs (which are arrays themselves)
-        done_n = []  # 1-d array holding all termination (goal) booleans for policy teams
-        info_n = {"battle_won": []}  # Extra info which does not fit into gym interface f.e. who won -> not included in done bool
+        # 2-d array holding all the rewards of a policy teams members
+        team_rewards = []
+        # 2-d array holding all policy agents obs (which are arrays themselves)
+        obs_n = []
+        # 1-d array holding all termination (goal) booleans for policy teams
+        done_n = []
+        # Extra info which does not fit into gym interface f.e. who won -> not included in done bool
+        info_n = {"battle_won": []}
+
         # Go over all policy teams aka all policy agents
         for team in self.world.policy_teams:
             local_rewards = []  # 1-d array holding all rewards of team members
@@ -212,6 +217,10 @@ class MAEnv(gym.Env):
                 team_rewards.append(global_reward)  # float
             else:
                 team_rewards.append(local_rewards)  # list of floats
+
+        for team in self.world.scripted_teams:
+            # Check if scripted agents won - these agents do not contribute to rewards and obs
+            done_n.append(self._get_done(team))
 
         info_n["battle_won"] = done_n
 
@@ -310,16 +319,14 @@ class MAEnv(gym.Env):
         :param agent:
         :return:
         """
+        team_done = self.done_callback(team, self.world)
+        if team_done:
+            self.episode += 1
+            return True
+
         if self.episode_limit is not None and self.episode_limit == self.t:
             self.episode += 1
-            self.logger.debug("------ Episode: {0}".format(self.episode))
             return True
-        if self.done_callback is None:
-            return False
-        if self.done_callback(team, self.world):
-            self.episode += 1
-            self.logger.debug("------ Episode: {0}".format(self.episode))
-        return self.done_callback(team, self.world)
 
     def _get_reward(self, agent):
         """
