@@ -20,6 +20,13 @@ class ScriptedAI(object):
 class BasicScriptedAI(ScriptedAI):
 
     def act(self, agent: Agent, world: World) -> Action:
+        """
+        Defines how a given agent should act in a given world.
+        In this case the agent always targets the closest
+        @param agent:
+        @param world:
+        @return: action
+        """
         action = Action()
         action.u = np.zeros(world.dim_p + 1)
         action.u[2] = -1  # default is no target == -1
@@ -36,7 +43,7 @@ class BasicScriptedAI(ScriptedAI):
             closest_agent = world.agents[target_id]
             distance = masked_distances[target_id]
 
-            if distance <= agent.sight_range:  # set enemy as target if in range
+            if distance <= agent.sight_range:  # set closest agent as target if in range
                 action.u[2] = target_id  # attack >= 5 --> index 2
             else:  # move towards the closest agent if not in range
                 d_pos = agent.state.pos - closest_agent.state.pos

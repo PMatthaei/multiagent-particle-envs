@@ -174,7 +174,7 @@ class MAEnv(gym.Env):
         """
         self.t += 1
         self.logger.debug("--- Step {0}".format(self.t))
-        self.logger.debug("Actions: {0}".format(action_n))
+        self.logger.debug("Perform Actions: {0}".format(action_n))
         # Only consider policy agents when calling self.agents
         self.agents = self.world.policy_agents
         # Set action for each agent - this needs to be performed before stepping world !
@@ -184,34 +184,37 @@ class MAEnv(gym.Env):
         for aid, agent in enumerate(self.agents):
             self._set_action(action_n[aid], agent, self.action_space[aid])
 
+        self.logger.debug("Advance world state...".format(action_n))
         # Advance world state - this also sets actions in the scripted agents
         self.world.step()
 
         # Record observation and reward for each agent - this needs to happen after stepping world !
-        # 2-d array holding all the rewards of a policy teams members
+        # 2-d array holding all rewards of a policy agents team-wise
         team_rewards = []
-        # 2-d array holding all policy agents obs (which are arrays themselves)
+        # 2-d array holding all policy agents obs
         obs_n = []
         # 1-d array holding all termination (goal) booleans for policy teams
         done_n = []
         # Extra info which does not fit into gym interface f.e. who won -> not included in done bool
         info_n = {"battle_won": []}
 
-        # Go over all policy teams aka all policy agents
+        # Go over all policy agents team-wise
         for team in self.world.policy_teams:
-            local_rewards = []  # 1-d array holding all rewards of team members
+            # 1-d array holding all rewards of team members and as special case the win/goal reward
+            local_rewards = []
             for agent in team.members:
                 obs_n.append(self._get_obs(agent))
                 local_rewards.append(self._get_reward(agent))
                 # info_n['n'].append(self._get_info(agent))
 
+            # Check if the policy team won and add reward
             won = self._get_done(team)
             if won:
-                # Add win reward
                 # This is why we are not using np.mean in global reward since it would cause division by (n+1)
                 local_rewards.append(100)
             done_n.append(won)
 
+            # Calculate the reward depending on the reward function category
             if self.global_reward:
                 global_reward = np.sum(local_rewards) / team.size
                 team_rewards.append(global_reward)  # float
@@ -219,21 +222,22 @@ class MAEnv(gym.Env):
                 team_rewards.append(local_rewards)  # list of floats
 
         for team in self.world.scripted_teams:
-            # Check if scripted agents won - these agents do not contribute to rewards and obs
+            # Check if scripted agents won - these agents are part of the env and do not receive obs and rewards
             done_n.append(self._get_done(team))
 
         info_n["battle_won"] = done_n
 
-        self.logger.debug("Obs: {0}".format(obs_n))
+        self.logger.debug("Observations: {0}".format(obs_n))
 
         if self.global_reward:
             reward_n = team_rewards
             self.logger.debug("Global Rewards per policy controlled team: {0}".format(team_rewards))
         else:
-            reward_n = np.concatenate(team_rewards)  # TODO fix won reward for global and local case
+            reward_n = np.concatenate(team_rewards)
             self.logger.debug("Local Rewards per policy controlled team: {0}".format(team_rewards))
 
-        winner = np.where(done_n)[0]
+        where = np.where(done_n)
+        winner = where[0]
         if len(winner) == 1:
             self.logger.debug("------ Done - Team with id {0} won the battle: {0}".format(winner[0]))
         # Too many winners are prohibited (prevent case of episode limit reached)
@@ -315,8 +319,8 @@ class MAEnv(gym.Env):
 
     def _get_done(self, team: Team):
         """
-        Get dones for a particular agent. A environment is done if it reached its max steps
-        :param agent:
+        Get dones for a particular team. A environment is done if it reached its max steps
+        :param team:
         :return:
         """
         team_done = self.done_callback(team, self.world)
@@ -327,6 +331,8 @@ class MAEnv(gym.Env):
         if self.episode_limit is not None and self.episode_limit == self.t:
             self.episode += 1
             return True
+
+        return False
 
     def _get_reward(self, agent):
         """
