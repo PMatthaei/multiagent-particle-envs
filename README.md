@@ -9,6 +9,7 @@ A simple multi-agent environment, allowing for team-based micro-management tasks
 - Heterogeneous/homogeneous and symmetric/asymmetric team compositions
 - Rendering via PyGame (optional headless)
 - Recording via ffmpeg (optional headless)
+- Streaming via twitch
 
 ## Getting started:
 
