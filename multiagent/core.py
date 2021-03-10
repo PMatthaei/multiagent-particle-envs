@@ -202,7 +202,8 @@ class Agent(Entity):
         self.tid = tid
         self.name = 'Agent %d' % id
         self.color = color
-        self.unit_id = (build_plan['role'], build_plan['attack_type'])
+        unit_id = (build_plan['role'], build_plan['attack_type'])
+        self.unit_type_bits = UNIT_TYPE_BITS[unit_id]
         self.attack_type = build_plan['attack_type'].value
         self.role = build_plan['role'].value
 
@@ -225,10 +226,9 @@ class Agent(Entity):
 
     @property
     def self_observation(self):
-        unit_type_bits = UNIT_TYPE_BITS[self.unit_id]
         self_obs = [
-                       self.state.health / self.state.max_health,  # relative health
-                   ] + unit_type_bits
+            self.state.health / self.state.max_health,  # relative health
+        ] + self.unit_type_bits
         return self_obs
 
     def heal(self, target: Agent):
@@ -346,11 +346,12 @@ class World(object):
         else:
             return [1] * self.get_movement_dims()  # four movement dims
 
-    def get_obs_dims(self):
+    def get_obs_dims(self, agent: Agent):
         obs_dims = self.dim_p  # position
         obs_dims += 1  # visibility bool
         obs_dims += 1  # distance
         obs_dims += 1  # health
+        obs_dims += len(agent.unit_type_bits)
         return obs_dims
 
     def get_obs(self, observer: Agent, target: Agent):
@@ -370,11 +371,11 @@ class World(object):
                 rel_pos[0] / observer.sight_range,  # x position relative to observer
                 rel_pos[1] / observer.sight_range,  # y position relative to observer
                 target.state.health / target.state.max_health,  # relative health
-            ]
-            assert len(obs) == self.get_obs_dims(), "Check observation matches underlying dimension."
+            ] + target.unit_type_bits
+            assert len(obs) == self.get_obs_dims(target), "Check observation matches underlying dimension."
             return obs
         else:
-            return [0] * self.get_obs_dims()
+            return [0] * self.get_obs_dims(target)
 
     @property
     def alive_agents(self):
