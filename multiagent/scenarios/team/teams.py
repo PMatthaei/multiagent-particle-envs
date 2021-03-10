@@ -26,6 +26,9 @@ class TeamsScenario(BaseTeamScenario):
         if self.is_symmetric and sum(self.n_agents) % self.n_teams != 0:
             raise ScenarioNotSymmetricError(self.n_agents, self.n_teams)
 
+        self.team_spawns = None
+        self.agent_spawns = [None] * self.n_teams
+
     def _make_world(self, grid_size: int):
         world = World(grid_size=grid_size)
         world.collaborative = True
@@ -52,12 +55,14 @@ class TeamsScenario(BaseTeamScenario):
 
     def reset_world(self, world: World):
         # random team spawns
-        team_spawns = generate_spawns(*world.grid_center, self.n_teams, mean_radius=world.grid_size * 3)
+        if self.team_spawns is None:
+            self.team_spawns = generate_spawns(*world.grid_center, self.n_teams, mean_radius=world.grid_size * 3)
         # scatter agents of a team a little
-        for team, team_spawn in zip(world.teams, team_spawns):
-            agent_spawns = generate_spawns(*team_spawn, self.n_agents[team.tid], mean_radius=world.grid_size)
+        for team, team_spawn in zip(world.teams, self.team_spawns):
+            if self.agent_spawns[team.tid] is None:
+                self.agent_spawns[team.tid] = generate_spawns(*team_spawn, self.n_agents[team.tid], mean_radius=world.grid_size)
             for i, agent in enumerate(team.members):
-                agent.state.reset(np.array(agent_spawns[i]))
+                agent.state.reset(np.array(self.agent_spawns[team.tid][i]))
 
     def reward(self, agent: Agent, world: World):
         reward = 0
