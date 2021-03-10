@@ -111,10 +111,8 @@ class MAEnv(gym.Env):
             # observation space
             obs_dim = len(observation_callback(agent, self.world))
             self.observation_space.append(spaces.Box(low=0.0, high=1.0, shape=(obs_dim,), dtype=np.float32))
-            agent.action.c = np.zeros(self.world.dim_c)
         # TODO: prone to different obs/state agents of choosing just the first!
-        pos_n = len(self.agents[0].state.pos)
-        self.state_n = (self.n + len(self.world.scripted_agents)) * (len(self.agents[0].self_observation) + pos_n)
+        self.state_n = self._get_state_dim()
 
         # rendering
         self.headless = headless
@@ -186,8 +184,14 @@ class MAEnv(gym.Env):
                                           # ... if the agent is a healer include team mate ids
                                           (agent.has_heal() and agent.tid == ag.tid))]
 
-        self.logger.debug("Agent {} has available actions with ids: {}".format(agent.id, avail_actions))
+        self.logger.debug("Agent {} has available actions with indices: {}".format(agent.id, avail_actions))
         return avail_actions
+
+    def _get_state_dim(self):
+        state_dim = 0
+        for a in self.world.agents:
+            state_dim += len(a.self_observation) + self.world.dim_p
+        return state_dim
 
     def _get_action_dim(self, agent):
         """
@@ -208,7 +212,7 @@ class MAEnv(gym.Env):
         :param agent: considered agent
         :return: action space available for this agent
         """
-        movement_dims = self.world.dim_p * 2
+        movement_dims = self.world.dim_p * 2  # two options for every movement axis
         attack_dims = 0
         heal_dims = 0
         # get amount of attack-able and heal-able agents in other/own team(s)
@@ -343,10 +347,11 @@ class MAEnv(gym.Env):
         for agent in self.world.agents:
             x = (agent.state.pos[0] - cx) / self.world.bounds[0]  # relative X
             y = (agent.state.pos[1] - cy) / self.world.bounds[1]  # relative Y
-            state.append([[x, y], agent.self_observation])
+            agent_state = [x, y] + agent.self_observation
+            state.append(agent_state)
         state = np.array(state).flatten()
         self.logger.debug("State: {0}".format(state))
-        assert self.state_n == len(state)
+        assert self.state_n == len(state), "State not matching underlying dimension."
         return state
 
     def get_obs(self):
@@ -413,7 +418,6 @@ class MAEnv(gym.Env):
         """
         # set default actions (physical and communication)
         agent.action.u = np.zeros(self.world.dim_p + 1)
-        agent.action.c = np.zeros(self.world.dim_c)
 
         # physical action index
         act_ind = action

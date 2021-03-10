@@ -192,8 +192,8 @@ class Agent(Entity):
         self.role = build_plan['role'].value
 
         self.attack_range = self.attack_type['attack_range']
-        # sight range cannot be smaller than attack range
-        self.sight_range = max(self.attack_range, self.sight_range)
+        self.sight_range = self.attack_range  # TODO: sight range != attack range
+        assert self.sight_range >= self.attack_range, "Sight range cannot be smaller than attack range."
         self.attack_damage = self.role['attack_damage']
         self.max_health = self.role['max_health']
 
@@ -212,7 +212,6 @@ class Agent(Entity):
     def self_observation(self):
         return [
             self.state.health / self.state.max_health,  # relative health
-            self.state.shield / self.state.max_shield if self.state.max_shield != 0 else 0.0  # relative shield
         ]
 
     def heal(self, target: Agent):
@@ -306,12 +305,16 @@ class World(object):
             logger.debug("Agent {1} is visible to {0}.".format(agent.id, target.id))
         return is_visible
 
+    def get_movement_dims(self):
+        return self.dim_p * 2
+
     def get_available_movement(self, agent: Agent):
+        avail_movement = [0] * self.get_movement_dims()  # four movement dims
+
         if agent.is_dead():
-            return [0] * 4  # four movement dims
+            return avail_movement  # four movement dims
 
         if self.bounds is not None:
-            avail_movement = [0] * 4  # four movement dims
             x = agent.state.pos[0]
             y = agent.state.pos[1]
             if x - self.grid_size >= 0:  # WEST would not exceed bounds
@@ -324,30 +327,37 @@ class World(object):
                 avail_movement[3] = 1
             return avail_movement
         else:
-            return [1] * 4  # four movement dims
+            return [1] * self.get_movement_dims()  # four movement dims
 
-    def get_obs_of(self, agent: Agent, target: Agent):
+    def get_obs_dims(self):
+        obs_dims = self.dim_p  # position
+        obs_dims += 1  # visibility bool
+        obs_dims += 1  # distance
+        obs_dims += 1  # health
+        return obs_dims
+
+    def get_obs(self, observer: Agent, target: Agent):
         """
         Retrieve observation conducted by an agent on another agent.
-        @param agent: the agent observing his environment
+        @param observer: the agent observing his environment
         @param target: agent which is observed
         @return: the observation made of the provided agent
         """
-        obs_target_visible = self.is_visible_to(agent, target)
+        obs_target_visible = self.is_visible_to(observer, target)
         if obs_target_visible and target.is_alive():
-            rel_pos = target.state.pos - agent.state.pos
-            distance = self.distance_matrix[agent.id][target.id]
+            rel_pos = target.state.pos - observer.state.pos
+            distance = self.distance_matrix[observer.id][target.id]
             obs = [
-                obs_target_visible,                 # is the observed unit visible
-                distance / agent.sight_range,       # distance relative to sight range
-                rel_pos[0] / agent.sight_range,     # x position relative to observer
-                rel_pos[1] / agent.sight_range,     # y position relative to observer
+                obs_target_visible,  # is the observed unit visible
+                distance / observer.sight_range,  # distance relative to sight range
+                rel_pos[0] / observer.sight_range,  # x position relative to observer
+                rel_pos[1] / observer.sight_range,  # y position relative to observer
                 target.state.health / target.state.max_health,  # relative health
-                target.state.shield / target.state.max_shield if target.state.max_shield != 0 else 0.0  # relative shield
             ]
+            assert len(obs) == self.get_obs_dims(), "Check observation matches underlying dimension."
             return obs
-        else:  # TODO obs dim for default case
-            return [0] * 6
+        else:
+            return [0] * self.get_obs_dims()
 
     @property
     def alive_agents(self):

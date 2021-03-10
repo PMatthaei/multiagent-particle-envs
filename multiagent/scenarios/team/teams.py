@@ -80,9 +80,9 @@ class TeamsScenario(BaseTeamScenario):
         # Movement observation of the agent
         obs = [world.get_available_movement(agent)]
         # Ally observations
-        obs += [world.get_obs_of(agent, member) for member in world.get_team_members(agent)]
+        obs += [world.get_obs(agent, member) for member in world.get_team_members(agent)]
         # Enemy observations
-        obs += [world.get_obs_of(agent, enemy) for enemy in world.get_enemies(agent)]
+        obs += [world.get_obs(agent, enemy) for enemy in world.get_enemies(agent)]
         # Self observation
         obs.append(agent.self_observation)
         # Flatten
