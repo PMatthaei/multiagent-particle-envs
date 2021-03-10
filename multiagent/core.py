@@ -349,8 +349,8 @@ class World(object):
                 distance / agent.sight_range,       # distance relative to sight range
                 rel_pos[0] / agent.sight_range,     # x position relative to observer
                 rel_pos[1] / agent.sight_range,     # y position relative to observer
-                agent.state.health / agent.state.max_health,  # relative health
-                agent.state.shield / agent.state.max_shield if agent.state.max_shield != 0 else 0.0  # relative shield
+                target.state.health / target.state.max_health,  # relative health
+                target.state.shield / target.state.max_shield if agent.state.max_shield != 0 else 0.0  # relative shield
             ]
             return obs
         else:  # TODO obs dim for default case

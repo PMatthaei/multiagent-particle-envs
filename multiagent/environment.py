@@ -30,18 +30,23 @@ class MAEnv(gym.Env):
 
         @param reset_callback: func, optional
             provided callback to reset the environment for the next episode.
+            For more info see: BaseTeamScenario in multiagent/scenarios/team/teams.py
 
         @param reward_callback: func, optional
             provided callback to supply agents with their reward.
+            For more info see: BaseTeamScenario in multiagent/scenarios/team/teams.py
 
         @param observation_callback: func, optional
             provided callback to supply agents with their observation.
+            For more info see: BaseTeamScenario in multiagent/scenarios/team/teams.py
 
         @param info_callback: func, optional
             provided callback to return additional data.
+            For more info see: BaseTeamScenario in multiagent/scenarios/team/teams.py
 
         @param done_callback: func, optional
             provided callback to return terminal boolean.
+            For more info see: BaseTeamScenario in multiagent/scenarios/team/teams.py
 
         @param log: bool, optional
             whether environment internals should be logged. Logs are exported as env.log file and in the console.

@@ -1,10 +1,9 @@
 import numpy as np
 
 from multiagent.ai.basic_ai import BasicScriptedAI
-from multiagent.core import World, Agent, Team, RoleTypes, Action
-from multiagent.exceptions.scenario_exceptions import ScenarioNotSymmetricError, SymmetricScenarioTeamsExceededError
+from multiagent.core import World, Agent, Team, Action
+from multiagent.exceptions.scenario_exceptions import ScenarioNotSymmetricError
 from multiagent.interfaces.scenario import BaseTeamScenario
-from multiagent.reward_functions.dense_functions import reward_team_health, reward_team_damage
 from multiagent.utils.colors import generate_colors
 from multiagent.utils.spawn_generator import generate_spawns
 
