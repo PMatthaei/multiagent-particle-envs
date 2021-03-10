@@ -231,16 +231,16 @@ class PyGameEntity(pygame.sprite.Sprite):
             self.draw_healer(alpha, body_radius, color, sight_range)
         else:
             self.draw_adc(alpha, body_radius, color, sight_range)
-        self.draw_health_bar(alpha, body_radius, color, sight_range)
+        self.draw_health_bar(alpha, body_radius, sight_range)
         self.draw_ranges(alpha, attack_range, color, sight_range)
 
-    def draw_health_bar(self, alpha, body_radius, color, sight_range):
+    def draw_health_bar(self, alpha, body_radius, sight_range):
         rel_health = self.agent.state.health / self.agent.state.max_health
         health_bar = HEALTH_BAR_WIDTH * rel_health
         missing_health = HEALTH_BAR_WIDTH * (1 - rel_health)
         center_x = sight_range - HEALTH_BAR_WIDTH / 2.0
         center_y = sight_range - HEALTH_BAR_HEIGHT / 2.0
-        pygame.draw.rect(self.surf, color=hsl_to_rgb(color, alpha),
+        pygame.draw.rect(self.surf, color=hsl_to_rgb((102, 171, 79), alpha),
                          rect=Rect(center_x, center_y - body_radius - HEALTH_BAR_HEIGHT, health_bar,
                                    HEALTH_BAR_HEIGHT))
         pygame.draw.rect(self.surf, color=hsl_to_rgb((61, 61, 61), alpha),
