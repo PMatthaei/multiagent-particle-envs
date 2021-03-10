@@ -213,8 +213,7 @@ class PyGameEntity(pygame.sprite.Sprite):
 
     def update(self):
         # Only redraw if visible state changed
-        if self.agent.is_dead():
-            self.draw()
+        self.draw()
         # Important: The simulation is updating with a move_by update while here we set the resulted new pos
         # TODO: if move_by needed the update needs to be saved in entity so we can recreate it here visually
         self.rect.centerx = self.agent.state.pos[0]
