@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import math
-from copy import copy
 from enum import Enum, IntEnum
 
 import numpy as np
@@ -277,6 +276,9 @@ class World(object):
     def get_team_members(self, agent: Agent):
         return [member for member in self.get_team(agent.tid).members if member.id != agent.id]
 
+    def get_enemies(self, agent: Agent):
+        return [enemy for enemy in self.agents if enemy.tid != agent.tid]
+
     def get_team(self, tid):
         """
         Return the team with the given id
@@ -338,16 +340,21 @@ class World(object):
         @param target: agent which is observed
         @return: the observation made of the provided agent
         """
-        if self.is_visible_to(agent, target):
-            rel_pos = agent.state.pos - target.state.pos
-            return [
-                rel_pos[0] / agent.sight_range,  # x position relative to observer
-                rel_pos[1] / agent.sight_range,  # y position relative to observer
+        obs_target_visible = self.is_visible_to(agent, target)
+        if obs_target_visible and target.is_alive():
+            rel_pos = target.state.pos - agent.state.pos
+            distance = self.distance_matrix[agent.id][target.id]
+            obs = [
+                obs_target_visible,                 # is the observed unit visible
+                distance / agent.sight_range,       # distance relative to sight range
+                rel_pos[0] / agent.sight_range,     # x position relative to observer
+                rel_pos[1] / agent.sight_range,     # y position relative to observer
                 agent.state.health / agent.state.max_health,  # relative health
                 agent.state.shield / agent.state.max_shield if agent.state.max_shield != 0 else 0.0  # relative shield
             ]
+            return obs
         else:  # TODO obs dim for default case
-            return [0] * 4
+            return [0] * 6
 
     @property
     def alive_agents(self):

@@ -75,15 +75,15 @@ class TeamsScenario(BaseTeamScenario):
     def observation(self, agent: Agent, world: World):
         # Movement observation of the agent
         obs = [world.get_available_movement(agent)]
-        # Ally observation
-        for member in world.get_team_members(agent):
-            obs.append(world.get_obs_of(agent, member))
-        # Enemy observation
-        for enemy in np.concatenate([team.members for team in world.get_opposing_teams(agent.tid)]):
-            obs.append(world.get_obs_of(agent, enemy))
+        # Ally observations
+        obs += [world.get_obs_of(agent, member) for member in world.get_team_members(agent)]
+        # Enemy observations
+        obs += [world.get_obs_of(agent, enemy) for enemy in world.get_enemies(agent)]
         # Self observation
         obs.append(agent.self_observation)
-        return np.concatenate(obs)
+        # Flatten
+        obs = np.concatenate(obs).astype(float)
+        return obs
 
     def scripted_agent_callback(self, agent: Agent, world: World) -> Action:
         return self.scripted_ai.act(agent, world)
