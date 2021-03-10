@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import logging
 import math
 from enum import Enum, IntEnum
@@ -21,6 +22,19 @@ class RoleTypes(Enum):
 class UnitAttackTypes(Enum):
     RANGED = {"attack_range": 35}
     MELEE = {"attack_range": 5}
+
+
+# Calculate all unique unit types
+UNIQUE_UNIT_TYPES = list(itertools.product(RoleTypes, UnitAttackTypes))
+# Calculate bits needed to represent all unique units
+UNIT_BITS_NEEDED = math.ceil(math.log(len(UNIQUE_UNIT_TYPES), 2))
+
+
+def _to_bits(num):
+    return list(map(float, bin(num)[2:].zfill(UNIT_BITS_NEEDED)))
+
+
+UNIT_TYPE_BITS = dict((unit, _to_bits(index)) for index, unit in enumerate(UNIQUE_UNIT_TYPES))
 
 
 class ActionTypes(IntEnum):
@@ -188,6 +202,7 @@ class Agent(Entity):
         self.tid = tid
         self.name = 'Agent %d' % id
         self.color = color
+        self.unit_id = (build_plan['role'], build_plan['attack_type'])
         self.attack_type = build_plan['attack_type'].value
         self.role = build_plan['role'].value
 
@@ -210,9 +225,11 @@ class Agent(Entity):
 
     @property
     def self_observation(self):
-        return [
-            self.state.health / self.state.max_health,  # relative health
-        ]
+        unit_type_bits = UNIT_TYPE_BITS[self.unit_id]
+        self_obs = [
+                       self.state.health / self.state.max_health,  # relative health
+                   ] + unit_type_bits
+        return self_obs
 
     def heal(self, target: Agent):
         if target.tid != self.tid:  # Agents can not heal their enemies. This indicates a bug.

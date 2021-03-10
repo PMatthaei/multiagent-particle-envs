@@ -202,8 +202,7 @@ class MAEnv(gym.Env):
         2 = Go east
         3 = Go north
         4 = Go south
-        5 until 5 + #a (= of attackable enemies) = attack agent with id x
-        5 + #a until (5 + #a) + #h = heal agent with id y
+        5 until 5 + # of agents = targets
 
         TODO: Current impl assumes same action space for all agents but some actions will always be unavailable:
         - Healers cannot attack enemies
@@ -347,7 +346,7 @@ class MAEnv(gym.Env):
         for agent in self.world.agents:
             x = (agent.state.pos[0] - cx) / self.world.bounds[0]  # relative X
             y = (agent.state.pos[1] - cy) / self.world.bounds[1]  # relative Y
-            agent_state = [x, y] + agent.self_observation
+            agent_state = np.concatenate(([x, y], agent.self_observation))
             state.append(agent_state)
         state = np.array(state).flatten()
         self.logger.debug("State: {0}".format(state))
