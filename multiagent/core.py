@@ -301,22 +301,15 @@ class World(object):
     def is_visible_to(self, agent: Agent, target: Agent):
         if len(self.distance_matrix) == 0:
             return False
-        can_see = self.distance_matrix[agent.id][target.id] <= agent.sight_range
-        if can_see:
-            logger.debug("Agent {0} can see {1}.".format(agent.id, target.id))
-        return can_see
-
-    def get_visible_entities(self, agent: Agent):
-        """
-        Return all entities visible to the provided entity. If no range given or zero return empty list.
-        @param entity: The entity from which to apply a range query onto its neighbor entities.
-        @return: List of visible entities for the provided entity
-        """
-        if agent.sight_range is None or agent.sight_range == 0:
-            return []
-        return self.distance_matrix[agent.id]
+        is_visible = self.distance_matrix[agent.id][target.id] <= agent.sight_range
+        if is_visible:
+            logger.debug("Agent {1} is visible to {0}.".format(agent.id, target.id))
+        return is_visible
 
     def get_available_movement(self, agent: Agent):
+        if agent.is_dead():
+            return [0] * 4  # four movement dims
+
         if self.bounds is not None:
             avail_movement = [0] * 4  # four movement dims
             x = agent.state.pos[0]
