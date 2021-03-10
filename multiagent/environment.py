@@ -19,6 +19,55 @@ class MAEnv(gym.Env):
                  log=False, log_level=logging.DEBUG,
                  fps=30, infos=True, draw_grid=True,
                  record=False, headless=False, stream_key=None):
+        """
+        Multi-Agent extension of gym.Env.
+
+        Parameters (defaults see: in init)
+        ----------
+        @param world: World
+            world object representing the whole state. Computes state transitions and internal calculations not
+            relevant to the environment.
+
+        @param reset_callback: func, optional
+            provided callback to reset the environment for the next episode.
+
+        @param reward_callback: func, optional
+            provided callback to supply agents with their reward.
+
+        @param observation_callback: func, optional
+            provided callback to supply agents with their observation.
+
+        @param info_callback: func, optional
+            provided callback to return additional data.
+
+        @param done_callback: func, optional
+            provided callback to return terminal boolean.
+
+        @param log: bool, optional
+            whether environment internals should be logged. Logs are exported as env.log file and in the console.
+
+        @param log_level: bool, optional
+            log-level of logged environment internals.
+
+        @param fps: int, optional
+            frames-per-second of recorded video.
+
+        @param infos: bool, optional
+            whether to display additional info in the environment rendering.
+
+        @param draw_grid: bool, optional
+            whether to display the underlying movement grid of agents.
+
+        @param record: bool, optional
+            whether to display the underlying movement grid of agents.
+
+        @param headless: bool, optional
+            whether to display the underlying movement grid of agents.
+
+        @param stream_key: str, optional
+            provided twitch stream key to stream environment rendering to twitch.tv.
+            If set streaming starts automatically.
+        """
         if log:
             logging.basicConfig(filename='env.log', level=log_level)
             self.logger = logging.getLogger("ma-env")
