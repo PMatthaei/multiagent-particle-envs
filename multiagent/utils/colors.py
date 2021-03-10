@@ -1,9 +1,15 @@
 import random
 
+import colour
 import pygame
 
 
-def hsl_to_rgb(color, alpha):
+def colour_to_color(color: colour.Color, alpha):
+    tupled_color = tuple([int(255 * c) for c in color.rgb])
+    return tuple_to_color(tupled_color, alpha)
+
+
+def tuple_to_color(color: tuple, alpha):
     return pygame.Color(color[0], color[1], color[2], alpha)
 
 

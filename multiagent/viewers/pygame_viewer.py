@@ -7,13 +7,16 @@ import numpy as np
 import pygame
 from pygame.rect import Rect
 
-from multiagent.core import Entity, RoleTypes, Agent
-from multiagent.utils.colors import hsl_to_rgb
+from multiagent.core import RoleTypes, Agent
+from multiagent.utils.colors import tuple_to_color, colour_to_color
 from multiagent.viewers.twitch_viewer import TwitchViewer
+from colour import Color
 
 HEALTH_BAR_HEIGHT = 4
-
 HEALTH_BAR_WIDTH = 25
+HEALTH_BAR_COLOR = tuple(c / 255.0 for c in [102, 171, 79])
+MISSING_HEALTH_BAR_COLOR = (61, 61, 61)
+HEALTH_BAR_COLOR_RANGE = list(Color(rgb=HEALTH_BAR_COLOR).range_to(Color("red"), 3))
 
 
 def check_ffmpeg():
@@ -237,33 +240,42 @@ class PyGameEntity(pygame.sprite.Sprite):
     def draw_health_bar(self, alpha, body_radius, sight_range):
         rel_health = self.agent.state.health / self.agent.state.max_health
         health_bar = HEALTH_BAR_WIDTH * rel_health
-        missing_health = HEALTH_BAR_WIDTH * (1 - rel_health)
+        missing_rel_health = (1.0 - rel_health)
+        missing_health_bar = HEALTH_BAR_WIDTH * missing_rel_health
         center_x = sight_range - HEALTH_BAR_WIDTH / 2.0
         center_y = sight_range - HEALTH_BAR_HEIGHT / 2.0
-        pygame.draw.rect(self.surf, color=hsl_to_rgb((102, 171, 79), alpha),
+        health_bar_color = self.get_health_color(missing_rel_health)
+        pygame.draw.rect(self.surf, color=colour_to_color(health_bar_color, alpha),
                          rect=Rect(center_x, center_y - body_radius - HEALTH_BAR_HEIGHT, health_bar,
                                    HEALTH_BAR_HEIGHT))
-        pygame.draw.rect(self.surf, color=hsl_to_rgb((61, 61, 61), alpha),
-                         rect=Rect(center_x + health_bar, center_y - body_radius - HEALTH_BAR_HEIGHT, missing_health,
+        pygame.draw.rect(self.surf, color=tuple_to_color(MISSING_HEALTH_BAR_COLOR, alpha),
+                         rect=Rect(center_x + health_bar, center_y - body_radius - HEALTH_BAR_HEIGHT,
+                                   missing_health_bar,
                                    HEALTH_BAR_HEIGHT))
 
+    def get_health_color(self, missing_rel_health):
+        health_category = math.ceil(missing_rel_health / (1 / 3))
+        color_index = np.clip(health_category, 0, len(HEALTH_BAR_COLOR_RANGE) - 1)
+        health_bar_color = HEALTH_BAR_COLOR_RANGE[color_index]
+        return health_bar_color
+
     def draw_ranges(self, alpha, attack_range, color, sight_range):
-        pygame.draw.circle(self.surf, color=hsl_to_rgb(color, alpha), center=(sight_range, sight_range),
+        pygame.draw.circle(self.surf, color=tuple_to_color(color, alpha), center=(sight_range, sight_range),
                            radius=sight_range, width=1)
-        pygame.draw.circle(self.surf, color=hsl_to_rgb(color, alpha), center=(sight_range, sight_range),
+        pygame.draw.circle(self.surf, color=tuple_to_color(color, alpha), center=(sight_range, sight_range),
                            radius=attack_range, width=1)
 
     def draw_adc(self, alpha, body_radius, color, sight_range):
-        pygame.draw.circle(self.surf, color=hsl_to_rgb(color, alpha), center=(sight_range, sight_range),
+        pygame.draw.circle(self.surf, color=tuple_to_color(color, alpha), center=(sight_range, sight_range),
                            radius=body_radius)
 
     def draw_tank(self, alpha, body_radius, color, sight_range):
         rect = Rect(sight_range - body_radius, sight_range - body_radius, body_radius * 2, body_radius * 2)
-        pygame.draw.rect(self.surf, color=hsl_to_rgb(color, alpha), rect=rect)
+        pygame.draw.rect(self.surf, color=tuple_to_color(color, alpha), rect=rect)
 
     def draw_healer(self, alpha, body_radius, color, sight_range):
         c = sight_range
         w = (body_radius * 2) * 1.0 / 3.0
         h = w * 3
-        pygame.draw.rect(self.surf, color=hsl_to_rgb(color, alpha), rect=Rect(c - w / 2, c - h / 2, w, h))
-        pygame.draw.rect(self.surf, color=hsl_to_rgb(color, alpha), rect=Rect(c - h / 2, c - w / 2, h, w))
+        pygame.draw.rect(self.surf, color=tuple_to_color(color, alpha), rect=Rect(c - w / 2, c - h / 2, w, h))
+        pygame.draw.rect(self.surf, color=tuple_to_color(color, alpha), rect=Rect(c - h / 2, c - w / 2, h, w))
