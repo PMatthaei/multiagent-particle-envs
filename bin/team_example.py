@@ -2,7 +2,7 @@ import argparse
 
 import pygame
 
-from bin.team_plans_example import TWO_TEAMS_SIZE_TWO_ASYMMETRIC_HETEROGENEOUS
+from bin.team_plans_example import TWO_TEAMS_SIZE_TWO_ASYMMETRIC_HETEROGENEOUS, LARGE
 from multiagent.environment import MAEnv
 from multiagent.interfaces.policy import RandomPolicy
 from multiagent.scenarios import team
@@ -14,7 +14,7 @@ if __name__ == '__main__':
     parser.add_argument('-stream_key', '--stream_key', default=None, help='Stream Key for Twitch.')
     args = parser.parse_args()
     # load scenario from script
-    scenario = team.load(args.scenario).TeamsScenario(TWO_TEAMS_SIZE_TWO_ASYMMETRIC_HETEROGENEOUS)
+    scenario = team.load(args.scenario).TeamsScenario(LARGE)
     # create world
     world = scenario.make_teams_world(grid_size=10.0)
     # create multi-agent environment
@@ -25,7 +25,7 @@ if __name__ == '__main__':
                 info_callback=None,
                 done_callback=scenario.done,
                 stream_key=args.stream_key,
-                log=True)
+                log=False)
     # render call to create viewer window (necessary only for interactive policies)
     env.render()
     # create random policies for each agent in each team

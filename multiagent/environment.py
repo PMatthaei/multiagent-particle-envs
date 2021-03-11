@@ -16,7 +16,7 @@ class MAEnv(gym.Env):
     def __init__(self, world: World,
                  reset_callback=None, reward_callback=None, observation_callback=None,
                  info_callback=None, done_callback=None,
-                 log=False, log_level=logging.DEBUG,
+                 log=False, log_level=logging.ERROR,
                  fps=30, infos=True, draw_grid=True,
                  record=False, headless=False, stream_key=None):
         """
@@ -49,7 +49,7 @@ class MAEnv(gym.Env):
             For more info see: BaseTeamScenario in multiagent/scenarios/team/teams.py
 
         @param log: bool, optional
-            whether environment internals should be logged. Logs are exported as env.log file and in the console.
+            whether environment internals should be logged into env.log.
 
         @param log_level: bool, optional
             log-level of logged environment internals.
@@ -75,13 +75,13 @@ class MAEnv(gym.Env):
         """
         if log:
             logging.basicConfig(filename='env.log', level=log_level)
-            self.logger = logging.getLogger("ma-env")
-            self.logger.handlers = []
-            ch = logging.StreamHandler()
-            formatter = logging.Formatter('[%(levelname)s %(asctime)s] %(name)s %(message)s', '%H:%M:%S')
-            ch.setFormatter(formatter)
-            self.logger.addHandler(ch)
-            self.logger.setLevel(log_level)
+        self.logger = logging.getLogger("ma-env")
+        self.logger.handlers = []
+        ch = logging.StreamHandler()
+        formatter = logging.Formatter('[%(levelname)s %(asctime)s] %(name)s %(message)s', '%H:%M:%S')
+        ch.setFormatter(formatter)
+        self.logger.addHandler(ch)
+        self.logger.setLevel(log_level)
 
         self.world = world
         self.agents = self.world.policy_agents

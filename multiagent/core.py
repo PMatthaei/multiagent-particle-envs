@@ -346,7 +346,7 @@ class World(object):
         else:
             return [1] * self.get_movement_dims()  # four movement dims
 
-    def get_obs_dims(self, agent: Agent):
+    def _get_obs_dims(self, agent: Agent):
         obs_dims = self.dim_p  # position
         obs_dims += 1  # visibility bool
         obs_dims += 1  # distance
@@ -372,10 +372,10 @@ class World(object):
                 rel_pos[1] / observer.sight_range,  # y position relative to observer
                 target.state.health / target.state.max_health,  # relative health
             ] + target.unit_type_bits
-            assert len(obs) == self.get_obs_dims(target), "Check observation matches underlying dimension."
+            assert len(obs) == self._get_obs_dims(target), "Check observation matches underlying dimension."
             return obs
         else:
-            return [0] * self.get_obs_dims(target)
+            return [0] * self._get_obs_dims(target)
 
     @property
     def alive_agents(self):

@@ -1,5 +1,26 @@
 from multiagent.core import RoleTypes, UnitAttackTypes
 
+LARGE = [
+    {
+        "is_scripted": True,
+        "units": [  # Team 1
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+        ] * 20
+    },
+    {
+        "is_scripted": False,
+        "units": [  # Team 2
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+        ] * 20
+    },
+]
+
 TWO_TEAMS_SIZE_TWO_ASYMMETRIC_HETEROGENEOUS = [
     {
         "is_scripted": True,
