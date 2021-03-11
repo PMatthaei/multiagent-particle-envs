@@ -60,7 +60,7 @@ class TeamsScenario(BaseTeamScenario):
         # scatter agents of a team a little
         for team, team_spawn in zip(world.teams, self.team_spawns):
             if self.agent_spawns[team.tid] is None:
-                self.agent_spawns[team.tid] = generate_spawns(*team_spawn, self.n_agents[team.tid], mean_radius=world.grid_size)
+                self.agent_spawns[team.tid] = generate_spawns(*team_spawn, self.n_agents[team.tid], grid_size=world.grid_size, mean_radius=world.grid_size)
             for i, agent in enumerate(team.members):
                 agent.state.reset(np.array(self.agent_spawns[team.tid][i]))
 
