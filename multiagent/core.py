@@ -427,9 +427,9 @@ class World(object):
 
     def step(self):
         """
-        Update state of the world
-        :return:
+        Update state of the world.
         """
+        illegal_actions = 0
         # Set actions for scripted/heuristic agents
         for agent in self.scripted_agents:
             agent.action = agent.action_callback(agent, self)
@@ -466,10 +466,15 @@ class World(object):
                     # TODO what to do if more than one unit attacks the target in the same step and it dies by one of them?
                     if target.is_dead():  # Target died due to the attack
                         pass
-                # TODO: For now, illegal actions can be taken and are available but will not influence the environment
                 else:
-                    logger.warning("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
+                    # TODO: For now, illegal actions can be taken and are available but will not influence the environment
+                    illegal_actions += 1
+                    logger.debug("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
+
                 agent.target_id = None  # Reset target after processing
+
+        # These actions where available to choose but can not be executed due to world physics or logic
+        logger.warning("Detected {} actions which did not result in state changes due to game logic.".format(illegal_actions))
 
         # After update test if world is done aka only one team left
         self.teams_wiped = [team.is_wiped() for team in self.teams]

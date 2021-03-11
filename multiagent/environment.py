@@ -230,7 +230,7 @@ class MAEnv(gym.Env):
         @param heuristic_opponent:
         """
         self.t += 1
-        self.logger.debug("--- Step {0}".format(self.t))
+        self.logger.info("--- Step {0}".format(self.t))
         self.logger.debug("Perform Actions: {0}".format(action_n))
         # Only consider policy agents when calling self.agents
         self.agents = self.world.policy_agents
@@ -282,7 +282,7 @@ class MAEnv(gym.Env):
             # Check if scripted agents won - these agents are part of the env and do not receive obs and rewards
             done_n.append(self._get_done(team))
 
-        info_n["battle_won"] = done_n
+        info_n["battle_won"] = done_n  # Provide additional info who won the episode.
 
         self.logger.debug("Observations: {0}".format(obs_n))
 
@@ -292,19 +292,19 @@ class MAEnv(gym.Env):
         else:
             reward_n = np.concatenate(team_rewards)
             self.logger.debug("Local Rewards per policy controlled team: {0}".format(team_rewards))
-
-        where = np.where(done_n)
-        winner = where[0]
-        if len(winner) == 1:
-            self.logger.debug("------ Done - Team with id {0} won the battle: {0}".format(winner[0]))
+        winner_id = np.where(done_n)[0]
+        if len(winner_id) == 1:
+            self.logger.info("------ Episode {} done - Team with id {} won the battle.".format(self.episode, winner_id))
+            self.episode += 1
         # Too many winners are prohibited (prevent case of episode limit reached)
-        elif len(winner) >= 1 and self.t != self.episode_limit:
-            raise TooManyWinners(winner)
+        elif len(winner_id) >= 1 and self.t != self.episode_limit:
+            raise TooManyWinners(winner_id)
 
-        # Place this code block after winner check !
-        if self.episode_limit == self.t:
+        # Episode limit reached - Place this code block after winner check !
+        if self.episode_limit is not None and self.episode_limit == self.t:
             # TODO: what should happen with result of match - draw or lose/win for all teams?
-            self.logger.debug("------ Done - Episode limit reached.")
+            self.logger.info("------ Episode {} done - Step limit reached.".format(self.episode))
+            self.episode += 1
             done_n = [True] * len(done_n)
 
         return obs_n, reward_n, done_n, info_n
@@ -377,16 +377,13 @@ class MAEnv(gym.Env):
 
     def _get_done(self, team: Team):
         """
-        Get dones for a particular team. A environment is done if it reached its max steps
+        Get terminal boolean for a particular team.
         :param team:
         :return:
         """
-        team_done = self.done_callback(team, self.world)
+        return self.done_callback(team, self.world)
         if team_done:
-            self.episode += 1
-            return True
-
-        if self.episode_limit is not None and self.episode_limit == self.t:
+            self.logger.info("------ Episode ended.")
             self.episode += 1
             return True
 

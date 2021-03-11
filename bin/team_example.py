@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 import pygame
 
@@ -25,6 +26,8 @@ if __name__ == '__main__':
                 info_callback=None,
                 done_callback=scenario.done,
                 stream_key=args.stream_key,
+                headless=False,
+                log_level=logging.INFO,
                 log=False)
     # render call to create viewer window (necessary only for interactive policies)
     env.render()
