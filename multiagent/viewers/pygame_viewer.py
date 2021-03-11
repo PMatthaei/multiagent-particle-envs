@@ -233,17 +233,14 @@ class PyGameViewer(object):
 class _PyGameEntity(pygame.sprite.Sprite):
     def __init__(self, agent: Agent):
         super(_PyGameEntity, self).__init__()
-        # This reference is updated in world step
-        self.agent = agent
+        self.agent = agent  # This reference is updated in world step
         self.color = self.agent.color
         self.sight_range = self.agent.sight_range
         self.attack_range = self.agent.attack_range
         self.body_radius = self.agent.bounding_circle_radius
         self.alpha = 255
-        # This is its visual representation
         self.surf = pygame.Surface((self.sight_range * 2, self.sight_range * 2), pygame.SRCALPHA, 32).convert_alpha()
         self.rect: Rect = self.surf.get_rect()
-        # Move to initial position
         self.update()
 
     def is_dead(self):

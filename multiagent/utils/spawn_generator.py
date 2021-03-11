@@ -11,6 +11,6 @@ def generate_spawns(cx, cy, num_points, grid_size=None, mean_radius=1.0, sigma_r
         y = cy + radius * math.sin(theta)
         if grid_size is not None:  # Move points onto grid
             x -= x % grid_size
-            y -= x % grid_size
+            y -= y % grid_size
         points.append([x, y])
     return points
