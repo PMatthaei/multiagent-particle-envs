@@ -34,7 +34,7 @@ def _to_bits(num):
     return list(map(float, bin(num)[2:].zfill(UNIT_BITS_NEEDED)))
 
 
-UNIT_TYPE_BITS = dict((unit, _to_bits(index)) for index, unit in enumerate(UNIQUE_UNIT_TYPES))
+UNIT_TYPE_BITS: dict = dict((unit, _to_bits(index)) for index, unit in enumerate(UNIQUE_UNIT_TYPES))
 
 
 class ActionTypes(IntEnum):
@@ -202,8 +202,8 @@ class Agent(Entity):
         self.tid = tid
         self.name = 'Agent %d' % id
         self.color = color
-        unit_id = (build_plan['role'], build_plan['attack_type'])
-        self.unit_type_bits = UNIT_TYPE_BITS[unit_id]
+        self.unit_id = (build_plan['role'], build_plan['attack_type'])
+        self.unit_type_bits = UNIT_TYPE_BITS[self.unit_id]
         self.attack_type = build_plan['attack_type'].value
         self.role = build_plan['role'].value
 

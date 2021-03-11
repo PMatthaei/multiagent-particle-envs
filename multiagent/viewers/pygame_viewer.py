@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import os
 
@@ -35,7 +37,7 @@ def check_ffmpeg():
     return ffmpeg_available
 
 
-class Grid:
+class _Grid:
     def __init__(self, screen, cell_size):
         self.screen = screen
         self.surface = screen.convert_alpha()
@@ -54,6 +56,19 @@ class Grid:
             pygame.draw.line(self.surface, (0, 0, 0, 50), (colCoord, 0), (colCoord, self.surface.get_height()))
 
         self.screen.blit(self.surface, (0, 0))
+
+
+class _SpriteFactory:
+    @staticmethod
+    def build(agent: Agent):
+        if RoleTypes.TANK in agent.unit_id:
+            return _Tank(agent)
+        elif RoleTypes.ADC in agent.unit_id:
+            return _ADC(agent)
+        elif RoleTypes.HEALER in agent.unit_id:
+            return _Healer(agent)
+        else:
+            raise Exception()
 
 
 class PyGameViewer(object):
@@ -91,10 +106,15 @@ class PyGameViewer(object):
         pygame.display.init()
         pygame.font.init()
         self.font = pygame.font.SysFont('', 25)
+        flags = pygame.DOUBLEBUF
 
-        self.screen = pygame.display.set_mode(self.env.world.bounds)
+        self.screen = pygame.display.set_mode(self.env.world.bounds, flags=flags)
+
+        pygame.event.set_allowed(
+            [pygame.QUIT, pygame.KEYDOWN, pygame.K_ESCAPE])  # Improve event queue with restricted events
+
         if self.draw_grid:
-            self.grid = Grid(screen=self.screen, cell_size=int(self.env.world.grid_size))
+            self.grid = _Grid(screen=self.screen, cell_size=int(self.env.world.grid_size))
 
         pygame.display.set_caption(caption)
         self.clock = pygame.time.Clock()
@@ -145,7 +165,10 @@ class PyGameViewer(object):
         # update entity positions visually
         for entity in self.entities:
             entity.update()
-            self.screen.blit(entity.surf, entity.rect)
+            if entity.is_dead():
+                self.entities.remove(entity)
+            else:
+                self.screen.blit(entity.surf, entity.rect)
 
     def init(self, world_entities):
         """
@@ -154,7 +177,7 @@ class PyGameViewer(object):
         :return:
         """
         self.entities = pygame.sprite.Group()
-        self.entities.add(*[PyGameEntity(entity) for entity in world_entities])
+        self.entities.add(*[_SpriteFactory.build(entity) for entity in world_entities])
 
     def render(self):
         if self.headless:
@@ -165,8 +188,14 @@ class PyGameViewer(object):
         """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                pygame.display.quit()
                 pygame.quit()
                 exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.display.quit()
+                    pygame.quit()
+                    exit()
 
         pygame.display.flip()
 
@@ -201,81 +230,99 @@ class PyGameViewer(object):
             self.proc.terminate()
 
 
-class PyGameEntity(pygame.sprite.Sprite):
+class _PyGameEntity(pygame.sprite.Sprite):
     def __init__(self, agent: Agent):
-        super(PyGameEntity, self).__init__()
+        super(_PyGameEntity, self).__init__()
         # This reference is updated in world step
         self.agent = agent
-        radius = agent.sight_range
+        self.color = self.agent.color
+        self.sight_range = self.agent.sight_range
+        self.attack_range = self.agent.attack_range
+        self.body_radius = self.agent.bounding_circle_radius
+        self.alpha = 255
         # This is its visual representation
-        self.surf = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA, 32).convert_alpha()
+        self.surf = pygame.Surface((self.sight_range * 2, self.sight_range * 2), pygame.SRCALPHA, 32).convert_alpha()
         self.rect: Rect = self.surf.get_rect()
         # Move to initial position
-        self.draw()
         self.update()
+
+    def is_dead(self):
+        return self.agent.is_dead()
 
     def update(self):
         # Only redraw if visible state changed
-        self.draw()
+        self._draw()
         # Important: The simulation is updating with a move_by update while here we set the resulted new pos
-        # TODO: if move_by needed the update needs to be saved in entity so we can recreate it here visually
+        # TODO: if move_by needed the delta update needs to be saved in entity so we can recreate it here visually
         self.rect.centerx = self.agent.state.pos[0]
         self.rect.centery = self.agent.state.pos[1]
 
-    def draw(self):
-        alpha = 80 if self.agent.is_dead() else 255
-        color = self.agent.color
-        sight_range = self.agent.sight_range
-        attack_range = self.agent.attack_range
-        body_radius = self.agent.bounding_circle_radius
-        if RoleTypes.TANK in self.agent.role:
-            self.draw_tank(alpha, body_radius, color, sight_range)
-        elif RoleTypes.HEALER in self.agent.role:
-            self.draw_healer(alpha, body_radius, color, sight_range)
-        else:
-            self.draw_adc(alpha, body_radius, color, sight_range)
-        self.draw_health_bar(alpha, body_radius, sight_range)
-        self.draw_ranges(alpha, attack_range, color, sight_range)
+    def _draw(self):
+        self.alpha = 80 if self.agent.is_dead() else 255
+        self._draw_health_bar()
+        self._draw_ranges()
 
-    def draw_health_bar(self, alpha, body_radius, sight_range):
+    def _draw_health_bar(self):
         rel_health = self.agent.state.health / self.agent.state.max_health
         health_bar = HEALTH_BAR_WIDTH * rel_health
         missing_rel_health = (1.0 - rel_health)
         missing_health_bar = HEALTH_BAR_WIDTH * missing_rel_health
-        center_x = sight_range - HEALTH_BAR_WIDTH / 2.0
-        center_y = sight_range - HEALTH_BAR_HEIGHT / 2.0
-        health_bar_color = self.get_health_color(missing_rel_health)
-        pygame.draw.rect(self.surf, color=colour_to_color(health_bar_color, alpha),
-                         rect=Rect(center_x, center_y - body_radius - HEALTH_BAR_HEIGHT, health_bar,
-                                   HEALTH_BAR_HEIGHT))
-        pygame.draw.rect(self.surf, color=tuple_to_color(MISSING_HEALTH_BAR_COLOR, alpha),
-                         rect=Rect(center_x + health_bar, center_y - body_radius - HEALTH_BAR_HEIGHT,
-                                   missing_health_bar,
-                                   HEALTH_BAR_HEIGHT))
 
-    def get_health_color(self, missing_rel_health):
+        center_x = self.sight_range - HEALTH_BAR_WIDTH / 2.0
+        center_y = self.sight_range - HEALTH_BAR_HEIGHT / 2.0
+
+        health_bar_color = self._get_health_color(missing_rel_health)
+        color = colour_to_color(health_bar_color, self.alpha)
+        health_bar_rect = Rect(center_x, center_y - self.body_radius - HEALTH_BAR_HEIGHT, health_bar, HEALTH_BAR_HEIGHT)
+
+        pygame.draw.rect(self.surf, color=color, rect=health_bar_rect)
+
+        missing_health_color = tuple_to_color(MISSING_HEALTH_BAR_COLOR, self.alpha)
+        missing_health_bar = Rect(center_x + health_bar, center_y - self.body_radius - HEALTH_BAR_HEIGHT,
+                                  missing_health_bar,
+                                  HEALTH_BAR_HEIGHT)
+        pygame.draw.rect(self.surf, color=missing_health_color, rect=missing_health_bar)
+
+    def _get_health_color(self, missing_rel_health):
         health_category = math.ceil(missing_rel_health / (1 / 3))
         color_index = np.clip(health_category, 0, len(HEALTH_BAR_COLOR_RANGE) - 1)
         health_bar_color = HEALTH_BAR_COLOR_RANGE[color_index]
         return health_bar_color
 
-    def draw_ranges(self, alpha, attack_range, color, sight_range):
-        pygame.draw.circle(self.surf, color=tuple_to_color(color, alpha), center=(sight_range, sight_range),
-                           radius=sight_range, width=1)
-        pygame.draw.circle(self.surf, color=tuple_to_color(color, alpha), center=(sight_range, sight_range),
-                           radius=attack_range, width=1)
+    def _draw_ranges(self):
+        center = (self.sight_range, self.sight_range)
+        color = tuple_to_color(self.color, self.alpha)
+        pygame.draw.circle(self.surf, color=color, center=center, radius=self.sight_range, width=1)
+        pygame.draw.circle(self.surf, color=color, center=center, radius=self.attack_range, width=1)
 
-    def draw_adc(self, alpha, body_radius, color, sight_range):
-        pygame.draw.circle(self.surf, color=tuple_to_color(color, alpha), center=(sight_range, sight_range),
-                           radius=body_radius)
 
-    def draw_tank(self, alpha, body_radius, color, sight_range):
-        rect = Rect(sight_range - body_radius, sight_range - body_radius, body_radius * 2, body_radius * 2)
-        pygame.draw.rect(self.surf, color=tuple_to_color(color, alpha), rect=rect)
+class _ADC(_PyGameEntity):
 
-    def draw_healer(self, alpha, body_radius, color, sight_range):
-        c = sight_range
-        w = (body_radius * 2) * 1.0 / 3.0
+    def _draw(self):
+        super(_ADC, self)._draw()
+        center = (self.sight_range, self.sight_range)
+        color = tuple_to_color(self.color, self.alpha)
+        pygame.draw.circle(self.surf, color=color, center=center, radius=self.body_radius)
+
+
+class _Healer(_PyGameEntity):
+
+    def _draw(self):
+        super(_Healer, self)._draw()
+        c = self.sight_range
+        w = (self.body_radius * 2) / 3.0
         h = w * 3
-        pygame.draw.rect(self.surf, color=tuple_to_color(color, alpha), rect=Rect(c - w / 2, c - h / 2, w, h))
-        pygame.draw.rect(self.surf, color=tuple_to_color(color, alpha), rect=Rect(c - h / 2, c - w / 2, h, w))
+        color = tuple_to_color(self.color, self.alpha)
+        pygame.draw.rect(self.surf, color=color, rect=Rect(c - w / 2, c - h / 2, w, h))
+        pygame.draw.rect(self.surf, color=color, rect=Rect(c - h / 2, c - w / 2, h, w))
+
+
+class _Tank(_PyGameEntity):
+
+    def _draw(self):
+        super(_Tank, self)._draw()
+        left, top = (self.sight_range - self.body_radius,) * 2
+        width, height = (self.body_radius * 2,) * 2
+        rect = Rect(left, top, width, height)
+        color = tuple_to_color(self.color, self.alpha)
+        pygame.draw.rect(self.surf, color=color, rect=rect)
