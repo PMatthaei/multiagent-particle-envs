@@ -153,19 +153,24 @@ class MAEnv(gym.Env):
         :param agent:
         :return: array of available action ids
         """
-        avail_actions = []
-        if agent.is_dead():  # when dead only allow no-op action
-            return [0]
+        avail_actions = [0]
+        # TODO: causes problem if unit cant move and cant attack -> empty avail_actions
+        # if agent.is_dead():  # only allow no-op action when dead
+        #     return [0]
         if self.world.bounds is not None:
             x = agent.state.pos[0]
             y = agent.state.pos[1]
-            if x - self.movement_step_amount >= 0:  # WEST would not exceed bounds
+            left_step = x - self.movement_step_amount
+            right_step = x + self.movement_step_amount
+            up_step = y - self.movement_step_amount
+            down_step = y + self.movement_step_amount
+            if left_step >= 0 and self.world.is_free([left_step, y]):  # WEST would not exceed bounds
                 avail_actions.append(1)
-            if x + self.movement_step_amount <= self.world.bounds[0]:  # EAST would not exceed bounds
+            if right_step <= self.world.bounds[0] and self.world.is_free([right_step, y]):  # EAST would not exceed bounds
                 avail_actions.append(2)
-            if y - self.movement_step_amount >= 0:  # NORTH would not exceed bounds
+            if up_step >= 0 and self.world.is_free([x, up_step]):  # NORTH would not exceed bounds
                 avail_actions.append(3)
-            if y + self.movement_step_amount <= self.world.bounds[1]:  # SOUTH would not exceed bounds
+            if down_step <= self.world.bounds[1] and self.world.is_free([x, down_step]):  # SOUTH would not exceed bounds
                 avail_actions.append(4)
         else:  # unbounded map -> always add all movement directions
             avail_actions.append([1, 2, 3, 4])

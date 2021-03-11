@@ -110,7 +110,7 @@ class Entity(object):
         # how far can the entity see
         self.sight_range = 25
         # radius defines entity`s collision and visuals
-        self.bounding_circle_radius = 6
+        self.bounding_circle_radius = 3
         self.name = ''
         # entity can move / be pushed
         self.movable = False
@@ -270,6 +270,7 @@ class World(object):
         :param bounds: World bounds in which the agents can move
         """
         self.bounds = bounds
+        self.occupied_positions = []
         self.grid_size = grid_size
         # indicates if the reward will be global(cooperative) or local
         self.collaborative = False
@@ -313,6 +314,13 @@ class World(object):
         :return: Teams NOT belonging to the identifier
         """
         return [team for team in self.teams if team.tid != tid]
+
+    def is_free(self, pos):
+        if len(self.occupied_positions) == 0:
+            return True
+        pos = np.array(pos)
+        xy_free = np.isin(pos, self.occupied_positions)
+        return all(xy_free)
 
     def is_visible_to(self, agent: Agent, target: Agent):
         if len(self.distance_matrix) == 0:
@@ -447,9 +455,10 @@ class World(object):
             if any([dim > 0 for dim in move_vector]):  # is there movement greater zero?
                 logger.debug("Agent {0} moved by {1}:".format(agent.id, move_vector))
 
-            # Calculate all distances - 1. Position difference matrix 2. Distance matrix via matrix norm
+            self.occupied_positions = np.array([a.state.pos for a in self.agents if agent.is_alive()])
+            # Calculate all position differences
             pos_diff_matrix = np.array([[t.state.pos - a.state.pos for t in self.agents] for a in self.agents])
-            # Our actual position is defined via the position array at dimension 2
+            # Apply linalg.norm to positions defined at dimension 2
             self.distance_matrix = np.linalg.norm(pos_diff_matrix, axis=2)
 
             # Influence entity if target set f.e with attack, heal etc

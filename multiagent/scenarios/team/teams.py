@@ -5,7 +5,7 @@ from multiagent.core import World, Agent, Team, Action
 from multiagent.exceptions.scenario_exceptions import ScenarioNotSymmetricError
 from multiagent.interfaces.scenario import BaseTeamScenario
 from multiagent.utils.colors import generate_colors
-from multiagent.utils.spawn_generator import generate_spawns
+from multiagent.utils.spawn_generator import SpawnGenerator
 
 
 class TeamsScenario(BaseTeamScenario):
@@ -19,13 +19,14 @@ class TeamsScenario(BaseTeamScenario):
         self.team_build_plan = build_plan
         self.n_teams = len(build_plan)
         self.n_agents = [len(team["units"]) for team in build_plan]
-        self.is_symmetric = build_plan.count(build_plan[0]) == len(build_plan)
-
+        self.is_symmetric = self.n_agents.count(self.n_agents[0]) == len(self.n_agents)
+        self.team_mixing_factor = 7 #build_plan["tmf"] if "tmf" in build_plan["tmf"] else 5
         self.scripted_ai = BasicScriptedAI()
-
-        if self.is_symmetric and sum(self.n_agents) % self.n_teams != 0:
+        # TODO: Asymmetric case
+        if not self.is_symmetric:
             raise ScenarioNotSymmetricError(self.n_agents, self.n_teams)
 
+        self.spg = SpawnGenerator()
         self.team_spawns = None
         self.agent_spawns = [None] * self.n_teams
 
@@ -56,11 +57,16 @@ class TeamsScenario(BaseTeamScenario):
     def reset_world(self, world: World):
         # random team spawns
         if self.team_spawns is None:
-            self.team_spawns = generate_spawns(*world.grid_center, self.n_teams, mean_radius=world.grid_size * 3)
+            # How far can team spawns be spread
+            spread = world.grid_size * self.n_teams * sum(self.n_agents) / self.team_mixing_factor
+            self.team_spawns = self.spg.generate_team_spawns(*world.grid_center, radius=spread)
         # scatter agents of a team a little
         for team, team_spawn in zip(world.teams, self.team_spawns):
             if self.agent_spawns[team.tid] is None:
-                self.agent_spawns[team.tid] = generate_spawns(*team_spawn, self.n_agents[team.tid], grid_size=world.grid_size, mean_radius=world.grid_size)
+                self.agent_spawns[team.tid] = self.spg.generate(*team_spawn, self.n_agents[team.tid],
+                                                                grid_size=world.grid_size,
+                                                                sigma_radius=1,
+                                                                mean_radius=world.grid_size * 3)
             for i, agent in enumerate(team.members):
                 agent.state.reset(np.array(self.agent_spawns[team.tid][i]))
 

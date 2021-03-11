@@ -1,9 +1,7 @@
 import argparse
 import logging
 
-import pygame
-
-from bin.team_plans_example import TWO_TEAMS_SIZE_TWO_ASYMMETRIC_HETEROGENEOUS, LARGE
+from bin.team_plans_example import LARGE
 from multiagent.environment import MAEnv
 from multiagent.interfaces.policy import RandomPolicy
 from multiagent.scenarios import team

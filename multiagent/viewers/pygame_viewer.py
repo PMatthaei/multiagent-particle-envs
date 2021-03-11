@@ -14,8 +14,8 @@ from multiagent.utils.colors import tuple_to_color, colour_to_color
 from multiagent.viewers.twitch_viewer import TwitchViewer
 from colour import Color
 
-HEALTH_BAR_HEIGHT = 4
-HEALTH_BAR_WIDTH = 25
+HEALTH_BAR_HEIGHT = 2
+HEALTH_BAR_WIDTH = 15
 HEALTH_BAR_COLOR = tuple(c / 255.0 for c in [102, 171, 79])
 MISSING_HEALTH_BAR_COLOR = (61, 61, 61)
 HEALTH_BAR_COLOR_RANGE = list(Color(rgb=HEALTH_BAR_COLOR).range_to(Color("red"), 3))
@@ -231,9 +231,11 @@ class PyGameViewer(object):
 
 
 class _PyGameEntity(pygame.sprite.Sprite):
-    def __init__(self, agent: Agent):
+    def __init__(self, agent: Agent, debug_range=False, debug_health=True):
         super(_PyGameEntity, self).__init__()
         self.agent = agent  # This reference is updated in world step
+        self.debug_range = debug_range
+        self.debug_health = debug_health
         self.color = self.agent.color
         self.sight_range = self.agent.sight_range
         self.attack_range = self.agent.attack_range
@@ -256,8 +258,10 @@ class _PyGameEntity(pygame.sprite.Sprite):
 
     def _draw(self):
         self.alpha = 80 if self.agent.is_dead() else 255
-        self._draw_health_bar()
-        self._draw_ranges()
+        if self.debug_health:
+            self._draw_health_bar()
+        if self.debug_range:
+            self._draw_ranges()
 
     def _draw_health_bar(self):
         rel_health = self.agent.state.health / self.agent.state.max_health
