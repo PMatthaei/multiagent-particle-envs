@@ -264,7 +264,7 @@ class Agent(Entity):
 
 
 class World(object):
-    def __init__(self, grid_size: int, bounds=(1280, 720)):
+    def __init__(self, grid_size: int, bounds=np.array([1280, 720])):
         """
         Multi-agent world
         :param bounds: World bounds in which the agents can move
@@ -391,9 +391,9 @@ class World(object):
 
     @property
     def grid_center(self):
-        center_x = self.bounds[0] / 2.0
-        center_y = self.bounds[1] / 2.0
-        return center_x - (center_x % self.grid_size), center_y - (center_y % self.grid_size)
+        center = self.bounds / 2.0
+        center -= center % self.grid_size
+        return center
 
     @property
     def center(self):

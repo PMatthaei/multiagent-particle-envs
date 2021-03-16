@@ -26,12 +26,14 @@ class TeamsScenario(BaseTeamScenario):
         if not self.is_symmetric:
             raise ScenarioNotSymmetricError(self.n_agents, self.n_teams)
 
-        self.spg = SpawnGenerator()
+        self.spg = None
         self.team_spawns = None
         self.agent_spawns = [None] * self.n_teams
 
     def _make_world(self, grid_size: int):
         world = World(grid_size=grid_size)
+        self.spg = SpawnGenerator(self.n_teams, world_center=world.grid_center, grid_size=grid_size)
+
         world.collaborative = True
         colors = generate_colors(self.n_teams)
         agent_count = 0
@@ -59,7 +61,7 @@ class TeamsScenario(BaseTeamScenario):
         if self.team_spawns is None:
             # How far can team spawns be spread
             spread = world.grid_size * self.n_teams * sum(self.n_agents) / self.team_mixing_factor
-            self.team_spawns = self.spg.generate_team_spawns(*world.grid_center, radius=spread)
+            self.team_spawns = self.spg.generate_team_spawns(radius=spread)
         # scatter agents of a team a little
         for team, team_spawn in zip(world.teams, self.team_spawns):
             if self.agent_spawns[team.tid] is None:
