@@ -1,4 +1,8 @@
+import cProfile
+import io
 import logging
+import pstats
+from pstats import SortKey
 
 import gym
 import numpy as np
@@ -18,7 +22,7 @@ class MAEnv(gym.Env):
                  info_callback=None, done_callback=None,
                  log=False, log_level=logging.ERROR,
                  fps=30, infos=True, draw_grid=True,
-                 record=False, headless=False, stream_key=None):
+                 record=False, headless=False, stream_key=None, profile=False):
         """
         Multi-Agent extension of gym.Env.
 
@@ -50,6 +54,8 @@ class MAEnv(gym.Env):
 
         @param log: bool, optional
             whether environment internals should be logged into env.log.
+            This can significantly reduce performance if set to true and is only advised to debug.
+            All string formatings including numpy arrays drain compute power.
 
         @param log_level: bool, optional
             log-level of logged environment internals.
@@ -73,8 +79,6 @@ class MAEnv(gym.Env):
             provided twitch stream key to stream environment rendering to twitch.tv.
             If set streaming starts automatically.
         """
-        if log:
-            logging.basicConfig(filename='env.log', level=log_level)
         self.logger = logging.getLogger("ma-env")
         self.logger.handlers = []
         ch = logging.StreamHandler()
@@ -82,6 +86,13 @@ class MAEnv(gym.Env):
         ch.setFormatter(formatter)
         self.logger.addHandler(ch)
         self.logger.setLevel(log_level)
+        self.log = log
+        if self.log:
+            logging.basicConfig(filename='env.log', level=log_level)
+        else:
+            logging.disable(logging.WARNING)
+        if profile:
+            self.profile = cProfile.Profile()
 
         self.world = world
         self.agents = self.world.policy_agents
@@ -166,11 +177,13 @@ class MAEnv(gym.Env):
             down_step = y + self.movement_step_amount
             if left_step >= 0 and self.world.is_free([left_step, y]):  # WEST would not exceed bounds
                 avail_actions.append(1)
-            if right_step <= self.world.bounds[0] and self.world.is_free([right_step, y]):  # EAST would not exceed bounds
+            if right_step <= self.world.bounds[0] and self.world.is_free(
+                    [right_step, y]):  # EAST would not exceed bounds
                 avail_actions.append(2)
             if up_step >= 0 and self.world.is_free([x, up_step]):  # NORTH would not exceed bounds
                 avail_actions.append(3)
-            if down_step <= self.world.bounds[1] and self.world.is_free([x, down_step]):  # SOUTH would not exceed bounds
+            if down_step <= self.world.bounds[1] and self.world.is_free(
+                    [x, down_step]):  # SOUTH would not exceed bounds
                 avail_actions.append(4)
         else:  # unbounded map -> always add all movement directions
             avail_actions.append([1, 2, 3, 4])
@@ -188,8 +201,7 @@ class MAEnv(gym.Env):
                                          ((agent.tid != ag.tid and not agent.has_heal()) or
                                           # ... if the agent is a healer include team mate ids
                                           (agent.has_heal() and agent.tid == ag.tid))]
-
-        self.logger.debug("Agent {} has available actions with indices: {}".format(agent.id, avail_actions))
+        self.logger.debug(f"Agent {agent.id,} has available actions with indices: {avail_actions if self.log else None}")
         return avail_actions
 
     def _get_state_dim(self):
@@ -234,9 +246,10 @@ class MAEnv(gym.Env):
         @param action_n: List of actions to take for each agent
         @param heuristic_opponent:
         """
+        self.profile.enable()
         self.t += 1
         self.logger.info("--- Step {0}".format(self.t))
-        self.logger.debug("Perform Actions: {0}".format(action_n))
+        self.logger.debug(f"Perform Actions: {action_n if self.log else None}")
         # Only consider policy agents when calling self.agents
         self.agents = self.world.policy_agents
         # Set action for each agent - this needs to be performed before stepping world !
@@ -246,7 +259,7 @@ class MAEnv(gym.Env):
         for aid, agent in enumerate(self.agents):
             self._set_action(action_n[aid], agent, self.action_space[aid])
 
-        self.logger.debug("Advance world state...".format(action_n))
+        self.logger.debug("Advance world state...")
         # Advance world state - this also sets actions in the scripted agents
         self.world.step()
 
@@ -288,15 +301,17 @@ class MAEnv(gym.Env):
             done_n.append(self._get_done(team))
 
         info_n["battle_won"] = done_n  # Provide additional info who won the episode.
-
-        self.logger.debug("Observations: {0}".format(obs_n))
+        pass
+        self.logger.debug(f"Observations: {obs_n if self.log else None}")
 
         if self.global_reward:
             reward_n = team_rewards
-            self.logger.debug("Global Rewards per policy controlled team: {0}".format(team_rewards))
+            pass
+            self.logger.debug(f"Global Rewards per policy controlled team: {team_rewards if self.log else None}")
         else:
             reward_n = np.concatenate(team_rewards)
-            self.logger.debug("Local Rewards per policy controlled team: {0}".format(team_rewards))
+            pass
+            self.logger.debug(f"Local Rewards per policy controlled team: {team_rewards if self.log else None}")
         winner_id = np.where(done_n)[0]
         if len(winner_id) == 1:
             self.logger.info("------ Episode {} done - Team with id {} won the battle.".format(self.episode, winner_id))
@@ -311,7 +326,12 @@ class MAEnv(gym.Env):
             self.logger.info("------ Episode {} done - Step limit reached.".format(self.episode))
             self.episode += 1
             done_n = [True] * len(done_n)
-
+        self.profile.disable()
+        s = io.StringIO()
+        sortby = SortKey.TIME
+        ps = pstats.Stats(self.profile, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        print(s.getvalue())
         return obs_n, reward_n, done_n, info_n
 
     def reset(self):
@@ -353,8 +373,9 @@ class MAEnv(gym.Env):
             y = (agent.state.pos[1] - cy) / self.world.bounds[1]  # relative Y
             agent_state = np.concatenate(([x, y], agent.self_observation))
             state.append(agent_state)
+        # TODO reduce np.array calls
         state = np.array(state).flatten()
-        self.logger.debug("State: {0}".format(state))
+        self.logger.debug(f"State: {state if self.log else None}")
         assert self.state_n == len(state), "State not matching underlying dimension."
         return state
 
@@ -387,12 +408,6 @@ class MAEnv(gym.Env):
         :return:
         """
         return self.done_callback(team, self.world)
-        if team_done:
-            self.logger.info("------ Episode ended.")
-            self.episode += 1
-            return True
-
-        return False
 
     def _get_reward(self, agent):
         """

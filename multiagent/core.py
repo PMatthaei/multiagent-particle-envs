@@ -270,7 +270,7 @@ class World(object):
         :param bounds: World bounds in which the agents can move
         """
         self.bounds = bounds
-        self.occupied_positions = []
+        self.occupied_positions = None
         self.grid_size = grid_size
         # indicates if the reward will be global(cooperative) or local
         self.collaborative = False
@@ -315,12 +315,11 @@ class World(object):
         """
         return [team for team in self.teams if team.tid != tid]
 
-    def is_free(self, pos):
+    def is_free(self, pos: np.array):
         if len(self.occupied_positions) == 0:
             return True
-        pos = np.array(pos)
-        xy_free = np.isin(pos, self.occupied_positions)
-        return all(xy_free)
+        xy_free = np.isin(pos, self.occupied_positions) # TODO improve free check
+        return not all(xy_free)
 
     def is_visible_to(self, agent: Agent, target: Agent):
         if len(self.distance_matrix) == 0:
@@ -374,12 +373,12 @@ class World(object):
             rel_pos = target.state.pos - observer.state.pos
             distance = self.distance_matrix[observer.id][target.id]
             obs = [
-                obs_target_visible,  # is the observed unit visible
-                distance / observer.sight_range,  # distance relative to sight range
-                rel_pos[0] / observer.sight_range,  # x position relative to observer
-                rel_pos[1] / observer.sight_range,  # y position relative to observer
-                target.state.health / target.state.max_health,  # relative health
-            ] + target.unit_type_bits
+                      obs_target_visible,  # is the observed unit visible
+                      distance / observer.sight_range,  # distance relative to sight range
+                      rel_pos[0] / observer.sight_range,  # x position relative to observer
+                      rel_pos[1] / observer.sight_range,  # y position relative to observer
+                      target.state.health / target.state.max_health,  # relative health
+                  ] + target.unit_type_bits
             assert len(obs) == self._get_obs_dims(target), "Check observation matches underlying dimension."
             return obs
         else:
@@ -449,17 +448,19 @@ class World(object):
         random.shuffle(shuffled_agents)
         for agent in shuffled_agents:
 
-            # Update position
+            # Update position of agent
             move_vector = agent.action.u[:2]
             agent.state.pos += move_vector
             if any([dim > 0 for dim in move_vector]):  # is there movement greater zero?
-                logger.debug("Agent {0} moved by {1}:".format(agent.id, move_vector))
+                pass
+                #logger.debug(f"Agent {agent.id} moved by {move_vector}:")
 
-            self.occupied_positions = np.array([a.state.pos for a in self.agents if agent.is_alive()])
-            # Calculate all position differences
-            pos_diff_matrix = np.array([[t.state.pos - a.state.pos for t in self.agents] for a in self.agents])
-            # Apply linalg.norm to positions defined at dimension 2
-            self.distance_matrix = np.linalg.norm(pos_diff_matrix, axis=2)
+            # Mark occupied position of agent
+            self.occupied_positions[agent.id, :2] = agent.state.pos
+            self.occupied_positions[agent.id, 2] = agent.is_alive()
+
+            # Calculate all distances to other agents
+            self.distance_matrix[agent.id] = np.linalg.norm([other.state.pos - agent.state.pos for other in self.agents], axis=1)
 
             # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1
@@ -483,7 +484,8 @@ class World(object):
                 agent.target_id = None  # Reset target after processing
 
         # These actions where available to choose but can not be executed due to world physics or logic
-        logger.warning("Detected {} actions which did not result in state changes due to game logic.".format(illegal_actions))
+        logger.warning(
+            "Detected {} actions which did not result in state changes due to game logic.".format(illegal_actions))
 
         # After update test if world is done aka only one team left
         self.teams_wiped = [team.is_wiped() for team in self.teams]

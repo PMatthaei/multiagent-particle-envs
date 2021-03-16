@@ -54,6 +54,8 @@ class TeamsScenario(BaseTeamScenario):
             team = Team(tid=tid, members=members, is_scripted=is_scripted)
             world.teams.append(team)
 
+        world.occupied_positions = np.zeros((agent_count, world.dim_p + 1))
+        world.distance_matrix = np.full((agent_count, agent_count), np.inf)
         return world
 
     def reset_world(self, world: World):
