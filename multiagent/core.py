@@ -227,8 +227,8 @@ class Agent(Entity):
     @property
     def self_observation(self):
         self_obs = [
-            self.state.health / self.state.max_health,  # relative health
-        ] + self.unit_type_bits
+                       self.state.health / self.state.max_health,  # relative health
+                   ] + self.unit_type_bits
         return self_obs
 
     def heal(self, target: Agent):
@@ -316,10 +316,14 @@ class World(object):
         return [team for team in self.teams if team.tid != tid]
 
     def is_free(self, pos: np.array):
-        if len(self.occupied_positions) == 0:
-            return True
-        xy_free = np.isin(pos, self.occupied_positions) # TODO improve free check
-        return not all(xy_free)
+        # TODO: when does the is free check happen? what if two decide to go on the same spot in same tick?
+        alive = self.occupied_positions[:, 2] # occupied may also hold pos of dead agents -> mask out via alive
+        # the desired pos matches occupied pos in all dimensions
+        pos_occupied = np.all(self.occupied_positions[:, [0, 1]] == pos, axis=1)
+        # desired position is occupied AND the entity on this pos is alive
+        pos_occupied = np.logical_and(pos_occupied, alive)
+        # if there is not one position found the desired pos is free to move to
+        return not np.any(pos_occupied)
 
     def is_visible_to(self, agent: Agent, target: Agent):
         if len(self.distance_matrix) == 0:
@@ -436,7 +440,8 @@ class World(object):
         """
         Update state of the world.
         """
-        illegal_actions = 0
+        illegal_target_actions = 0
+        illegal_movement_actions = 0
         # Set actions for scripted/heuristic agents
         for agent in self.scripted_agents:
             agent.action = agent.action_callback(agent, self)
@@ -451,16 +456,21 @@ class World(object):
             # Update position of agent
             move_vector = agent.action.u[:2]
             agent.state.pos += move_vector
-            if any([dim > 0 for dim in move_vector]):  # is there movement greater zero?
-                pass
-                #logger.debug(f"Agent {agent.id} moved by {move_vector}:")
+            # Call before updating occupied positions !
+            if not self.is_free(agent.state.pos) and any(move_vector):
+                # TODO is_free needs to consider all planned actions and needs to decide who gets to move to the pos
+                # TODO for now this action is illegal but able to choose from
+                # TODO: probability increases with agent size and grid size (less options -> more likely to pick same)
+                illegal_movement_actions += 1
+                agent.state.pos -= move_vector
 
-            # Mark occupied position of agent
+            # Mark occupied position of agent and its state
             self.occupied_positions[agent.id, :2] = agent.state.pos
             self.occupied_positions[agent.id, 2] = agent.is_alive()
 
             # Calculate all distances to other agents
-            self.distance_matrix[agent.id] = np.linalg.norm([other.state.pos - agent.state.pos for other in self.agents], axis=1)
+            diffs = [other.state.pos - agent.state.pos for other in self.agents]
+            self.distance_matrix[agent.id] = np.linalg.norm(diffs, axis=1)
 
             # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1
@@ -473,19 +483,18 @@ class World(object):
                     agent.heal(target)
                 elif self.can_attack(agent, target):
                     agent.attack(target)
-                    # TODO what to do if more than one unit attacks the target in the same step and it dies by one of them?
                     if target.is_dead():  # Target died due to the attack
-                        pass
+                        logger.debug("Agent {0} neutralized Agent {1}".format(agent.id, target.id))
                 else:
                     # TODO: For now, illegal actions can be taken and are available but will not influence the environment
-                    illegal_actions += 1
+                    illegal_target_actions += 1
                     logger.debug("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
 
                 agent.target_id = None  # Reset target after processing
 
         # These actions where available to choose but can not be executed due to world physics or logic
-        logger.warning(
-            "Detected {} actions which did not result in state changes due to game logic.".format(illegal_actions))
+        logger.warning("Detected {} illegal target actions (no state changes due to game logic).".format(illegal_target_actions))
+        logger.warning("Detected {} illegal movement actions (no state changes due to game logic).".format(illegal_movement_actions))
 
         # After update test if world is done aka only one team left
         self.teams_wiped = [team.is_wiped() for team in self.teams]
