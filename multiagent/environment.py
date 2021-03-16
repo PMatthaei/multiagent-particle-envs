@@ -91,8 +91,10 @@ class MAEnv(gym.Env):
             logging.basicConfig(filename='env.log', level=log_level)
         else:
             logging.disable(logging.WARNING)
-        if profile:
-            self.profile = cProfile.Profile()
+
+        self.profile = profile
+        if self.profile:
+            self.profiler = cProfile.Profile()
 
         self.world = world
         self.agents = self.world.policy_agents
@@ -124,6 +126,7 @@ class MAEnv(gym.Env):
             self.observation_space.append(spaces.Box(low=0.0, high=1.0, shape=(obs_dim,), dtype=np.float32))
         # TODO: prone to different obs/state agents of choosing just the first!
         self.state_n = self._get_state_dim()
+        self._state = np.zeros((self.state_n,))
 
         # rendering
         self.headless = headless
@@ -201,7 +204,8 @@ class MAEnv(gym.Env):
                                          ((agent.tid != ag.tid and not agent.has_heal()) or
                                           # ... if the agent is a healer include team mate ids
                                           (agent.has_heal() and agent.tid == ag.tid))]
-        self.logger.debug(f"Agent {agent.id,} has available actions with indices: {avail_actions if self.log else None}")
+        self.logger.debug(
+            f"Agent {agent.id,} has available actions with indices: {avail_actions if self.log else None}")
         return avail_actions
 
     def _get_state_dim(self):
@@ -246,7 +250,8 @@ class MAEnv(gym.Env):
         @param action_n: List of actions to take for each agent
         @param heuristic_opponent:
         """
-        self.profile.enable()
+        if self.profile:
+            self.profiler.enable()
         self.t += 1
         self.logger.info("--- Step {0}".format(self.t))
         self.logger.debug(f"Perform Actions: {action_n if self.log else None}")
@@ -326,12 +331,13 @@ class MAEnv(gym.Env):
             self.logger.info("------ Episode {} done - Step limit reached.".format(self.episode))
             self.episode += 1
             done_n = [True] * len(done_n)
-        self.profile.disable()
-        s = io.StringIO()
-        sortby = SortKey.TIME
-        ps = pstats.Stats(self.profile, stream=s).sort_stats(sortby)
-        ps.print_stats()
-        print(s.getvalue())
+        if self.profile:
+            self.profiler.disable()
+            s = io.StringIO()
+            sortby = SortKey.TIME
+            ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
+            ps.print_stats()
+            print(s.getvalue())
         return obs_n, reward_n, done_n, info_n
 
     def reset(self):
@@ -365,16 +371,11 @@ class MAEnv(gym.Env):
         """Returns the global state.
         NOTE: This function should not be used during decentralised execution.
         """
-        cx, cy = self.world.center
         state = []
         # State includes ALL agents. Even scripted ones !
         for agent in self.world.agents:
-            x = (agent.state.pos[0] - cx) / self.world.bounds[0]  # relative X
-            y = (agent.state.pos[1] - cy) / self.world.bounds[1]  # relative Y
-            agent_state = np.concatenate(([x, y], agent.self_observation))
-            state.append(agent_state)
-        # TODO reduce np.array calls
-        state = np.array(state).flatten()
+            agent_obs = (agent.state.pos - self.world.center) / self.world.bounds
+            state = np.concatenate((state, agent_obs, agent.self_observation))
         self.logger.debug(f"State: {state if self.log else None}")
         assert self.state_n == len(state), "State not matching underlying dimension."
         return state
