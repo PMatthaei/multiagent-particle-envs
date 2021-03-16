@@ -89,8 +89,6 @@ class MAEnv(gym.Env):
         self.log = log
         if self.log:
             logging.basicConfig(filename='env.log', level=log_level)
-        else:
-            logging.disable(logging.WARNING)
 
         self.profile = profile
         if self.profile:
