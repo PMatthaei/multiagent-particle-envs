@@ -2,13 +2,13 @@ from multiagent.core import RoleTypes, UnitAttackTypes
 
 LARGE = [
     {
-        "is_scripted": True,
+        "is_scripted": False,
         "units": [  # Team 1
             {
                 "role": RoleTypes.TANK,
                 "attack_type": UnitAttackTypes.RANGED
             },
-        ] * 25
+        ] * 5
     },
     {
         "is_scripted": False,
@@ -17,7 +17,7 @@ LARGE = [
                 "role": RoleTypes.TANK,
                 "attack_type": UnitAttackTypes.RANGED
             },
-        ] * 25
+        ] * 5
     },
 ]
 

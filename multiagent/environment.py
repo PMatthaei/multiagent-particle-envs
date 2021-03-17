@@ -344,11 +344,8 @@ class MAEnv(gym.Env):
         :return:
         """
         self.t = 0
-        # reset world
         self.reset_callback(self.world)
-        # reset renderer
         self._reset_render()
-        # record observations for each agent
         obs_n = []
         self.agents = self.world.policy_agents
         for agent in self.agents:

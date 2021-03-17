@@ -458,9 +458,6 @@ class World(object):
             agent.state.pos += move_vector
             # Call before updating occupied positions !
             if not self.is_free(agent.state.pos) and any(move_vector):
-                # TODO is_free needs to consider all planned actions and needs to decide who gets to move to the pos
-                # TODO for now this action is illegal but able to choose from
-                # TODO: probability increases with agent size and grid size (less options -> more likely to pick same)
                 illegal_movement_actions += 1
                 agent.state.pos -= move_vector
 
@@ -483,10 +480,9 @@ class World(object):
                     agent.heal(target)
                 elif self.can_attack(agent, target):
                     agent.attack(target)
-                    if target.is_dead():  # Target died due to the attack
+                    if target.is_dead():  # Target died due to the attack since it was attackable before
                         logger.debug("Agent {0} neutralized Agent {1}".format(agent.id, target.id))
                 else:
-                    # TODO: For now, illegal actions can be taken and are available but will not influence the environment
                     illegal_target_actions += 1
                     logger.debug("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
 
