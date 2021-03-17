@@ -288,8 +288,8 @@ class World(object):
         # color dimensionality
         self.dim_color = 3
 
-        self.distance_matrix = []
-        self.visibility_matrix = []
+        self.distance_matrix: np.array = None
+        self.visibility_matrix: np.array = None
 
     def get_team_members(self, agent: Agent):
         return [member for member in self.get_team(agent.tid).members if member.id != agent.id]
@@ -318,7 +318,7 @@ class World(object):
 
     def is_free(self, pos: np.array):
         # TODO: when does the is free check happen? what if two decide to go on the same spot in same tick?
-        alive = self.occupied_positions[:, 2] # occupied may also hold pos of dead agents -> mask out via alive
+        alive = self.occupied_positions[:, 2]  # occupied may also hold pos of dead agents -> mask out via alive
         # the desired pos matches occupied pos in all dimensions
         pos_occupied = np.all(self.occupied_positions[:, [0, 1]] == pos, axis=1)
         # desired position is occupied AND the entity on this pos is alive
@@ -384,7 +384,8 @@ class World(object):
                       rel_pos[1] / observer.sight_range,  # y position relative to observer
                       target.state.health / target.state.max_health,  # relative health
                   ] + target.unit_type_bits
-            assert len(obs) == self._get_obs_dims(target), "Check observation matches underlying dimension."
+            # TODO move to test
+            # assert len(obs) == self._get_obs_dims(target), "Check observation matches underlying dimension."
             return obs
         else:
             return [0] * self._get_obs_dims(target)
