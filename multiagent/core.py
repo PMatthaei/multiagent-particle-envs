@@ -457,7 +457,7 @@ class World(object):
             # Update position of agent
             move_vector = agent.action.u[:2]
             agent.state.pos += move_vector
-            
+
             # Call before updating occupied positions !
             if not self.is_free(agent.state.pos) and any(move_vector):
                 illegal_movement_actions += 1
