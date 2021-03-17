@@ -22,7 +22,7 @@ class MAEnv(gym.Env):
                  info_callback=None, done_callback=None,
                  log=False, log_level=logging.ERROR,
                  fps=30, infos=True, draw_grid=True,
-                 record=False, headless=False, stream_key=None, profile=False):
+                 record=False, headless=False, stream_key=None, profile=True):
         """
         Multi-Agent extension of gym.Env.
 

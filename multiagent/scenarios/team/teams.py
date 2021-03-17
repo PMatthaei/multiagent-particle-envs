@@ -56,6 +56,7 @@ class TeamsScenario(BaseTeamScenario):
 
         world.occupied_positions = np.zeros((agent_count, world.dim_p + 1))
         world.distance_matrix = np.full((agent_count, agent_count), np.inf)
+        world.visibility_matrix = np.full((agent_count, agent_count), False)
         return world
 
     def reset_world(self, world: World):
@@ -91,6 +92,7 @@ class TeamsScenario(BaseTeamScenario):
     def observation(self, agent: Agent, world: World):
         # Movement observation of the agent
         obs = [world.get_available_movement(agent)]
+        # TODO vectorize
         # Ally observations
         obs += [world.get_obs(agent, member) for member in world.get_team_members(agent)]
         # Enemy observations

@@ -289,6 +289,7 @@ class World(object):
         self.dim_color = 3
 
         self.distance_matrix = []
+        self.visibility_matrix = []
 
     def get_team_members(self, agent: Agent):
         return [member for member in self.get_team(agent.tid).members if member.id != agent.id]
@@ -326,9 +327,8 @@ class World(object):
         return not np.any(pos_occupied)
 
     def is_visible_to(self, agent: Agent, target: Agent):
-        if len(self.distance_matrix) == 0:
-            return False
-        is_visible = self.distance_matrix[agent.id][target.id] <= agent.sight_range
+        # TODO vectorize
+        is_visible = self.visibility_matrix[agent.id][target.id]
         if is_visible:
             logger.debug("Agent {1} is visible to {0}.".format(agent.id, target.id))
         return is_visible
@@ -372,6 +372,7 @@ class World(object):
         @param target: agent which is observed
         @return: the observation made of the provided agent
         """
+        # TODO vectorize
         obs_target_visible = self.is_visible_to(observer, target)
         if obs_target_visible and target.is_alive():
             rel_pos = target.state.pos - observer.state.pos
@@ -434,7 +435,7 @@ class World(object):
     def can_attack(self, agent: Agent, target: Agent):
         if target.tid == agent.tid:
             return False
-        return self.distance_matrix[agent.id][target.id] <= agent.attack_range and target.is_alive()
+        return self.visibility_matrix[agent.id][target.id] and target.is_alive()
 
     def step(self):
         """
@@ -456,6 +457,7 @@ class World(object):
             # Update position of agent
             move_vector = agent.action.u[:2]
             agent.state.pos += move_vector
+            
             # Call before updating occupied positions !
             if not self.is_free(agent.state.pos) and any(move_vector):
                 illegal_movement_actions += 1
@@ -468,6 +470,7 @@ class World(object):
             # Calculate all distances to other agents
             diffs = [other.state.pos - agent.state.pos for other in self.agents]
             self.distance_matrix[agent.id] = np.linalg.norm(diffs, axis=1)
+            self.visibility_matrix[agent.id] = self.distance_matrix[agent.id] <= agent.sight_range
 
             # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1
