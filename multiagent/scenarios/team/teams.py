@@ -20,7 +20,7 @@ class TeamsScenario(BaseTeamScenario):
         self.n_teams = len(build_plan)
         self.n_agents = [len(team["units"]) for team in build_plan]
         self.is_symmetric = self.n_agents.count(self.n_agents[0]) == len(self.n_agents)
-        self.team_mixing_factor = 7 #build_plan["tmf"] if "tmf" in build_plan["tmf"] else 5
+        self.team_mixing_factor = 8 #build_plan["tmf"] if "tmf" in build_plan["tmf"] else 5
         self.scripted_ai = BasicScriptedAI()
         # TODO: Asymmetric case
         if not self.is_symmetric:
@@ -61,16 +61,17 @@ class TeamsScenario(BaseTeamScenario):
     def reset_world(self, world: World):
         # random team spawns
         if self.team_spawns is None:
-            # How far can team spawns be spread
-            spread = world.grid_size * self.n_teams * sum(self.n_agents) / self.team_mixing_factor
-            self.team_spawns = self.spg.generate_team_spawns(radius=spread)
+            # How far can team spawns be team_spread
+            agent_spread = world.grid_size * sum(self.n_agents) / self.team_mixing_factor
+            team_spread = self.n_teams * agent_spread
+            self.team_spawns = self.spg.generate_team_spawns(radius=team_spread)
         # scatter agents of a team a little
         for team, team_spawn in zip(world.teams, self.team_spawns):
             if self.agent_spawns[team.tid] is None:
                 self.agent_spawns[team.tid] = self.spg.generate(*team_spawn, self.n_agents[team.tid],
                                                                 grid_size=world.grid_size,
                                                                 sigma_radius=1,
-                                                                mean_radius=world.grid_size * 3)
+                                                                mean_radius=agent_spread)
             for i, agent in enumerate(team.members):
                 agent.state.reset(np.array(self.agent_spawns[team.tid][i]))
 
