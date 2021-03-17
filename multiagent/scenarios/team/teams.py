@@ -32,7 +32,7 @@ class TeamsScenario(BaseTeamScenario):
 
     def _make_world(self, grid_size: int):
         world = World(grid_size=grid_size)
-        self.spg = SpawnGenerator(self.n_teams, world_center=world.grid_center, grid_size=grid_size)
+        self.spg = SpawnGenerator(world, num_pos=sum(self.n_agents))
 
         world.collaborative = True
         colors = generate_colors(self.n_teams)
@@ -61,19 +61,20 @@ class TeamsScenario(BaseTeamScenario):
     def reset_world(self, world: World):
         # random team spawns
         if self.team_spawns is None:
-            # How far can team spawns be team_spread
+            # How far should team spawns and agents be spread
             agent_spread = world.grid_size * sum(self.n_agents) / self.team_mixing_factor
             team_spread = self.n_teams * agent_spread
             self.team_spawns = self.spg.generate_team_spawns(radius=team_spread)
         # scatter agents of a team a little
         for team, team_spawn in zip(world.teams, self.team_spawns):
             if self.agent_spawns[team.tid] is None:
-                self.agent_spawns[team.tid] = self.spg.generate(*team_spawn, self.n_agents[team.tid],
+                self.agent_spawns[team.tid] = self.spg.generate(team_spawn, self.n_agents[team.tid],
                                                                 grid_size=world.grid_size,
                                                                 sigma_radius=1,
                                                                 mean_radius=agent_spread)
             for i, agent in enumerate(team.members):
                 agent.state.reset(np.array(self.agent_spawns[team.tid][i]))
+        self.spg.clear()
 
     def reward(self, agent: Agent, world: World):
         reward = 0
