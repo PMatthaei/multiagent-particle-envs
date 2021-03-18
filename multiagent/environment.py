@@ -22,7 +22,7 @@ class MAEnv(gym.Env):
                  info_callback=None, done_callback=None,
                  log=False, log_level=logging.ERROR,
                  fps=30, infos=True, draw_grid=True,
-                 record=False, headless=False, stream_key=None, profile=False):
+                 record=False, headless=False, stream_key=None):
         """
         Multi-Agent extension of gym.Env.
 
@@ -89,10 +89,6 @@ class MAEnv(gym.Env):
         self.log = log
         if self.log:
             logging.basicConfig(filename='env.log', level=log_level)
-
-        self.profile = profile
-        if self.profile:
-            self.profiler = cProfile.Profile()
 
         self.world = world
         self.agents = self.world.policy_agents
@@ -236,10 +232,10 @@ class MAEnv(gym.Env):
         # get amount of attack-able and heal-able agents in other/own team(s)
         for team in self.world.teams:
             if team.tid == agent.tid and agent.has_heal():
-                heal_dims += len(team.members)  # cannot heal himself
+                heal_dims += team.size  # cannot heal himself
             if team.tid != agent.tid and not agent.has_heal():
-                attack_dims += len(team.members)
-        return movement_dims + len(self.world.agents) + 1  # no-op
+                attack_dims += team.size
+        return movement_dims + self.n + 1  # no-op
         # return movement_dims + attack_dims + heal_dims + 1  # no-op
 
     def step(self, action_n, heuristic_opponent=False):
@@ -248,16 +244,15 @@ class MAEnv(gym.Env):
         @param action_n: List of actions to take for each agent
         @param heuristic_opponent:
         """
-        if self.profile:
-            self.profiler.enable()
         self.t += 1
         self.logger.info("--- Step {0}".format(self.t))
         self.logger.debug(f"Perform Actions: {action_n if self.log else None}")
         # Only consider policy agents when calling self.agents
         self.agents = self.world.policy_agents
         # Set action for each agent - this needs to be performed before stepping world !
-        if len(self.agents) != len(action_n):  # Make sure we received an action for every agent
-            raise MissingActions()
+        # TODO: test instead of in code
+        # if len(self.agents) != len(action_n):  # Make sure we received an action for every agent
+        #     raise MissingActions()
 
         for aid, agent in enumerate(self.agents):
             self._set_action(action_n[aid], agent, self.action_space[aid])
@@ -329,13 +324,7 @@ class MAEnv(gym.Env):
             self.logger.info("------ Episode {} done - Step limit reached.".format(self.episode))
             self.episode += 1
             done_n = [True] * len(done_n)
-        if self.profile:
-            self.profiler.disable()
-            s = io.StringIO()
-            sortby = SortKey.TIME
-            ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
-            ps.print_stats()
-            print(s.getvalue())
+
         return obs_n, reward_n, done_n, info_n
 
     def reset(self):
@@ -372,7 +361,8 @@ class MAEnv(gym.Env):
             agent_obs = (agent.state.pos - self.world.center) / self.world.bounds
             state = np.concatenate((state, agent_obs, agent.self_observation))
         self.logger.debug(f"State: {state if self.log else None}")
-        assert self.state_n == len(state), "State not matching underlying dimension."
+        #TOD: test instead of assertion in running code
+        # assert self.state_n == len(state), "State not matching underlying dimension."
         return state
 
     def get_obs(self):
@@ -472,19 +462,6 @@ class MAEnv(gym.Env):
         :param mode:
         :return:
         """
-        if mode == 'human':
-            alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-            message = ''
-            for agent in self.world.agents:
-                for other in self.world.agents:
-                    if other is agent: continue
-                    if np.all(other.state.c == 0):
-                        word = '_'
-                    else:
-                        word = alphabet[np.argmax(other.state.c)]
-                    message += (other.name + ' to ' + agent.name + ': ' + word + '   ')
-            if message is not None and not message and message != '':
-                print("Communicated message: ", message)
 
         if not self.headless:
             if self.viewer is None:

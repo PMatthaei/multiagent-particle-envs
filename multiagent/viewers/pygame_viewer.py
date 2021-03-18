@@ -19,7 +19,7 @@ HEALTH_BAR_WIDTH = 15
 HEALTH_BAR_COLOR = tuple(c / 255.0 for c in [102, 171, 79])
 MISSING_HEALTH_BAR_COLOR = (61, 61, 61)
 HEALTH_BAR_COLOR_RANGE = list(Color(rgb=HEALTH_BAR_COLOR).range_to(Color("red"), 3))
-
+HEALTH_BAR_COLOR_RANGE_N = len(HEALTH_BAR_COLOR_RANGE)
 
 def check_ffmpeg():
     ffmpeg_available = True
@@ -286,7 +286,7 @@ class _PyGameEntity(pygame.sprite.Sprite):
 
     def _get_health_color(self, missing_rel_health):
         health_category = math.ceil(missing_rel_health / (1 / 3))
-        color_index = np.clip(health_category, 0, len(HEALTH_BAR_COLOR_RANGE) - 1)
+        color_index = np.clip(health_category, 0, HEALTH_BAR_COLOR_RANGE_N - 1)
         health_bar_color = HEALTH_BAR_COLOR_RANGE[color_index]
         return health_bar_color
 

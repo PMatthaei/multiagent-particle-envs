@@ -151,13 +151,10 @@ class Team:
         self.tid = tid
         self.members = members
         self.is_scripted = is_scripted
+        self.size = len(members) # team size not influenced by deaths
 
     def is_wiped(self):
         return all([agent.is_dead() for agent in self.members])
-
-    @property
-    def size(self):
-        return len(self.members)
 
 
 class PerformanceStatistics:
@@ -204,6 +201,7 @@ class Agent(Entity):
         self.color = color
         self.unit_id = (build_plan['role'], build_plan['attack_type'])
         self.unit_type_bits = UNIT_TYPE_BITS[self.unit_id]
+        self.unit_type_bits_n = len(self.unit_type_bits)
         self.attack_type = build_plan['attack_type'].value
         self.role = build_plan['role'].value
 
@@ -362,7 +360,7 @@ class World(object):
         obs_dims += 1  # visibility bool
         obs_dims += 1  # distance
         obs_dims += 1  # health
-        obs_dims += len(agent.unit_type_bits)
+        obs_dims += agent.unit_type_bits_n
         return obs_dims
 
     def get_obs(self, observer: Agent, target: Agent):
@@ -453,6 +451,7 @@ class World(object):
         import random
         shuffled_agents = self.alive_agents
         random.shuffle(shuffled_agents)
+
         for agent in shuffled_agents:
 
             # Update position of agent
@@ -468,10 +467,12 @@ class World(object):
             self.occupied_positions[agent.id, :2] = agent.state.pos
             self.occupied_positions[agent.id, 2] = agent.is_alive()
 
+            # Prune - Select all agents which might be in feasible distance => closer than attack + action range
+            # this is max distance they could have moved away from each other
+            mask = self.distance_matrix[agent.id] <= agent.sight_range + self.grid_size * 2
             # Calculate all distances to other agents
-            diffs = [other.state.pos - agent.state.pos for other in self.agents]
-            self.distance_matrix[agent.id] = np.linalg.norm(diffs, axis=1)
-            self.visibility_matrix[agent.id] = self.distance_matrix[agent.id] <= agent.sight_range
+            self.distance_matrix[agent.id, mask] = np.linalg.norm(self.occupied_positions[mask, :2] - agent.state.pos, axis=1)
+            self.visibility_matrix[agent.id, mask] = self.distance_matrix[agent.id, mask] <= agent.sight_range
 
             # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1

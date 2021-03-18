@@ -65,6 +65,11 @@ ffmpeg version 4.2.4-1ubuntu0.1 Copyright (c) 2000-2020 the FFmpeg developers
 
 You can create new scenarios by implementing the first 5 functions above (`make_world()`, `build_teams`, `reset_world()`, `reward()`, and `observation()`).
 
+## Internals
+
+### Why numpy 1.16?
+
+See performance problems with [`numpy.core._multiarray_umath.implement_array_function`](https://stackoverflow.com/questions/58909525/what-is-numpy-core-multiarray-umath-implement-array-function-and-why-it-costs-l)
 ## References
 
 This repository is based on work of:

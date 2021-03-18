@@ -1,5 +1,9 @@
 import argparse
+import cProfile
+import io
 import logging
+import pstats
+from pstats import SortKey
 
 from bin.team_plans_example import LARGE
 from multiagent.environment import MAEnv
@@ -7,6 +11,7 @@ from multiagent.interfaces.policy import RandomPolicy
 from multiagent.scenarios import team
 
 if __name__ == '__main__':
+    profiler = cProfile.Profile()
     # parse arguments
     parser = argparse.ArgumentParser(description=None)
     parser.add_argument('-s', '--scenario', default='teams.py', help='Path of the scenario Python script.')
@@ -33,6 +38,7 @@ if __name__ == '__main__':
     all_policies = [[RandomPolicy(env, agent) for agent in team.members] for team in world.policy_teams]
     # execution loop
     obs_n = env.reset()
+    profiler.enable()
     while True:
         # query for action from each agent's policy
         act_n = []
@@ -47,6 +53,12 @@ if __name__ == '__main__':
         state = env.get_state()
         # render all agent views
         env.render()
+
+        s = io.StringIO()
+        sortby = SortKey.TIME
+        ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        print(s.getvalue())
 
         if any(done_n):
             env.reset()
