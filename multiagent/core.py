@@ -262,12 +262,13 @@ class Agent(Entity):
 
 
 class World(object):
-    def __init__(self, grid_size: int, bounds=np.array([1280, 720])):
+    def __init__(self, grid_size: int, bounds=np.array([1280, 720]), log=False):
         """
         Multi-agent world
         :param bounds: World bounds in which the agents can move
         """
         self.bounds = bounds
+        self.log = log
         self.occupied_positions = None
         self.grid_size = grid_size
         # indicates if the reward will be global(cooperative) or local
@@ -288,12 +289,6 @@ class World(object):
 
         self.distance_matrix: np.array = None
         self.visibility_matrix: np.array = None
-
-    def get_team_members(self, agent: Agent):
-        return [member for member in self.get_team(agent.tid).members if member.id != agent.id]
-
-    def get_enemies(self, agent: Agent):
-        return [enemy for enemy in self.agents if enemy.tid != agent.tid]
 
     def get_team(self, tid):
         """
@@ -323,13 +318,6 @@ class World(object):
         pos_occupied = np.logical_and(pos_occupied, alive)
         # if there is not one position found the desired pos is free to move to
         return not np.any(pos_occupied)
-
-    def is_visible_to(self, agent: Agent, target: Agent):
-        # TODO vectorize
-        is_visible = self.visibility_matrix[agent.id][target.id]
-        if is_visible:
-            logger.debug("Agent {1} is visible to {0}.".format(agent.id, target.id))
-        return is_visible
 
     def get_movement_dims(self):
         return self.dim_p * 2
@@ -371,16 +359,16 @@ class World(object):
         @return: the observation made of the provided agent
         """
         # TODO vectorize
-        obs_target_visible = self.is_visible_to(observer, target)
+        obs_target_visible = self.visibility_matrix[observer.id][target.id]
         if obs_target_visible and target.is_alive():
-            rel_pos = target.state.pos - observer.state.pos
+            rel_pos = target.state.pos - observer.state.pos #TODO can be calced in batch
             distance = self.distance_matrix[observer.id][target.id]
             obs = [
                       obs_target_visible,  # is the observed unit visible
-                      distance / observer.sight_range,  # distance relative to sight range
-                      rel_pos[0] / observer.sight_range,  # x position relative to observer
-                      rel_pos[1] / observer.sight_range,  # y position relative to observer
-                      target.state.health / target.state.max_health,  # relative health
+                      distance / observer.sight_range,  # distance relative to sight range #TODO can be calced in batch
+                      rel_pos[0] / observer.sight_range,  # x position relative to observer #TODO can be calced in batch
+                      rel_pos[1] / observer.sight_range,  # y position relative to observer #TODO can be calced in batch
+                      target.state.health / target.state.max_health,  # relative health #TODO can be calced in batch
                   ] + target.unit_type_bits
             # TODO move to test
             # assert len(obs) == self._get_obs_dims(target), "Check observation matches underlying dimension."
@@ -485,17 +473,14 @@ class World(object):
                     agent.heal(target)
                 elif self.can_attack(agent, target):
                     agent.attack(target)
-                    if target.is_dead():  # Target died due to the attack since it was attackable before
+                    if target.is_dead() and self.log:  # Target died due to the attack since it was attackable before
                         logger.debug("Agent {0} neutralized Agent {1}".format(agent.id, target.id))
                 else:
                     illegal_target_actions += 1
-                    logger.debug("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
+                    if self.log:
+                        logger.debug("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
 
                 agent.target_id = None  # Reset target after processing
-
-        # These actions where available to choose but can not be executed due to world physics or logic
-        logger.warning("Detected {} illegal target actions (no state changes due to game logic).".format(illegal_target_actions))
-        logger.warning("Detected {} illegal movement actions (no state changes due to game logic).".format(illegal_movement_actions))
 
         # After update test if world is done aka only one team left
         self.teams_wiped = [team.is_wiped() for team in self.teams]

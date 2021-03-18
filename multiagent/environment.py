@@ -187,13 +187,14 @@ class MAEnv(gym.Env):
 
         act_ind_offset = 5  # Attack/Heal actions begin at index 5
 
+        # TODO vectorize
         # All alive agents (except self) can be taken a action against f.e heal, attack etc
         avail_actions = avail_actions + [ag.id + act_ind_offset for ag in self.world.alive_agents if
                                          # Include the following agents ids as action encoded ids if:
                                          # ... it is NOT the agent itself -> TODO: Remove if self-heal needed
                                          agent.id != ag.id and
                                          # ... the agent is visible
-                                         self.world.is_visible_to(agent, ag) and
+                                         self.world.visibility_matrix[agent.id][ag.id] and
                                          # ... if the agent is not a healer include enemy ids
                                          ((agent.tid != ag.tid and not agent.has_heal()) or
                                           # ... if the agent is a healer include team mate ids
