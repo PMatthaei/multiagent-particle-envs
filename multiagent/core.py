@@ -310,7 +310,6 @@ class World(object):
         return [team for team in self.teams if team.tid != tid]
 
     def is_free(self, pos: np.array):
-        # TODO: when does the is free check happen? what if two decide to go on the same spot in same tick?
         alive = self.occupied_positions[:, 2]  # occupied may also hold pos of dead agents -> mask out via alive
         # the desired pos matches occupied pos in all dimensions
         pos_occupied = np.all(self.occupied_positions[:, [0, 1]] == pos, axis=1)
@@ -437,7 +436,7 @@ class World(object):
         # Update each alive agent - agent action was set during environment.py step() function
         # Shuffle randomly to prevent favoring
         import random
-        shuffled_agents = self.alive_agents
+        shuffled_agents = self.alive_agents.copy()
         random.shuffle(shuffled_agents)
 
         for agent in shuffled_agents:
@@ -446,21 +445,16 @@ class World(object):
             move_vector = agent.action.u[:2]
             agent.state.pos += move_vector
 
+            # Revert move if already taken by another agent within this step
             # Call before updating occupied positions !
             if not self.is_free(agent.state.pos) and any(move_vector):
                 illegal_movement_actions += 1
                 agent.state.pos -= move_vector
 
-            # Mark occupied position of agent and its state
-            self.occupied_positions[agent.id, :2] = agent.state.pos
-            self.occupied_positions[agent.id, 2] = agent.is_alive()
+            # Mark position of agent and its state -> only occupied if alive
+            self.occupy_pos(agent)
 
-            # Prune - Select all agents which might be in feasible distance => closer than attack + action range
-            # this is max distance they could have moved away from each other
-            mask = self.distance_matrix[agent.id] <= agent.sight_range + self.grid_size * 2
-            # Calculate all distances to other agents
-            self.distance_matrix[agent.id, mask] = np.linalg.norm(self.occupied_positions[mask, :2] - agent.state.pos, axis=1)
-            self.visibility_matrix[agent.id, mask] = self.distance_matrix[agent.id, mask] <= agent.sight_range
+            self.calculate_visibility(agent)
 
             # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1
@@ -473,8 +467,9 @@ class World(object):
                     agent.heal(target)
                 elif self.can_attack(agent, target):
                     agent.attack(target)
-                    if target.is_dead() and self.log:  # Target died due to the attack since it was attackable before
-                        logger.debug("Agent {0} neutralized Agent {1}".format(agent.id, target.id))
+                    if target.is_dead():
+                        # Mark dead
+                        self.occupied_positions[target.id, 2] = 0.0
                 else:
                     illegal_target_actions += 1
                     if self.log:
@@ -484,3 +479,14 @@ class World(object):
 
         # After update test if world is done aka only one team left
         self.teams_wiped = [team.is_wiped() for team in self.teams]
+
+    def occupy_pos(self, agent):
+        self.occupied_positions[agent.id, :2] = agent.state.pos
+        self.occupied_positions[agent.id, 2] = agent.is_alive()
+
+    def calculate_visibility(self, agent):
+        # Calculate all distances to other agents
+        others = self.occupied_positions[:, :2]
+        self.distance_matrix[agent.id] = np.linalg.norm(others - agent.state.pos, axis=1)
+        self.visibility_matrix[agent.id] = self.distance_matrix[agent.id] <= agent.sight_range
+

@@ -57,32 +57,30 @@ class TeamsScenario(BaseTeamScenario):
             world.teams.append(team)
 
         world.occupied_positions = np.zeros((n_agents, world.dim_p + 1))
-        world.distance_matrix = np.full((n_agents, n_agents), 0) # Assumes all enemies seen -> first pruning
+        world.distance_matrix = np.full((n_agents, n_agents), 0.0)  # Assumes all enemies seen -> first pruning
         world.visibility_matrix = np.full((n_agents, n_agents), False)
 
         return world
 
     def reset_world(self, world: World):
+
+        # How far should team spawns and agents be spread
+        agent_spread = world.grid_size * sum(self.n_agents) / self.team_mixing_factor
+        team_spread = self.n_teams * agent_spread
+
         # random team spawns
-        if self.team_spawns is None:
-            # How far should team spawns and agents be spread
-            agent_spread = world.grid_size * sum(self.n_agents) / self.team_mixing_factor
-            team_spread = self.n_teams * agent_spread
-            self.team_spawns = self.spg.generate_team_spawns(radius=team_spread)
+        self.team_spawns = self.spg.generate_team_spawns(radius=team_spread)
 
         # scatter agents of a team a little
         for team, team_spawn in zip(world.teams, self.team_spawns):
-            if self.agent_spawns[team.tid] is None:
-                self.agent_spawns[team.tid] = self.spg.generate(team_spawn, self.n_agents[team.tid],
+            self.agent_spawns[team.tid] = self.spg.generate(team_spawn, self.n_agents[team.tid],
                                                                 grid_size=world.grid_size,
                                                                 sigma_radius=1,
                                                                 mean_radius=agent_spread)
             for team_intern_id, agent in enumerate(team.members):
-                world.occupied_positions[agent.id, :2] = self.agent_spawns[team.tid][team_intern_id]
-                agent.state.reset(self.agent_spawns[team.tid][team_intern_id])
-
-        # Free occupied position mem
-        self.spg.clear()
+                pos = self.agent_spawns[team.tid][team_intern_id]
+                agent.state.reset(pos)
+                world.occupy_pos(agent) # after pos was set!
 
     def reward(self, agent: Agent, world: World):
         reward = 0
