@@ -393,9 +393,6 @@ class World(object):
 
     @property
     def entities(self):
-        """
-        :return: all entities in the world
-        """
         return self.agents + self.objects
 
     @property
@@ -408,16 +405,10 @@ class World(object):
 
     @property
     def policy_agents(self):
-        """
-        :return: all agents controllable by external policies (trained AI)
-        """
         return [agent for agent in self.agents if agent.action_callback is None]
 
     @property
     def scripted_agents(self):
-        """
-        :return: all agents controlled by world scripts (heuristic, non-training AI)
-        """
         return [agent for agent in self.agents if agent.action_callback is not None]
 
     def can_attack(self, agent: Agent, target: Agent):
@@ -489,9 +480,11 @@ class World(object):
         self.occupied_positions[agent.id, 2] = agent.is_alive()
 
     def _calculate_visibility(self, agent):
-        # Calculate all distances to other agents
         all_pos = self.occupied_positions[:, :2]
         alive = self.occupied_positions[:, 2] == 1.0
+        # update distances to alive agents
         self.distance_matrix[agent.id, alive] = np.linalg.norm(all_pos[alive] - agent.state.pos, axis=1)
+        # update visibility to alive agents
         self.visibility_matrix[agent.id, alive] = self.distance_matrix[agent.id, alive] <= agent.sight_range
+        # set dead agents invisible
         self.visibility_matrix[alive == 0.0] = False

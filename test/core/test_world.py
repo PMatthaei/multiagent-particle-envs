@@ -15,12 +15,14 @@ class WorldTestCases(unittest.TestCase):
         self.agent.state.pos = np.array([1, 1])
         self.agent.is_alive = MagicMock(return_value=True)
         self.agent.sight_range = 2
+        self.agent.action.u = np.zeros((2,))
 
         self.agent2 = Mock()
         self.agent2.id = 1
-        self.agent2.state.pos = np.array([0, 0])
+        self.agent2.state.pos = np.array([1, 0])
         self.agent2.is_alive = MagicMock(return_value=True)
         self.agent2.sight_range = 2
+        self.agent2.action.u = np.zeros((2,))
 
         self.world = World(grid_size=10, agents_n=N_AGENTS)
 
@@ -47,6 +49,21 @@ class WorldTestCases(unittest.TestCase):
 
         np.testing.assert_array_equal(self.world.occupied_positions[0], [1, 1, 0])
 
+    def test_update_pos_if_not_occupied(self):
+        self.world.occupy_pos(self.agent)
+        self.agent.action.u = [0, -1]  # move to -> 1,0 -> free
+        self.world._update_pos(self.agent, 0)
+
+        np.testing.assert_array_equal(self.agent.state.pos, [1, 0])
+
+    def test_no_update_pos_if_occupied(self):
+        self.world.occupy_pos(self.agent)
+        self.world.occupy_pos(self.agent2)  # occupy -> 1,0
+        self.agent.action.u = [0, -1]  # move to -> 1,0 -> occupied by agent 2
+        self.world._update_pos(self.agent, 0)
+
+        np.testing.assert_array_equal(self.agent.state.pos, [1, 1])
+
     def test_visibility_for_in_range_and_alive(self):
         self.world.occupy_pos(self.agent)
         self.world.occupy_pos(self.agent2)
@@ -58,7 +75,7 @@ class WorldTestCases(unittest.TestCase):
         np.testing.assert_array_equal(self.world.visibility_matrix[self.agent2.id], [True, True])
 
     def test_no_visibility_for_in_range_and_dead(self):
-        self.agent2.is_alive = MagicMock(return_value=False) # declare dead
+        self.agent2.is_alive = MagicMock(return_value=False)  # declare dead
 
         self.world.occupy_pos(self.agent)
         self.world.occupy_pos(self.agent2)
@@ -70,7 +87,7 @@ class WorldTestCases(unittest.TestCase):
         np.testing.assert_array_equal(self.world.visibility_matrix[self.agent2.id], [False, False])
 
     def test_visibility_for_not_in_range_and_alive(self):
-        self.agent2.state.pos = np.array([3, 3]) # move out of range
+        self.agent2.state.pos = np.array([3, 3])  # move out of range
 
         self.world.occupy_pos(self.agent)
         self.world.occupy_pos(self.agent2)

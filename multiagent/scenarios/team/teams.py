@@ -67,18 +67,15 @@ class TeamsScenario(BaseTeamScenario):
 
         # random team spawns
         if self.team_spawns is None:
-            self.team_spawns = self.spg.generate_team_spawns(radius=team_spread)
-
+            self.team_spawns = self.spg.generate_team_spawns(radius=team_spread, grid_size=world.grid_size)
+            agent_spawns = self.spg.generate(self.n_agents[0], world.grid_size, 1, agent_spread)
+            self.agent_spawns[0] = agent_spawns + self.team_spawns[0]
+            self.agent_spawns[1] = - agent_spawns + self.team_spawns[1]
         # scatter agents of a team a little
         for team, team_spawn in zip(world.teams, self.team_spawns):
-            if self.agent_spawns[team.tid] is None:
-                self.agent_spawns[team.tid] = self.spg.generate(team_spawn, self.n_agents[team.tid],
-                                                                grid_size=world.grid_size,
-                                                                sigma_radius=1,
-                                                                mean_radius=agent_spread)
             for team_intern_id, agent in enumerate(team.members):
                 agent.state.reset(self.agent_spawns[team.tid][team_intern_id])
-                world.occupy_pos(agent) # after pos was set!
+                world.occupy_pos(agent)  # after pos was set!
 
     def reward(self, agent: Agent, world: World):
         reward = 0
