@@ -262,7 +262,7 @@ class Agent(Entity):
 
 
 class World(object):
-    def __init__(self, grid_size: int, bounds=np.array([1280, 720]), log=False):
+    def __init__(self, grid_size: int, agents_n: int, bounds=np.array([1280, 720]), log=False):
         """
         Multi-agent world
         :param bounds: World bounds in which the agents can move
@@ -278,6 +278,7 @@ class World(object):
         self.teams_wiped = []
         # list of agents
         self.agents = []
+        self.agents_n = agents_n
         # list of non-agent objects in the world
         self.objects = []
         # communication channel dimensionality
@@ -287,8 +288,9 @@ class World(object):
         # color dimensionality
         self.dim_color = 3
 
-        self.distance_matrix: np.array = None
-        self.visibility_matrix: np.array = None
+        self.occupied_positions = np.zeros((agents_n, self.dim_p + 1))
+        self.distance_matrix = np.full((agents_n, agents_n), 0.0)  # Assumes all enemies seen -> first pruning
+        self.visibility_matrix = np.full((agents_n, agents_n), False)
 
     def get_team(self, tid):
         """

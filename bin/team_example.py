@@ -1,14 +1,11 @@
 import argparse
 import cProfile
 import io
-import logging
 import pstats
 import sys
-import threading
-import time
 from pstats import SortKey
 
-from bin.interactive import EnvControls
+from bin.controls.headless_controls import HeadlessControls
 from bin.team_plans_example import AI_SMALL
 from make_env import make_env
 from multiagent.interfaces.policy import RandomPolicy
@@ -25,7 +22,7 @@ if __name__ == '__main__':
 
     env = make_env(args)
 
-    controls = EnvControls(env=env)
+    controls = HeadlessControls(env=env)
     controls.start()
 
     # render call to create viewer window (necessary only for interactive policies)

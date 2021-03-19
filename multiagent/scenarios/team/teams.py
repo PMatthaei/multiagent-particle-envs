@@ -31,9 +31,10 @@ class TeamsScenario(BaseTeamScenario):
         self.agent_spawns = [None] * self.n_teams
 
     def _make_world(self, grid_size: int):
-        world = World(grid_size=grid_size)
-        n_agents = sum(self.n_agents)
-        self.spg = SpawnGenerator(world, num_pos=n_agents)
+        agents_n = sum(self.n_agents)
+
+        world = World(agents_n=agents_n, grid_size=grid_size)
+        self.spg = SpawnGenerator(world, num_pos=agents_n)
 
         world.collaborative = True
 
@@ -55,10 +56,6 @@ class TeamsScenario(BaseTeamScenario):
             world.agents += members
             team = Team(tid=tid, members=members, is_scripted=is_scripted)
             world.teams.append(team)
-
-        world.occupied_positions = np.zeros((n_agents, world.dim_p + 1))
-        world.distance_matrix = np.full((n_agents, n_agents), 0.0)  # Assumes all enemies seen -> first pruning
-        world.visibility_matrix = np.full((n_agents, n_agents), False)
 
         return world
 

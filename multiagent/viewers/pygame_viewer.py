@@ -21,6 +21,7 @@ MISSING_HEALTH_BAR_COLOR = (61, 61, 61)
 HEALTH_BAR_COLOR_RANGE = list(Color(rgb=HEALTH_BAR_COLOR).range_to(Color("red"), 3))
 HEALTH_BAR_COLOR_RANGE_N = len(HEALTH_BAR_COLOR_RANGE)
 
+
 def check_ffmpeg():
     ffmpeg_available = True
     print('Check if ffmpeg is installed...')
@@ -99,7 +100,7 @@ class PyGameViewer(object):
         self.proc = None
         self.headless = headless
 
-        if self.headless:
+        if self.headless:  # Call before init()
             os.environ["SDL_VIDEODRIVER"] = "dummy"
 
         # Skip audio module since it is not used and produced errors with ALSA lib on ubuntu
@@ -111,7 +112,7 @@ class PyGameViewer(object):
         self.screen = pygame.display.set_mode(self.env.world.bounds, flags=flags)
 
         # Improve event queue with restricted events
-        pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.K_ESCAPE])
+        pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.K_ESCAPE, pygame.KSCAN_R])
 
         if self.draw_grid:
             self.grid = _Grid(screen=self.screen, cell_size=int(self.env.world.grid_size))
@@ -137,8 +138,7 @@ class PyGameViewer(object):
                                   '-an',
                                   'env-recording.mov'], stdin=sp.PIPE)
         elif self.stream and check_ffmpeg():
-            self.twitch = TwitchViewer(stream_key=stream_key,
-                                       width=width, height=height)
+            self.twitch = TwitchViewer(stream_key=stream_key, width=width, height=height)
         pass
 
     def update(self):
@@ -180,32 +180,35 @@ class PyGameViewer(object):
         self.entities.add(*[_SpriteFactory.build(entity) for entity in world_entities])
 
     def render(self):
-        if self.headless:
-            return
         """
         Render current data and handle events
         :return:
         """
+        # Always track events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.display.quit()
                 pygame.quit()
                 exit()
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+                if event.key == pygame.K_r:
+                    print("R")
+                    self.headless = not self.headless
+                elif event.key == pygame.K_ESCAPE:
                     pygame.display.quit()
                     pygame.quit()
                     exit()
 
-        pygame.display.flip()
+        if not self.headless:
+            pygame.display.flip()
 
-        if self.record:
-            self.proc.stdin.write(self.screen.get_buffer())
-        elif self.stream:
-            frame = pygame.surfarray.array3d(self.screen)
-            self.twitch.send_frame(np.true_divide(frame, 255))
+            if self.record:
+                self.proc.stdin.write(self.screen.get_buffer())
+            elif self.stream:
+                frame = pygame.surfarray.array3d(self.screen)
+                self.twitch.send_frame(np.true_divide(frame, 255))
 
-        self.dt = self.clock.tick(self.fps)
+            self.dt = self.clock.tick(self.fps)
 
     def reset(self):
         """
