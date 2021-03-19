@@ -3,6 +3,7 @@ import cProfile
 import io
 import logging
 import pstats
+import threading
 from pstats import SortKey
 
 from bin.team_plans_example import LARGE
@@ -10,7 +11,16 @@ from multiagent.environment import MAEnv
 from multiagent.interfaces.policy import RandomPolicy
 from multiagent.scenarios import team
 
+def input_listener(env: MAEnv):
+    while True:
+        value = input("Press 'r' to swap render bool: \n")
+        if value == 'r':
+            env.headless = not env.headless
+        print(env.headless)
+
 if __name__ == '__main__':
+
+
     profiler = cProfile.Profile()
     # parse arguments
     parser = argparse.ArgumentParser(description=None)
@@ -29,9 +39,14 @@ if __name__ == '__main__':
                 info_callback=None,
                 done_callback=scenario.done,
                 stream_key=args.stream_key,
-                headless=False,
-                log_level=logging.INFO,
+                headless=True,
+                log_level=logging.ERROR,
                 log=False)
+
+    mythread = threading.Thread(target=input_listener, args=(env,))
+    mythread.daemon = True
+    mythread.start()
+
     # render call to create viewer window (necessary only for interactive policies)
     env.render()
     # create random policies for each agent in each team
@@ -52,13 +67,13 @@ if __name__ == '__main__':
         obs_n, reward_n, done_n, _ = env.step(act_n)
         state = env.get_state()
         # render all agent views
-        env.render(headless_override=False)
+        env.render()
 
         s = io.StringIO()
         sortby = SortKey.TIME
         ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
-        ps.print_stats()
-        print(s.getvalue())
+        #ps.print_stats()
+        #print(s.getvalue())
 
         if any(done_n):
             env.reset()

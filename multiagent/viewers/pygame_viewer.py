@@ -179,8 +179,8 @@ class PyGameViewer(object):
         self.entities = pygame.sprite.Group()
         self.entities.add(*[_SpriteFactory.build(entity) for entity in world_entities])
 
-    def render(self, headless_override=False):
-        if not headless_override or self.headless:
+    def render(self):
+        if self.headless:
             return
         """
         Render current data and handle events
@@ -223,6 +223,7 @@ class PyGameViewer(object):
         self.screen.fill((255, 255, 255))
 
     def close(self):
+        self.entities = None
         pygame.quit()
         if self.proc is not None:
             self.proc.stdin.close()
