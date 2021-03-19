@@ -441,20 +441,13 @@ class World(object):
 
         for agent in shuffled_agents:
 
-            # Update position of agent
-            move_vector = agent.action.u[:2]
-            agent.state.pos += move_vector
-
-            # Revert move if already taken by another agent within this step
             # Call before updating occupied positions !
-            if not self.is_free(agent.state.pos) and any(move_vector):
-                illegal_movement_actions += 1
-                agent.state.pos -= move_vector
+            self._update_pos(agent, illegal_movement_actions)
 
             # Mark position of agent and its state -> only occupied if alive
             self.occupy_pos(agent)
 
-            self.calculate_visibility(agent)
+            self._calculate_visibility(agent)
 
             # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1
@@ -480,11 +473,19 @@ class World(object):
         # After update test if world is done aka only one team left
         self.teams_wiped = [team.is_wiped() for team in self.teams]
 
+    def _update_pos(self, agent, illegal_movement_actions):
+        move_vector = agent.action.u[:2]
+        agent.state.pos += move_vector
+        has_moved = any(move_vector)
+        if has_moved and not self.is_free(agent.state.pos):
+            illegal_movement_actions += 1
+            agent.state.pos -= move_vector
+
     def occupy_pos(self, agent):
         self.occupied_positions[agent.id, :2] = agent.state.pos
         self.occupied_positions[agent.id, 2] = agent.is_alive()
 
-    def calculate_visibility(self, agent):
+    def _calculate_visibility(self, agent):
         # Calculate all distances to other agents
         others = self.occupied_positions[:, :2]
         self.distance_matrix[agent.id] = np.linalg.norm(others - agent.state.pos, axis=1)

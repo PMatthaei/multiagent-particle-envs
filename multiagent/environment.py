@@ -457,19 +457,19 @@ class MAEnv(gym.Env):
         # TODO: better clean up of environment
         self.viewer.close()
 
-    def render(self, mode='human'):
+    def render(self, mode='human', headless=False):
         """
         Render the environment via the defined PyGameViewer.
-        :param mode:
-        :return:
+        @param mode:
+        @param headless: 
+        @return:
         """
-
-        if not self.headless:
+        if headless or not self.headless:
             if self.viewer is None:
                 # import rendering only if we need it (and don't import for headless machines)
                 from multiagent.viewers import pygame_viewer
                 self.viewer = pygame_viewer.PyGameViewer(self, fps=30, infos=True, draw_grid=True, record=True,
-                                                         headless=self.h)
+                                                         headless=headless or self.headless)
 
             # create rendered entities
             if self.viewer.entities is None:
