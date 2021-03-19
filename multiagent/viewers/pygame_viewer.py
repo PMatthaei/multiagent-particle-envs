@@ -179,8 +179,8 @@ class PyGameViewer(object):
         self.entities = pygame.sprite.Group()
         self.entities.add(*[_SpriteFactory.build(entity) for entity in world_entities])
 
-    def render(self):
-        if self.headless:
+    def render(self, headless_override=False):
+        if headless_override or self.headless:
             return
         """
         Render current data and handle events

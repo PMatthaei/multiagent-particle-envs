@@ -464,12 +464,13 @@ class MAEnv(gym.Env):
         @param headless:
         @return:
         """
+        headless_override = headless or self.headless
+
         if headless or not self.headless:
             if self.viewer is None:
                 # import rendering only if we need it (and don't import for headless machines)
                 from multiagent.viewers import pygame_viewer
-                print(headless or self.headless)
-                self.viewer = pygame_viewer.PyGameViewer(self, headless=headless or self.headless)
+                self.viewer = pygame_viewer.PyGameViewer(self, headless=headless_override)
 
             # create rendered entities
             if self.viewer.entities is None:
@@ -484,7 +485,7 @@ class MAEnv(gym.Env):
 
             self.viewer.update()
 
-            self.viewer.render()
+            self.viewer.render(headless_override=headless_override)
         return None
 
 
