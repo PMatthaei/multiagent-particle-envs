@@ -16,10 +16,11 @@ from multiagent.scenarios import team
 
 if __name__ == '__main__':
 
-    profiler = cProfile.Profile()
+
     # parse arguments
     parser = argparse.ArgumentParser(description=None)
     parser.add_argument('-s', '--scenario', default='teams.py', help='Path of the scenario Python script.')
+    parser.add_argument('-p', '--profile', default=False, help='Profile the example for performance issues.')
     parser.add_argument('-stream_key', '--stream_key', default=None, help='Stream Key for Twitch.')
     args = parser.parse_args()
     # load scenario from script
@@ -47,7 +48,12 @@ if __name__ == '__main__':
     all_policies = [[RandomPolicy(env, agent) for agent in team.members] for team in world.policy_teams]
     # execution loop
     obs_n = env.reset()
-    profiler.enable()
+
+    profiler = None
+    if args.profile:
+        profiler = cProfile.Profile()
+        profiler.enable()
+
     try:
         while True:
             # query for action from each agent's policy
@@ -64,11 +70,12 @@ if __name__ == '__main__':
             # render all agent views
             env.render()
 
-            s = io.StringIO()
-            sortby = SortKey.TIME
-            ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
-            ps.print_stats()
-            print(s.getvalue())
+            if args.profile and profiler:
+                s = io.StringIO()
+                sortby = SortKey.TIME
+                ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+                ps.print_stats()
+                print(s.getvalue())
 
             if any(done_n):
                 env.reset()

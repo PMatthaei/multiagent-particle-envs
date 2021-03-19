@@ -265,12 +265,13 @@ class _PyGameEntity(pygame.sprite.Sprite):
             self._draw_ranges()
 
     def _draw_health_bar(self):
+        bar_width = self.body_radius * 2 + 2
         rel_health = self.agent.state.health / self.agent.state.max_health
-        health_bar = HEALTH_BAR_WIDTH * rel_health
+        health_bar = bar_width * rel_health
         missing_rel_health = (1.0 - rel_health)
-        missing_health_bar = HEALTH_BAR_WIDTH * missing_rel_health
+        missing_health_bar = bar_width * missing_rel_health
 
-        center_x = self.sight_range - HEALTH_BAR_WIDTH / 2.0
+        center_x = self.sight_range - bar_width / 2.0
         center_y = self.sight_range - HEALTH_BAR_HEIGHT / 2.0
 
         health_bar_color = self._get_health_color(missing_rel_health)
