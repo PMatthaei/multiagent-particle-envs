@@ -1,15 +1,11 @@
-import cProfile
-import io
 import logging
-import pstats
-from pstats import SortKey
 
 import gym
 import numpy as np
 from gym import spaces
 
 from multiagent.core import World, Team
-from multiagent.exceptions.environment_exceptions import TooManyWinners, MissingActions
+from multiagent.exceptions.environment_exceptions import TooManyWinners
 
 
 class MAEnv(gym.Env):
