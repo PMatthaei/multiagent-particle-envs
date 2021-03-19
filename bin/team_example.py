@@ -52,7 +52,7 @@ if __name__ == '__main__':
         obs_n, reward_n, done_n, _ = env.step(act_n)
         state = env.get_state()
         # render all agent views
-        env.render()
+        env.render(headless_override=False)
 
         s = io.StringIO()
         sortby = SortKey.TIME
