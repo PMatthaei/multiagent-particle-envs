@@ -490,6 +490,8 @@ class World(object):
 
     def _calculate_visibility(self, agent):
         # Calculate all distances to other agents
-        others = self.occupied_positions[:, :2]
-        self.distance_matrix[agent.id] = np.linalg.norm(others - agent.state.pos, axis=1)
-        self.visibility_matrix[agent.id] = self.distance_matrix[agent.id] <= agent.sight_range
+        all_pos = self.occupied_positions[:, :2]
+        alive = self.occupied_positions[:, 2] == 1.0
+        self.distance_matrix[agent.id, alive] = np.linalg.norm(all_pos[alive] - agent.state.pos, axis=1)
+        self.visibility_matrix[agent.id, alive] = self.distance_matrix[agent.id, alive] <= agent.sight_range
+        self.visibility_matrix[alive == 0.0] = False

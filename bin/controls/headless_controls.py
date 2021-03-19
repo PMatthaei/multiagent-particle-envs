@@ -25,7 +25,6 @@ class HeadlessControls(threading.Thread):
             except ValueError:
                 self.stop()
 
-
     def stop(self):
         self._stop_event.set()
 
