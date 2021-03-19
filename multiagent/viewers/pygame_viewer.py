@@ -110,8 +110,8 @@ class PyGameViewer(object):
 
         self.screen = pygame.display.set_mode(self.env.world.bounds, flags=flags)
 
-        pygame.event.set_allowed(
-            [pygame.QUIT, pygame.KEYDOWN, pygame.K_ESCAPE])  # Improve event queue with restricted events
+        # Improve event queue with restricted events
+        pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.K_ESCAPE])
 
         if self.draw_grid:
             self.grid = _Grid(screen=self.screen, cell_size=int(self.env.world.grid_size))

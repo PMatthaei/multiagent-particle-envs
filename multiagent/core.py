@@ -57,7 +57,7 @@ class EntityState(object):
     def reset(self, spawn_pos):
         self.health = self.max_health
         self.shield = self.max_shield
-        self.pos = spawn_pos
+        self.pos = spawn_pos.copy()  # ! we do not want to modify the original spawn in-place !
 
 
 # state of agents (including communication and internal/mental state)
@@ -151,7 +151,7 @@ class Team:
         self.tid = tid
         self.members = members
         self.is_scripted = is_scripted
-        self.size = len(members) # team size not influenced by deaths
+        self.size = len(members)  # team size not influenced by deaths
 
     def is_wiped(self):
         return all([agent.is_dead() for agent in self.members])
@@ -360,7 +360,7 @@ class World(object):
         # TODO vectorize
         obs_target_visible = self.visibility_matrix[observer.id][target.id]
         if obs_target_visible and target.is_alive():
-            rel_pos = target.state.pos - observer.state.pos #TODO can be calced in batch
+            rel_pos = target.state.pos - observer.state.pos  # TODO can be calced in batch
             distance = self.distance_matrix[observer.id][target.id]
             obs = [
                       obs_target_visible,  # is the observed unit visible
@@ -466,7 +466,8 @@ class World(object):
                 else:
                     illegal_target_actions += 1
                     if self.log:
-                        logger.debug("Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
+                        logger.debug(
+                            "Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
 
                 agent.target_id = None  # Reset target after processing
 
@@ -490,4 +491,3 @@ class World(object):
         others = self.occupied_positions[:, :2]
         self.distance_matrix[agent.id] = np.linalg.norm(others - agent.state.pos, axis=1)
         self.visibility_matrix[agent.id] = self.distance_matrix[agent.id] <= agent.sight_range
-

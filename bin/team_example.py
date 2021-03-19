@@ -5,9 +5,10 @@ import logging
 import pstats
 import sys
 import threading
+import time
 from pstats import SortKey
 
-from bin.interactive import EnvInputListener
+from bin.interactive import EnvControls
 from bin.team_plans_example import LARGE
 from multiagent.environment import MAEnv
 from multiagent.interfaces.policy import RandomPolicy
@@ -37,8 +38,8 @@ if __name__ == '__main__':
                 log_level=logging.ERROR,
                 log=False)
 
-    input_listener = EnvInputListener(kwargs={'env': env})
-    input_listener.start()
+    controls = EnvControls(env=env)
+    controls.start()
 
     # render call to create viewer window (necessary only for interactive policies)
     env.render()
@@ -66,15 +67,15 @@ if __name__ == '__main__':
             s = io.StringIO()
             sortby = SortKey.TIME
             ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
-            # ps.print_stats()
-            # print(s.getvalue())
+            ps.print_stats()
+            print(s.getvalue())
 
             if any(done_n):
                 env.reset()
     except KeyboardInterrupt:
-        input_listener.join()
+        controls.stop()
+        controls.join()
         sys.exit()
-        pass
 
 
 
