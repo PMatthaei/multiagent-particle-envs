@@ -80,7 +80,7 @@ class PyGameViewer(object):
                  draw_grid=True,
                  record=False,
                  stream_key=None,
-                 headless=False):
+                 headless=True):
         """
         Create new PyGameViewer for the environment
         :param env: MultiAgentEnv to render
