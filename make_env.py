@@ -13,7 +13,7 @@ communication actions in this array. See environment.py for more details.
 """
 
 
-def make_env(scenario_name, benchmark=False):
+def make_env(args, benchmark=False):
     '''
     Creates a MultiAgentEnv object as env. This can be used similar to a gym
     environment by calling env.reset() and env.step().
@@ -31,15 +31,16 @@ def make_env(scenario_name, benchmark=False):
         .n                  :   Returns the number of Agents
     '''
     from multiagent.environment import MAEnv
-    import multiagent.scenarios as scenarios
+    from multiagent.scenarios import team
 
     # load scenario from script
-    scenario = scenarios.load(scenario_name + ".py").TeamsScenario()
+    scenario = team.load(args.scenario + ".py").TeamsScenario(args.build_plan)
     # create world
-    world = scenario.make_world()
+    world = scenario.make_teams_world(grid_size=10.0)
     # create multiagent environment
-    if benchmark:
-        env = MAEnv(world, scenario.reset_world, scenario.reward, scenario.observation, scenario.benchmark_data)
-    else:
-        env = MAEnv(world, scenario.reset_world, scenario.reward, scenario.observation)
+    env = MAEnv(world=world,
+                reset_callback=scenario.reset_world,
+                reward_callback=scenario.reward,
+                observation_callback=scenario.observation,
+                done_callback=scenario.done)
     return env

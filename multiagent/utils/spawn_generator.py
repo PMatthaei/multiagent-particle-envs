@@ -59,7 +59,7 @@ class SpawnGenerator:
             while np.any(used):  # Try generating new point if already used
                 if self.trials >= self.max_trials:
                     raise Exception("Maximum trials per point reached. Try generating with more variance allowed.")
-                point = self._generate_point(center, grid_size, mean_radius, sigma_radius)
+                point = self._generate_point(center, mean_radius, sigma_radius, grid_size=grid_size)
                 used = np.all(self.used_points[:, [0, 1]] == point, axis=1)
                 self.trials += 1
             self.used_points[i] = point
