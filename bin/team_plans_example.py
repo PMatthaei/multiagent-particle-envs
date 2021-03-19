@@ -1,5 +1,69 @@
 from multiagent.core import RoleTypes, UnitAttackTypes
 
+AI_SMALL = [
+    {
+        "is_scripted": True,
+        "units": [  # Team 1
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+        ] * 5
+    },
+    {
+        "is_scripted": False,
+        "units": [  # Team 2
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+        ] * 5
+    },
+]
+
+
+SMALL = [
+    {
+        "is_scripted": False,
+        "units": [  # Team 1
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+        ] * 5
+    },
+    {
+        "is_scripted": False,
+        "units": [  # Team 2
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+        ] * 5
+    },
+]
+
+MEDIUM = [
+    {
+        "is_scripted": False,
+        "units": [  # Team 1
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+        ] * 25
+    },
+    {
+        "is_scripted": False,
+        "units": [  # Team 2
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+        ] * 25
+    },
+]
+
 LARGE = [
     {
         "is_scripted": False,
