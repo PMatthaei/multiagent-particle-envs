@@ -461,7 +461,7 @@ class MAEnv(gym.Env):
         """
         Render the environment via the defined PyGameViewer.
         @param mode:
-        @param headless: 
+        @param headless:
         @return:
         """
         if headless or not self.headless:
