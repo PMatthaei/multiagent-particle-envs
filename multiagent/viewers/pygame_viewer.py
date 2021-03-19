@@ -180,7 +180,7 @@ class PyGameViewer(object):
         self.entities.add(*[_SpriteFactory.build(entity) for entity in world_entities])
 
     def render(self, headless_override=False):
-        if headless_override or self.headless:
+        if not headless_override or self.headless:
             return
         """
         Render current data and handle events
