@@ -70,12 +70,13 @@ class TeamsScenario(BaseTeamScenario):
             self.team_spawns = self.spg.generate_team_spawns(radius=team_spread, grid_size=world.grid_size)
             agent_spawns = self.spg.generate(self.n_agents[0], world.grid_size, 1, agent_spread)
             self.agent_spawns[0] = agent_spawns + self.team_spawns[0]
-            self.agent_spawns[1] = - agent_spawns + self.team_spawns[1]
+            self.agent_spawns[1] = (- agent_spawns) + self.team_spawns[1]
+
         # scatter agents of a team a little
         for team, team_spawn in zip(world.teams, self.team_spawns):
             for team_intern_id, agent in enumerate(team.members):
-                agent.state.reset(self.agent_spawns[team.tid][team_intern_id])
-                world.occupy_pos(agent)  # after pos was set!
+                spawn = self.agent_spawns[team.tid][team_intern_id]
+                world.connect(agent, spawn)
 
     def reward(self, agent: Agent, world: World):
         reward = 0
@@ -87,18 +88,10 @@ class TeamsScenario(BaseTeamScenario):
 
     def done(self, team: Team, world: World):
         # if only one team is not wiped and this team is the team under testing -> winner winner chicken dinner
-        return not team.is_wiped() and world.teams_wiped.count(False) == 1
+        return not team.is_wiped() and world.wiped_teams.count(False) == 1
 
     def observation(self, agent: Agent, world: World):
-        # Movement observation of the agent
-        obs = [world.get_available_movement(agent)]
-        # TODO vectorize
-        # Other agents observations
-        obs += [world.get_obs(agent, member) for member in world.agents if member.id != agent.id]
-        # Self observation
-        obs.append(agent.self_observation)
-        # Flatten
-        obs = np.concatenate(obs).astype(float)
+        obs = world.obs[agent.id].flatten()
         return obs
 
     def scripted_agent_callback(self, agent: Agent, world: World) -> Action:
