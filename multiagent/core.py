@@ -452,7 +452,7 @@ class World(object):
                             "Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
 
                 agent.target_id = None  # Reset target after processing
-                
+
         for agent in shuffled_agents:
 
             # Update position and recalculate visibility after performing influence actions
