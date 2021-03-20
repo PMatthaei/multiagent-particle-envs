@@ -420,8 +420,6 @@ class World(object):
         """
         Update state of the world.
         """
-        illegal_target_actions = 0
-        illegal_movement_actions = 0
         # Set actions for scripted/heuristic agents
         for agent in self.scripted_agents:
             agent.action = agent.action_callback(agent, self)
@@ -433,14 +431,6 @@ class World(object):
         random.shuffle(shuffled_agents)
 
         for agent in shuffled_agents:
-
-            # Call before updating occupied positions !
-            self._update_pos(agent, illegal_movement_actions)
-
-            # Mark position of agent and its state -> only occupied if alive
-            self.occupy_pos(agent)
-
-            self._calculate_visibility(agent)
 
             # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1
@@ -457,22 +447,30 @@ class World(object):
                         # Mark dead
                         self.occupied_positions[target.id, 2] = 0.0
                 else:
-                    illegal_target_actions += 1
                     if self.log:
                         logger.debug(
                             "Agent {0} cannot attack Agent {1} due to range.".format(agent.id, agent.target_id))
 
                 agent.target_id = None  # Reset target after processing
+                
+        for agent in shuffled_agents:
+
+            # Update position and recalculate visibility after performing influence actions
+            # In case an agent would move out of range with the following update
+            self._update_pos(agent)
+
+            self.occupy_pos(agent)
+
+            self._calculate_visibility(agent)
 
         # After update test if world is done aka only one team left
         self.teams_wiped = [team.is_wiped() for team in self.teams]
 
-    def _update_pos(self, agent, illegal_movement_actions):
+    def _update_pos(self, agent):
         move_vector = agent.action.u[:2]
         agent.state.pos += move_vector
         has_moved = any(move_vector)
         if has_moved and not self.is_free(agent.state.pos):
-            illegal_movement_actions += 1
             agent.state.pos -= move_vector
 
     def occupy_pos(self, agent):
