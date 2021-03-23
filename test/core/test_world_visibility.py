@@ -11,49 +11,67 @@ N_AGENTS = 2
 
 class WorldVisibilityTestCases(unittest.TestCase):
     def setUp(self):
-        self.agent = mock_agent(id=0)
-        self.agent2 = mock_agent(id=1, tid=1)
-        self.agent_spawn = np.array([1, 1])
-        self.agent_spawn2 = np.array([1, 0])
+        self.a = mock_agent(id=0)
+        self.b = mock_agent(id=1, tid=1)
+        self.a_spawn = np.array([1, 1])
+        self.b_spawn = np.array([1, 0])
 
         self.world = World(grid_size=10, agents_n=N_AGENTS)
-        self.world.agents = [self.agent, self.agent2]
+        self.world.agents = [self.a, self.b]
 
-        self.world.connect(self.agent, self.agent_spawn)
-        self.world.connect(self.agent2, self.agent_spawn2)
+        self.world.connect(self.a, self.a_spawn)
+        self.world.connect(self.b, self.b_spawn)
+
+    def test_can_attack(self):
+        self.world._update_visibility()
+
+        result = self.world.can_attack(self.a, self.b)
+        self.assertEqual(True, result)
 
     def test_visibility_for_in_range_and_alive(self):
         self.world._update_visibility()
 
-        np.testing.assert_array_equal(self.world.visibility[self.agent.id], [True, True])
-        np.testing.assert_array_equal(self.world.visibility[self.agent2.id], [True, True])
+        np.testing.assert_array_equal(self.world.visibility[self.a.id], [True, True])
+        np.testing.assert_array_equal(self.world.visibility[self.b.id], [True, True])
+
+        result = self.world.can_attack(self.a, self.b)
+        self.assertEqual(True, result)
 
     def test_no_visibility_for_in_range_and_dead(self):
-        self.agent2.is_alive = MagicMock(return_value=False)  # declare dead
+        self.b.is_alive = MagicMock(return_value=False)  # declare dead
 
-        self.world.connect(self.agent2, self.agent_spawn2)
-
-        self.world._update_visibility()
-
-        np.testing.assert_array_equal(self.world.visibility[self.agent.id], [True, False])
-        np.testing.assert_array_equal(self.world.visibility[self.agent2.id], [False, False])
-
-    def test_visibility_for_not_in_range_and_alive(self):
-        self.world.connect(self.agent2, np.array([3, 3]))  # move out of range
+        self.world.connect(self.b, self.b_spawn)
 
         self.world._update_visibility()
 
-        np.testing.assert_array_equal(self.world.visibility[self.agent.id], [True, False])
-        np.testing.assert_array_equal(self.world.visibility[self.agent2.id], [False, True])
+        np.testing.assert_array_equal(self.world.visibility[self.a.id], [True, False])
+        np.testing.assert_array_equal(self.world.visibility[self.b.id], [False, False])
+
+        result = self.world.can_attack(self.a, self.b)
+        self.assertEqual(False, result)
+
+    def test_no_visibility_for_not_in_range_and_alive(self):
+        self.world.connect(self.b, np.array([3, 3]))  # move out of range
+
+        self.world._update_visibility()
+
+        np.testing.assert_array_equal(self.world.visibility[self.a.id], [True, False])
+        np.testing.assert_array_equal(self.world.visibility[self.b.id], [False, True])
+
+        result = self.world.can_attack(self.a, self.b)
+        self.assertEqual(False, result)
 
     def test_no_visibility_for_not_in_range_and_dead(self):
-        self.agent2.is_alive = MagicMock(return_value=False)  # declare dead
-        self.world.connect(self.agent2, np.array([3, 3]))  # move out of range
+        self.b.is_alive = MagicMock(return_value=False)  # declare dead
+        self.world.connect(self.b, np.array([3, 3]))  # move out of range
 
         self.world._update_visibility()
 
-        np.testing.assert_array_equal(self.world.visibility[self.agent.id], [True, False])
-        np.testing.assert_array_equal(self.world.visibility[self.agent2.id], [False, False])
+        np.testing.assert_array_equal(self.world.visibility[self.a.id], [True, False])
+        np.testing.assert_array_equal(self.world.visibility[self.b.id], [False, False])
+
+        result = self.world.can_attack(self.a, self.b)
+        self.assertEqual(False, result)
 
 
 if __name__ == '__main__':
