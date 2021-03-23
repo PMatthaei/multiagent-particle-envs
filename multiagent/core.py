@@ -480,7 +480,7 @@ class World(object):
         ranges = np.repeat(self.ranges.reshape(-1, 1), self.dim_p, axis=1)
         position_differences = (self.positions - self.positions[:, None])[..., :]
 
-        relative_positions_obs = position_differences / ranges
+        relative_positions_obs = position_differences / ranges.reshape(*ranges.shape, 1)
         relative_positions_obs[not_visible_mask] = [0.0, 0.0]  # relative position to invisible agents set to 0,0
 
         relative_distances_obs = (self.distances / self.ranges[:, None])
