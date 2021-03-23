@@ -6,6 +6,8 @@ import math
 from enum import Enum, IntEnum
 
 import numpy as np
+import scipy.spatial.ckdtree
+import scipy.spatial.distance
 
 from multiagent.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError
 from multiagent.exceptions.world_exceptions import NoTeamFoundError
@@ -14,9 +16,9 @@ logger = logging.getLogger("ma-env")
 
 
 class RoleTypes(Enum):
-    TANK = {"max_health": 100, "attack_damage": 5}
-    ADC = {"max_health": 50, "attack_damage": 50}
-    HEALER = {"max_health": 75, "attack_damage": 20, "can_heal": True}
+    TANK = {"max_health": 60, "attack_damage": 10}
+    ADC = {"max_health": 40, "attack_damage": 20}
+    HEALER = {"max_health": 60, "attack_damage": 5, "can_heal": True}
 
 
 class UnitAttackTypes(Enum):
@@ -49,15 +51,14 @@ class ActionTypes(IntEnum):
 class EntityState(object):
     def __init__(self):
         self.pos = None
-        self.max_health = 100
+        self.max_health = 0
         self.max_shield = 0
         self.health = 0
         self.shield = 0
 
-    def reset(self, spawn_pos):
+    def reset(self):
         self.health = self.max_health
         self.shield = self.max_shield
-        self.pos = spawn_pos.copy()  # ! we do not want to modify the original spawn in-place !
 
 
 # state of agents (including communication and internal/mental state)
@@ -67,8 +68,8 @@ class AgentState(EntityState):
         # communication utterance
         self.c = None
 
-    def reset(self, spawn_pos):
-        super().reset(spawn_pos)
+    def reset(self):
+        super().reset()
         self.c = None
 
 
@@ -144,10 +145,6 @@ class WorldObject(Entity):
 
 class Team:
     def __init__(self, tid, members, is_scripted=False):
-        """
-        :param tid: Identifier for this team
-        :param members: Members in this team
-        """
         self.tid = tid
         self.members = members
         self.is_scripted = is_scripted
@@ -160,16 +157,6 @@ class Team:
 class PerformanceStatistics:
     def __init__(self, kills=0, assists=0, dmg_dealt=0, dmg_healed=0, attacks_performed=0, heals_performed=0,
                  distance_traveled=0, dmg_received=0):
-        """
-        Holds the stats of an agent within an episode, representing it at the current time step t.
-        :param kills:
-        :param assists:
-        :param dmg_dealt:
-        :param dmg_healed:
-        :param attacks_performed:
-        :param heals_performed:
-        :param distance_traveled:
-        """
         self.kills = kills
         self.assists = assists
         self.dmg_received = dmg_received
@@ -209,12 +196,13 @@ class Agent(Entity):
         self.sight_range = self.attack_range  # TODO: sight range != attack range
         assert self.sight_range >= self.attack_range, "Sight range cannot be smaller than attack range."
         self.attack_damage = self.role['attack_damage']
-        self.max_health = self.role['max_health']
 
         self.movable = True
         # control range
         # state
         self.state = AgentState()
+        self.state.max_health = self.role['max_health']
+
         # action
         self.action = Action()
         # stats
@@ -253,11 +241,6 @@ class Agent(Entity):
         return 'can_heal' in self.role and self.role['can_heal']
 
     def can_heal(self, target=None):
-        """
-        Test if a unit can heal in general. If target provided test for healing that specific agent.
-        :param target:
-        :return:
-        """
         return self.has_heal() and (target is not None and target.tid != self.tid) and target.is_alive()
 
 
@@ -269,13 +252,13 @@ class World(object):
         """
         self.bounds = bounds
         self.log = log
-        self.occupied_positions = None
+        self.positions = None
         self.grid_size = grid_size
         # indicates if the reward will be global(cooperative) or local
         self.collaborative = False
         # list of teams build by a subset of ...
         self.teams = []
-        self.teams_wiped = []
+        self.wiped_teams = []
         # list of agents
         self.agents = []
         self.agents_n = agents_n
@@ -288,94 +271,86 @@ class World(object):
         # color dimensionality
         self.dim_color = 3
 
-        self.occupied_positions = np.zeros((agents_n, self.dim_p + 1))
-        self.distance_matrix = np.full((agents_n, agents_n), 0.0)  # Assumes all enemies seen -> first pruning
-        self.visibility_matrix = np.full((agents_n, agents_n), False)
+        # Holds each agents alive boolean
+        self.alive = np.zeros((agents_n,), dtype=np.int)
+        # Holds each agents health and max health
+        self.health = np.zeros((agents_n,), dtype=np.float)
+        self.max_health = np.zeros((agents_n,), dtype=np.int)
+        # Holds each agents action
+        self.actions = np.zeros((agents_n, self.dim_p + 1))
+        # Holds all available movement actions in the current step
+        self.avail_movement_actions = np.ones((agents_n, self.get_movement_dims),
+                                              dtype=np.float)  # four movement directions
+        # Holds all available target actions in the current step
+        self.avail_target_actions = np.zeros((agents_n, agents_n), dtype=np.float)  # target action for each agent
+        # Mask out each agent if its himself
+        self.self_target_mask = (np.ones_like(self.avail_target_actions) - np.diag(np.ones(self.agents_n))) \
+            .astype(np.bool)
+        # Mask all healable targets
+        self.heal_target_mask = np.zeros_like(self.avail_target_actions).astype(np.bool)
+        # Mask all attackable targets
+        self.attack_target_mask = np.zeros_like(self.avail_target_actions).astype(np.bool)
+
+        # Holds each agents sight range
+        self.ranges = np.zeros((agents_n,), dtype=np.float)
+        # Holds each agents unit representation encoded as bit array
+        self.unit_bits_obs = np.zeros((agents_n, UNIT_BITS_NEEDED), dtype=np.float)
+        # Holds each agents position
+        self.positions = np.zeros((agents_n, self.dim_p))
+        # Holds each agents distance to other agents (and himself on diag = always 0)
+        self.distances = np.zeros((agents_n, agents_n))
+        # Holds each agents visibility of other agents (and himself on diag = always True)
+        self.visibility = np.zeros((agents_n, agents_n))
+        # Holds each agents observation of all other agents
+        self.obs = np.zeros((agents_n, agents_n, self.obs_dims))
+
+        # Helper to calculate range queries
+        self.kd_tree = scipy.spatial.kdtree.cKDTree(self.positions)
 
     def get_team(self, tid):
-        """
-        Return the team with the given id
-        :param tid: Identifier for a team
-        :return: Team belonging to the identifier
-        """
         for team in self.teams:
             if team.tid == tid:
                 return team
         raise NoTeamFoundError(tid)
 
     def get_opposing_teams(self, tid: int):
-        """
-        Return opposing teams of the team with the provided team id
-        :param tid: Identifier for a team
-        :return: Teams NOT belonging to the identifier
-        """
         return [team for team in self.teams if team.tid != tid]
 
     def is_free(self, pos: np.array):
-        alive = self.occupied_positions[:, 2]  # occupied may also hold pos of dead agents -> mask out via alive
-        # the desired pos matches occupied pos in all dimensions
-        pos_occupied = np.all(self.occupied_positions[:, [0, 1]] == pos, axis=1)
-        # desired position is occupied AND the entity on this pos is alive
-        pos_occupied = np.logical_and(pos_occupied, alive)
-        # if there is not one position found the desired pos is free to move to
+        """
+        Checks is a given position is not occupied in the world and therefore free to move.
+        This function is used during action selection.
+        @param pos:
+        @return:
+        """
+        pos_occupied = np.all(self.positions[self.alive == 1] == pos, axis=1)
         return not np.any(pos_occupied)
 
+    def is_valid_move(self, agent_id: int):
+        """
+        Check if the given agent has made an illegal move because the state changed after action selection.
+        @param agent_id:
+        @return:
+        """
+        alive = self.alive[agent_id]  # save alive status
+        self.alive[agent_id] = 0  # fake agent as death to prevent comparison with its own position in is_free
+        pos = self.positions[agent_id]  # the position under testing
+        valid = self.is_free(pos)
+        self.alive[agent_id] = alive  # revert faked death
+        return valid
+
+    @property
     def get_movement_dims(self):
         return self.dim_p * 2
 
-    def get_available_movement(self, agent: Agent):
-        avail_movement = [0] * self.get_movement_dims()  # four movement dims
-
-        if agent.is_dead():
-            return avail_movement  # four movement dims
-
-        if self.bounds is not None:
-            x = agent.state.pos[0]
-            y = agent.state.pos[1]
-            if x - self.grid_size >= 0:  # WEST would not exceed bounds
-                avail_movement[0] = 1
-            if x + self.grid_size <= self.bounds[0]:  # EAST would not exceed bounds
-                avail_movement[1] = 1
-            if y - self.grid_size >= 0:  # NORTH would not exceed bounds
-                avail_movement[2] = 1
-            if y + self.grid_size <= self.bounds[1]:  # SOUTH would not exceed bounds
-                avail_movement[3] = 1
-            return avail_movement
-        else:
-            return [1] * self.get_movement_dims()  # four movement dims
-
-    def _get_obs_dims(self, agent: Agent):
+    @property
+    def obs_dims(self):
         obs_dims = self.dim_p  # position
         obs_dims += 1  # visibility bool
         obs_dims += 1  # distance
         obs_dims += 1  # health
-        obs_dims += agent.unit_type_bits_n
+        obs_dims += UNIT_BITS_NEEDED
         return obs_dims
-
-    def get_obs(self, observer: Agent, target: Agent):
-        """
-        Retrieve observation conducted by an agent on another agent.
-        @param observer: the agent observing his environment
-        @param target: agent which is observed
-        @return: the observation made of the provided agent
-        """
-        # TODO vectorize
-        obs_target_visible = self.visibility_matrix[observer.id][target.id]
-        if obs_target_visible and target.is_alive():
-            rel_pos = target.state.pos - observer.state.pos  # TODO can be calced in batch
-            distance = self.distance_matrix[observer.id][target.id]
-            obs = [
-                      obs_target_visible,  # is the observed unit visible
-                      distance / observer.sight_range,  # distance relative to sight range #TODO can be calced in batch
-                      rel_pos[0] / observer.sight_range,  # x position relative to observer #TODO can be calced in batch
-                      rel_pos[1] / observer.sight_range,  # y position relative to observer #TODO can be calced in batch
-                      target.state.health / target.state.max_health,  # relative health #TODO can be calced in batch
-                  ] + target.unit_type_bits
-            # TODO move to test
-            # assert len(obs) == self._get_obs_dims(target), "Check observation matches underlying dimension."
-            return obs
-        else:
-            return [0] * self._get_obs_dims(target)
 
     @property
     def alive_agents(self):
@@ -413,8 +388,8 @@ class World(object):
 
     def can_attack(self, agent: Agent, target: Agent):
         if target.tid == agent.tid:
-            return False
-        return self.visibility_matrix[agent.id][target.id] and target.is_alive()
+            raise IllegalTargetError("Cannot attack team mates.")
+        return self.visibility[agent.id][target.id]
 
     def step(self):
         """
@@ -424,14 +399,13 @@ class World(object):
         for agent in self.scripted_agents:
             agent.action = agent.action_callback(agent, self)
 
-        # Update each alive agent - agent action was set during environment.py step() function
         # Shuffle randomly to prevent favoring
         import random
         shuffled_agents = self.alive_agents.copy()
         random.shuffle(shuffled_agents)
 
+        # Calculate influence actions BEFORE updating positions to prevent moving out of range
         for agent in shuffled_agents:
-
             # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1
             if agent_has_action_target:
@@ -443,9 +417,6 @@ class World(object):
                     agent.heal(target)
                 elif self.can_attack(agent, target):
                     agent.attack(target)
-                    if target.is_dead():
-                        # Mark dead
-                        self.occupied_positions[target.id, 2] = 0.0
                 else:
                     if self.log:
                         logger.debug(
@@ -453,36 +424,138 @@ class World(object):
 
                 agent.target_id = None  # Reset target after processing
 
-        for agent in shuffled_agents:
+        # Update alive status BEFORE moving the agents
+        self._update_alive_status()
 
-            # Update position and recalculate visibility after performing influence actions
-            # In case an agent would move out of range with the following update
+        # Update positions BEFORE recalculating visibility and observations
+        for agent in shuffled_agents:
             self._update_pos(agent)
 
-            self.occupy_pos(agent)
+        self._update_visibility()
 
-            self._calculate_visibility(agent)
+        self._update_dist_matrix()
+
+        self._calculate_obs()
+
+        self.calculate_avail_movements_actions()
+
+        self.calculate_avail_target_actions()
 
         # After update test if world is done aka only one team left
-        self.teams_wiped = [team.is_wiped() for team in self.teams]
+        self.wiped_teams = [team.is_wiped() for team in self.teams]
 
     def _update_pos(self, agent):
+        """
+        Update position and re-calculate visibility AFTER performing influence actions such as attacks and heals.
+        Otherwise these actions would be illegal although they were legal in the state when the action was selected.
+        In case: an agent would move out of range with the following update
+        @param agent:
+        @return:
+        """
         move_vector = agent.action.u[:2]
-        agent.state.pos += move_vector
-        has_moved = any(move_vector)
-        if has_moved and not self.is_free(agent.state.pos):
-            agent.state.pos -= move_vector
+        if not any(move_vector):
+            return  # no movement
+        pos = self.positions[agent.id, :2]
+        new_pos = pos + move_vector
+        if self.is_free(new_pos):
+            pos += move_vector
 
-    def occupy_pos(self, agent):
-        self.occupied_positions[agent.id, :2] = agent.state.pos
-        self.occupied_positions[agent.id, 2] = agent.is_alive()
+    def _update_visibility(self):
+        self.kd_tree = scipy.spatial.cKDTree(data=self.positions)
+        self.visibility[:, :] = False  # Reset
+        visible = self.kd_tree.query_ball_point(self.positions, self.ranges)
+        for agent_id, visible_indices in enumerate(visible):
+            self.visibility[agent_id, visible_indices] = self.alive[agent_id]
+            dead = self.alive == 0
+            self.visibility[agent_id, dead] = False
 
-    def _calculate_visibility(self, agent):
-        all_pos = self.occupied_positions[:, :2]
-        alive = self.occupied_positions[:, 2] == 1.0
-        # update distances to alive agents
-        self.distance_matrix[agent.id, alive] = np.linalg.norm(all_pos[alive] - agent.state.pos, axis=1)
-        # update visibility to alive agents
-        self.visibility_matrix[agent.id, alive] = self.distance_matrix[agent.id, alive] <= agent.sight_range
-        # set dead agents invisible
-        self.visibility_matrix[alive == 0.0] = False
+    def _update_dist_matrix(self):
+        z = np.array([complex(*pos) for pos in self.positions])
+        m, n = np.meshgrid(z, z)
+        self.distances = abs(m - n)  # abs in complex space is distance in real space
+
+    def _calculate_obs(self):
+        not_visible_mask = self.visibility == 0
+
+        ranges = np.repeat(self.ranges.reshape(-1, 1), self.dim_p, axis=1)
+        position_differences = (self.positions - self.positions[:, None])[..., :]
+
+        relative_positions_obs = position_differences / ranges
+        relative_positions_obs[not_visible_mask] = [0.0, 0.0]  # relative position to invisible agents set to 0,0
+
+        relative_distances_obs = (self.distances / self.ranges[:, None])
+        relative_distances_obs = relative_distances_obs.reshape(*relative_distances_obs.shape, 1)
+        relative_distances_obs[not_visible_mask] = 0.0  # relative distance to invisible agents set to 0
+
+        visibility_obs = self.visibility.reshape(*self.visibility.shape, 1)
+
+        health_obs = np.repeat(self.health.reshape(*self.health.shape, 1), self.agents_n, axis=1)
+        max_health = np.repeat(self.max_health.reshape(*self.max_health.shape, 1), self.agents_n, axis=1)
+        health_obs /= max_health
+        health_obs = health_obs.reshape((*health_obs.shape, 1))
+        health_obs[not_visible_mask] = 0.0  # health of invisible agents set to 0
+
+        unit_bits_obs = np.repeat([self.unit_bits_obs], self.agents_n, axis=0)
+        unit_bits_obs[not_visible_mask] = [0.0, 0.0, 0.0]  # unit bits of invisible agents set to default bits
+
+        self.obs = np.concatenate(
+            (
+                visibility_obs,
+                health_obs,
+                relative_positions_obs,
+                relative_distances_obs,
+                unit_bits_obs,
+            ),
+            axis=2
+        )
+
+    def connect(self, agent, spawn):
+        # Init update-able data
+        self.health[agent.id] = agent.state.max_health
+        self.positions[agent.id] = spawn
+        self.alive[agent.id] = agent.is_alive()
+
+        # Assign update-able data by reference - this data is mainly needed for rendering
+        agent.state.health = self.health[agent.id]
+        agent.state.pos = self.positions[agent.id]
+
+        # Static data
+        self.ranges[agent.id] = agent.sight_range
+        self.max_health[agent.id] = agent.state.max_health
+        team_mates = [mate.id for mate in self.agents if mate.tid == agent.tid]
+        self.heal_target_mask[agent.id][team_mates] = agent.has_heal()
+        enemies = [enemy.id for enemy in self.agents if enemy.tid != agent.tid]
+        self.attack_target_mask[agent.id][enemies] = True
+
+    def _update_alive_status(self):
+        self.alive = self.health > 0
+
+    def calculate_avail_movements_actions(self):
+        self.avail_movement_actions[:, :] = 0  # Reset
+        if self.bounds is not None:
+            w_steps = self.positions - [self.grid_size, 0]
+            e_steps = self.positions + [self.grid_size, 0]
+            n_steps = self.positions - [0, self.grid_size]
+            s_steps = self.positions + [0, self.grid_size]
+            stepped_positions = np.concatenate((w_steps, e_steps, n_steps, s_steps), axis=1) \
+                .reshape((self.agents_n, self.get_movement_dims, 2))
+
+            illegal_step_mask = np.logical_not(np.all(np.isin(stepped_positions, self.positions), axis=2))
+
+            # In bounds checks
+            x_in_left_bound = stepped_positions[:, :, 0] >= 0
+            x_in_right_bound = stepped_positions[:, :, 0] <= self.bounds[0]
+            y_in_up_bound = stepped_positions[:, :, 1] >= 0
+            y_in_down_bound = stepped_positions[:, :, 1] <= self.bounds[1]
+            all_in_bound = x_in_left_bound & x_in_right_bound & y_in_up_bound & y_in_down_bound
+            mask = illegal_step_mask & all_in_bound
+
+            self.avail_movement_actions[mask] = 1.0
+        else:  # unbounded map -> always add all_in_bound movement directions
+            self.avail_movement_actions[:, :] = 1
+
+    def calculate_avail_target_actions(self):
+        self.avail_target_actions[:, :] = 0.0  # Reset
+        mask = (self.visibility == 1) & self.alive & self.self_target_mask & (
+                self.attack_target_mask | self.heal_target_mask)
+        self.avail_target_actions[mask] = 1.0

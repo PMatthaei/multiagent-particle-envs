@@ -31,8 +31,8 @@ class BasicScriptedAI(ScriptedAI):
         action.u = np.zeros(world.dim_p + 1)
         action.u[2] = -1  # default is no target == -1
 
-        if world.distance_matrix is not None:  # if distance matrix initialized
-            masked_distances = world.distance_matrix[agent.id].copy()
+        if world.distances is not None:  # if distance matrix initialized
+            masked_distances = world.distances[agent.id].copy()
             if agent.has_heal():
                 mask = [a.tid != agent.tid or a.is_dead() for a in world.agents]  # mask out all enemies and dead
             else:

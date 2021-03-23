@@ -158,45 +158,15 @@ class MAEnv(gym.Env):
         :return: array of available action ids
         """
         avail_actions = [0]
-        # TODO: causes problem if unit cant move and cant attack -> empty avail_actions
-        # if agent.is_dead():  # only allow no-op action when dead
-        #     return [0]
-        if self.world.bounds is not None:
-            x = agent.state.pos[0]
-            y = agent.state.pos[1]
-            left_step = x - self.movement_step_amount
-            right_step = x + self.movement_step_amount
-            up_step = y - self.movement_step_amount
-            down_step = y + self.movement_step_amount
-            if left_step >= 0 and self.world.is_free([left_step, y]):  # WEST would not exceed bounds
-                avail_actions.append(1)
-            if right_step <= self.world.bounds[0] and self.world.is_free(
-                    [right_step, y]):  # EAST would not exceed bounds
-                avail_actions.append(2)
-            if up_step >= 0 and self.world.is_free([x, up_step]):  # NORTH would not exceed bounds
-                avail_actions.append(3)
-            if down_step <= self.world.bounds[1] and self.world.is_free(
-                    [x, down_step]):  # SOUTH would not exceed bounds
-                avail_actions.append(4)
-        else:  # unbounded map -> always add all movement directions
-            avail_actions.append([1, 2, 3, 4])
-
-        act_ind_offset = 5  # Attack/Heal actions begin at index 5
-
-        # TODO vectorize
-        # All alive agents (except self) can be taken a action against f.e heal, attack etc
-        avail_actions = avail_actions + [ag.id + act_ind_offset for ag in self.world.alive_agents if
-                                         # Include the following agents ids as action encoded ids if:
-                                         # ... it is NOT the agent itself -> TODO: Remove if self-heal needed
-                                         agent.id != ag.id and
-                                         # ... the agent is visible
-                                         self.world.visibility_matrix[agent.id][ag.id] and
-                                         # ... if the agent is not a healer include enemy ids
-                                         ((agent.tid != ag.tid and not agent.has_heal()) or
-                                          # ... if the agent is a healer include team mate ids
-                                          (agent.has_heal() and agent.tid == ag.tid))]
-        self.logger.debug(
-            f"Agent {agent.id,} has available actions with indices: {avail_actions if self.log else None}")
+        offset = 1
+        avail_movement_action_indices = np.where(self.world.avail_movement_actions[agent.id])[0]
+        avail_movement_action_indices += offset # Apply offset from no-op
+        avail_actions += avail_movement_action_indices.tolist()
+        offset += 4  # Add movement actions to offset
+        avail_target_action_indices = np.where(self.world.avail_target_actions[agent.id])[0]
+        avail_target_action_indices += offset # Apply offset from no-op + movement
+        avail_actions += avail_target_action_indices.tolist()
+        self.logger.debug(f"Agent {agent.id,} has available actions with indices: {avail_actions if self.log else None}")
         return avail_actions
 
     def _get_state_dim(self):
@@ -358,7 +328,7 @@ class MAEnv(gym.Env):
             agent_obs = (agent.state.pos - self.world.center) / self.world.bounds
             state = np.concatenate((state, agent_obs, agent.self_observation))
         self.logger.debug(f"State: {state if self.log else None}")
-        #TOD: test instead of assertion in running code
+        # TOD: test instead of assertion in running code
         # assert self.state_n == len(state), "State not matching underlying dimension."
         return state
 
