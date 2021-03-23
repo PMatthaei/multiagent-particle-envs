@@ -477,7 +477,7 @@ class World(object):
     def _calculate_obs(self):
         not_visible_mask = self.visibility == 0
 
-        ranges = np.repeat(self.ranges.reshape(-1, 1), self.dim_p, axis=1)
+        ranges = np.repeat(self.ranges.reshape(-1, 1), self.agents_n, axis=1)
         position_differences = (self.positions - self.positions[:, None])[..., :]
 
         relative_positions_obs = position_differences / ranges.reshape(*ranges.shape, 1)
