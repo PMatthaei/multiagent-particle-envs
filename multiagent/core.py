@@ -241,7 +241,8 @@ class Agent(Entity):
         return 'can_heal' in self.role and self.role['can_heal']
 
     def can_heal(self, target=None):
-        return self.has_heal() and (target is not None and target.tid != self.tid) and target.is_alive()
+        return self.has_heal() and (target is not None and target.tid == self.tid) \
+               and target.is_alive() and target.state.health < target.state.max_health
 
 
 class World(object):
