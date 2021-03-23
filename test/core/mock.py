@@ -11,4 +11,5 @@ def mock_agent(id: int, tid: int = 0):
     agent.is_alive = MagicMock(return_value=True)
     agent.sight_range = 2
     agent.action.u = np.zeros((2,))
+    agent.unit_type_bits = [0, 0, 1]
     return agent

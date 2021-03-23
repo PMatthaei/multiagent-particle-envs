@@ -23,7 +23,7 @@ class AgentTestCases(unittest.TestCase):
         pass
 
     def test_build_plan(self):
-        self.assertEqual(self.a.unit_type_bits, [0, 0, 0])
+        self.assertEqual(self.a.unit_type_bits, [0, 0, 1])
         self.assertEqual(self.a.unit_type_bits_n, 3)
         self.assertEqual(self.a.attack_type, UnitAttackTypes.RANGED.value)
         self.assertEqual(self.a.role, RoleTypes.TANK.value)

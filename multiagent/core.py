@@ -14,6 +14,8 @@ from multiagent.exceptions.world_exceptions import NoTeamFoundError
 
 logger = logging.getLogger("ma-env")
 
+UNKNOWN_TYPE = "UNIT_TYPE_NONE"
+
 
 class RoleTypes(Enum):
     TANK = {"max_health": 60, "attack_damage": 10}
@@ -28,6 +30,7 @@ class UnitAttackTypes(Enum):
 
 # Calculate all unique unit types
 UNIQUE_UNIT_TYPES = list(itertools.product(RoleTypes, UnitAttackTypes))
+UNIQUE_UNIT_TYPES.insert(0, UNKNOWN_TYPE)
 # Calculate bits needed to represent all unique units
 UNIT_BITS_NEEDED = math.ceil(math.log(len(UNIQUE_UNIT_TYPES), 2))
 
@@ -73,11 +76,10 @@ class AgentState(EntityState):
         self.c = None
 
 
-# action of the agent
 class Action(object):
     def __init__(self, index=None, owner=None, target=None, u=None, c=None):
         """
-        # TODO
+        # Action of the agent
         :param index:
         :param owner:
         :param target:
@@ -497,7 +499,7 @@ class World(object):
         health_obs[not_visible_mask] = 0.0  # health of invisible agents set to 0
 
         unit_bits_obs = np.repeat([self.unit_bits_obs], self.agents_n, axis=0)
-        unit_bits_obs[not_visible_mask] = [0.0, 0.0, 0.0]  # unit bits of invisible agents set to default bits
+        unit_bits_obs[not_visible_mask] = UNIT_TYPE_BITS[UNKNOWN_TYPE]  # unit bits of invisible agents set to unknown
 
         self.obs = np.concatenate(
             (
@@ -523,6 +525,7 @@ class World(object):
         # Static data
         self.ranges[agent.id] = agent.sight_range
         self.max_health[agent.id] = agent.state.max_health
+        self.unit_bits_obs[agent.id] = agent.unit_type_bits
         team_mates = [mate.id for mate in self.agents if mate.tid == agent.tid]
         self.heal_target_mask[agent.id][team_mates] = agent.has_heal()
         enemies = [enemy.id for enemy in self.agents if enemy.tid != agent.tid]

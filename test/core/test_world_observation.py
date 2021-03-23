@@ -31,12 +31,12 @@ class WorldObservationTestCases(unittest.TestCase):
     def test_a_observes_b_if_visible_and_alive(self):
         #   vis     health    rel x-pos   rel y-pos  rel dist  unit bits
         r = self.a.sight_range
-        a_obs_of_b = np.array([1.0, 1.0, 1.0 / r, 0.0 / r, 1.0 / r, 0, 0, 0])
+        a_obs_of_b = np.array([1.0, 1.0, 1.0 / r, 0.0 / r, 1.0 / r, 0, 0, 1])
         np.testing.assert_array_equal(self.world.obs[self.a.id][self.b.id], a_obs_of_b)
 
     def test_b_observes_a_with_different_sight_range_if_visible_and_alive(self):
         r = self.b.sight_range
-        b_obs_of_a = np.array([1.0, 1.0, -1.0 / r, 0.0 / r, 1.0 / r, 0, 0, 0])
+        b_obs_of_a = np.array([1.0, 1.0, -1.0 / r, 0.0 / r, 1.0 / r, 0, 0, 1])
         np.testing.assert_array_equal(self.world.obs[self.b.id][self.a.id], b_obs_of_a)
 
     def test_a_cannot_observe_b_if_b_dead(self):
