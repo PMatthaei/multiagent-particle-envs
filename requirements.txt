@@ -12,5 +12,5 @@ pygame==2.0.0
 pyglet==1.5.0
 python-twitch-stream==1.0.2
 python-utils==2.4.0
-scipy==1.5.4
+scipy==1.6.1
 six==1.15.0
