@@ -107,6 +107,34 @@ class WorldAvailableMovementActionsTestCases(unittest.TestCase):
         self.world.calculate_avail_movements_actions()
         np.testing.assert_array_equal(self.world.avail_movement_actions[self.agent.id], [1, 1, 1, 0])
 
+    def test_blocked_west_and_north_by_bound(self):
+        self.agent_spawn = np.array([0, 0])
+        self._calculate()
+
+        self.world.calculate_avail_movements_actions()
+        np.testing.assert_array_equal(self.world.avail_movement_actions[self.agent.id], [0, 1, 0, 1])
+
+    def test_blocked_east_and_north_by_bound(self):
+        self.agent_spawn = np.array([self.world.bounds[0], 0])
+        self._calculate()
+
+        self.world.calculate_avail_movements_actions()
+        np.testing.assert_array_equal(self.world.avail_movement_actions[self.agent.id], [1, 0, 0, 1])
+
+    def test_blocked_east_and_south_by_bound(self):
+        self.agent_spawn = np.array([self.world.bounds[0], self.world.bounds[1]])
+        self._calculate()
+
+        self.world.calculate_avail_movements_actions()
+        np.testing.assert_array_equal(self.world.avail_movement_actions[self.agent.id], [1, 0, 1, 0])
+
+    def test_blocked_west_and_south_by_bound(self):
+        self.agent_spawn = np.array([0, self.world.bounds[1]])
+        self._calculate()
+
+        self.world.calculate_avail_movements_actions()
+        np.testing.assert_array_equal(self.world.avail_movement_actions[self.agent.id], [0, 1, 1, 0])
+
 
 if __name__ == '__main__':
     unittest.main()
