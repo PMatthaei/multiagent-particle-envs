@@ -1,3 +1,5 @@
+[![Python package](https://github.com/PMatthaei/ma-env/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/PMatthaei/ma-env/actions/workflows/python-package.yml)
+
 ```
 This is a fork of: https://github.com/openai/multiagent-particle-envs
 ```
