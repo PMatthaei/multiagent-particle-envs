@@ -5,7 +5,7 @@ import numpy as np
 from gym import spaces
 
 from multiagent.core import World, Team
-from multiagent.exceptions.environment_exceptions import TooManyWinners
+from multiagent.exceptions.environment_exceptions import TooManyWinners, MissingActions
 
 
 class MAEnv(gym.Env):
@@ -91,7 +91,7 @@ class MAEnv(gym.Env):
         self.movement_step_amount = self.world.grid_size  # move X pixels per action - de-facto grid size
         # set required vectorized gym env property
         self.n = len(world.policy_agents)
-        # scenario callbacks - TODO: type unsafety here
+        # scenario callbacks
         self.reset_callback = reset_callback
         self.reward_callback = reward_callback
         self.observation_callback = observation_callback
@@ -114,7 +114,7 @@ class MAEnv(gym.Env):
             # observation space
             obs_dim = len(observation_callback(agent, self.world))
             self.observation_space.append(spaces.Box(low=0.0, high=1.0, shape=(obs_dim,), dtype=np.float32))
-        # TODO: prone to different obs/state agents of choosing just the first!
+
         self.state_n = self._get_state_dim()
         self._state = np.zeros((self.state_n,))
 
@@ -185,11 +185,8 @@ class MAEnv(gym.Env):
         3 = Go north
         4 = Go south
         5 until 5 + # of agents = targets
-
-        TODO: Current impl assumes same action space for all agents but some actions will always be unavailable:
         - Healers cannot attack enemies
         - Team mates cannot be attacked
-
         :param agent: considered agent
         :return: action space available for this agent
         """
@@ -217,9 +214,9 @@ class MAEnv(gym.Env):
         # Only consider policy agents when calling self.agents
         self.agents = self.world.policy_agents
         # Set action for each agent - this needs to be performed before stepping world !
-        # TODO: test instead of in code
-        # if len(self.agents) != len(action_n):  # Make sure we received an action for every agent
-        #     raise MissingActions()
+
+        if len(self.agents) != len(action_n):  # Make sure we received an action for every agent
+            raise MissingActions()
 
         for aid, agent in enumerate(self.agents):
             self._set_action(action_n[aid], agent, self.action_space[aid])
@@ -236,7 +233,7 @@ class MAEnv(gym.Env):
         # 1-d array holding all termination (goal) booleans for policy teams
         done_n = []
         # Extra info which does not fit into gym interface f.e. who won -> not included in done bool
-        info_n = {"battle_won": []}
+        info_n = {"battle_won": [], "draw": False}
 
         # Go over all policy agents team-wise
         for team in self.world.policy_teams:
@@ -245,7 +242,6 @@ class MAEnv(gym.Env):
             for agent in team.members:
                 obs_n.append(self._get_obs(agent))
                 local_rewards.append(self._get_reward(agent))
-                # info_n['n'].append(self._get_info(agent))
 
             # Check if the policy team won and add reward
             won = self._get_done(team)
@@ -266,7 +262,7 @@ class MAEnv(gym.Env):
             done_n.append(self._get_done(team))
 
         info_n["battle_won"] = done_n  # Provide additional info who won the episode.
-        pass
+
         self.logger.debug(f"Observations: {obs_n if self.log else None}")
 
         if self.global_reward:
@@ -287,7 +283,7 @@ class MAEnv(gym.Env):
 
         # Episode limit reached - Place this code block after winner check !
         if self.episode_limit is not None and self.episode_limit == self.t:
-            # TODO: what should happen with result of match - draw or lose/win for all teams?
+            info_n["draw"] = True
             self.logger.info("------ Episode {} done - Step limit reached.".format(self.episode))
             self.episode += 1
             done_n = [True] * len(done_n)
@@ -420,8 +416,9 @@ class MAEnv(gym.Env):
             self.viewer.clear()
 
     def close(self):
-        # TODO: better clean up of environment
         self.viewer.close()
+        del self.world
+        self.world = None
 
     def render(self, mode='human'):
         """

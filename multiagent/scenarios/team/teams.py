@@ -22,7 +22,6 @@ class TeamsScenario(BaseTeamScenario):
         self.is_symmetric = self.n_agents.count(self.n_agents[0]) == len(self.n_agents)
         self.team_mixing_factor = 8  # build_plan["tmf"] if "tmf" in build_plan["tmf"] else 5
         self.scripted_ai = BasicScriptedAI()
-        # TODO: Asymmetric case
         if not self.is_symmetric:
             raise ScenarioNotSymmetricError(self.n_agents, self.n_teams)
 

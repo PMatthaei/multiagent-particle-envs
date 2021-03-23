@@ -195,7 +195,7 @@ class Agent(Entity):
         self.role = build_plan['role'].value
 
         self.attack_range = self.attack_type['attack_range']
-        self.sight_range = self.attack_range  # TODO: sight range != attack range
+        self.sight_range = self.attack_range
         assert self.sight_range >= self.attack_range, "Sight range cannot be smaller than attack range."
         self.attack_damage = self.role['attack_damage']
 
