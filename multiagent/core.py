@@ -515,7 +515,7 @@ class World(object):
         self.positions[agent.id] = spawn
         self.alive[agent.id] = agent.is_alive()
 
-        # Assign update-able data by reference - this data is mainly needed for rendering
+        # Assign update-able data by reference to numpy data structures- this data is mainly needed for rendering
         agent.state.health = self.health[agent.id]
         agent.state.pos = self.positions[agent.id]
 
@@ -540,14 +540,17 @@ class World(object):
             stepped_positions = np.concatenate((w_steps, e_steps, n_steps, s_steps), axis=1) \
                 .reshape((self.agents_n, self.get_movement_dims, 2))
 
-            illegal_step_mask = np.logical_not(np.all(np.isin(stepped_positions, self.positions), axis=2))
+            illegal_step_mask = np.ones((self.agents_n, self.get_movement_dims), dtype=np.bool)
+            for pos in self.positions:
+                mask = np.all(stepped_positions == pos, axis=2)
+                illegal_step_mask[mask] = False
 
             # In bounds checks
             x_in_left_bound = stepped_positions[:, :, 0] >= 0
             x_in_right_bound = stepped_positions[:, :, 0] <= self.bounds[0]
             y_in_up_bound = stepped_positions[:, :, 1] >= 0
             y_in_down_bound = stepped_positions[:, :, 1] <= self.bounds[1]
-            all_in_bound = x_in_left_bound & x_in_right_bound & y_in_up_bound & y_in_down_bound
+            all_in_bound = (x_in_left_bound & x_in_right_bound) & (y_in_up_bound & y_in_down_bound)
             mask = illegal_step_mask & all_in_bound
 
             self.avail_movement_actions[mask] = 1.0

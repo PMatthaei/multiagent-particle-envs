@@ -35,6 +35,12 @@ class WorldPositionsTestCases(unittest.TestCase):
         np.testing.assert_array_equal(self.world.positions[0], [1, 1])
         np.testing.assert_array_equal(self.agent.state.pos, [1, 1])
 
+    def test_no_update_pos_if_noop(self):
+        self.agent.action.u[:2] = [0, 0]  # noop action
+        self.world._update_pos(self.agent)
+
+        np.testing.assert_array_equal(self.world.positions[0], [1, 1])
+        np.testing.assert_array_equal(self.agent.state.pos, [1, 1])
 
 if __name__ == '__main__':
     unittest.main()
