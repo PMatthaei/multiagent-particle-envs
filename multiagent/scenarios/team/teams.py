@@ -86,6 +86,8 @@ class TeamsScenario(BaseTeamScenario):
         return reward
 
     def done(self, team: Team, world: World):
+        if np.all(world.wiped_teams):  # if all teams are wiped simultaneously -> done
+            return True
         # if only one team is not wiped and this team is the team under testing -> winner winner chicken dinner
         return not world.wiped_teams[team.tid] and world.wiped_teams.count(False) == 1
 

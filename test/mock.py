@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, Mock
 
 import numpy as np
 
-from multiagent.core import Team
+from multiagent.core import Team, World
 
 
 def mock_agent(id: int, tid: int = 0, sight_range=2):
@@ -24,3 +24,11 @@ def mock_team(tid: int, members=None, is_scripted=False):
         members = []
     team = Team(tid, members, is_scripted)
     return team
+
+
+def mock_world(agents_n, grid_size=10, teams=None):
+    if teams is None:
+        teams = []
+    world = World(agents_n=agents_n, grid_size=grid_size)
+    world.teams = teams
+    return world

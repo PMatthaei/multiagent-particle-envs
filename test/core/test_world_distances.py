@@ -1,10 +1,9 @@
 import unittest
-from unittest.mock import Mock, MagicMock
 
 import numpy as np
 
 from multiagent.core import World
-from test.core.mock import mock_agent
+from test.mock import mock_agent
 
 N_AGENTS = 2
 

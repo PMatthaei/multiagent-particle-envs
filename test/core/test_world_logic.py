@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from multiagent.core import World, Agent, RoleTypes, UnitAttackTypes
-from test.core.mock import mock_team
+from test.mock import mock_team
 
 N_AGENTS = 2
 

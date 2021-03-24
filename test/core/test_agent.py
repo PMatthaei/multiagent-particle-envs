@@ -2,7 +2,6 @@ import unittest
 
 from multiagent.core import Agent, RoleTypes, UnitAttackTypes, World
 from multiagent.exceptions.agent_exceptions import OverhealError
-from test.core.mock import mock_agent
 
 BUILD_PLAN = {
     "role": RoleTypes.TANK,
