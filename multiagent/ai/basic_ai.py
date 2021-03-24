@@ -22,7 +22,8 @@ class BasicScriptedAI(ScriptedAI):
     def act(self, agent: Agent, world: World) -> Action:
         """
         Defines how a given agent should act in a given world.
-        In this case the agent always targets the closest
+        In this case the agent always targets the closest agent which is targetable.
+        If no agent is targetable (out of sight) the AI moves in direction of the closest.
         @param agent:
         @param world:
         @return: action
