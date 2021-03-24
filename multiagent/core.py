@@ -526,7 +526,7 @@ class World(object):
 
     def connect(self, agent, spawn=None):
         self.health[agent.id] = agent.state.max_health
-        agent.state._health = self.health[agent.id:(agent.id+1)]
+        agent.state._health = self.health[agent.id:(agent.id + 1)]
         self.alive[agent.id] = agent.is_alive()
 
         self.positions[agent.id] = spawn
@@ -537,9 +537,9 @@ class World(object):
         self.max_health[agent.id] = agent.state.max_health
         self.unit_bits_obs[agent.id] = agent.unit_type_bits
         team_mates = [mate.id for mate in self.agents if mate.tid == agent.tid]
-        self.heal_target_mask[agent.id][team_mates] = agent.has_heal()
+        self.heal_target_mask[agent.id][team_mates] = True if agent.has_heal() else False
         enemies = [enemy.id for enemy in self.agents if enemy.tid != agent.tid]
-        self.attack_target_mask[agent.id][enemies] = True
+        self.attack_target_mask[agent.id][enemies] = False if agent.has_heal() else True
         self.team_mask[agent.id] = agent.tid
 
     def _update_alive_status(self):
