@@ -3,11 +3,9 @@ import random
 
 import numpy as np
 
-from multiagent.core import World
-
 
 class SpawnGenerator:
-    def __init__(self, world: World, num_pos: int, max_trials=50):
+    def __init__(self, center, grid_size: int, dim: int, num_pos: int, max_trials=50):
         """
         Generator producing random spawns. In a first step unique random spawns for each team are chosen.
         Based on these team spawn each agent receives a unique spawn.
@@ -15,12 +13,9 @@ class SpawnGenerator:
         @param grid_size:
         @param max_trials:
         """
-        self.n_teams = len(world.teams)
-        self.world_center = world.grid_center
-        if self.n_teams > 2:
-            raise NotImplementedError("Generating team spawns for more than two teams is not yet implemented.")
-        self.grid_size = world.grid_size
-        self.used_points = np.full((num_pos, world.dim_p), fill_value=np.inf)
+        self.world_center = center
+        self.grid_size = grid_size
+        self.used_points = np.full((num_pos, dim), fill_value=np.inf)
         self.team_spawns = []
         self.max_trials = max_trials
         # Generate positions on grid

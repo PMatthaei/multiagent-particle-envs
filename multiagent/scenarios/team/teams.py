@@ -25,7 +25,6 @@ class TeamsScenario(BaseTeamScenario):
         if not self.is_symmetric:
             raise ScenarioNotSymmetricError(self.n_agents, self.n_teams)
 
-        self.spg = None
         self.team_spawns = None
         self.agent_spawns = [None] * self.n_teams
 
@@ -33,7 +32,6 @@ class TeamsScenario(BaseTeamScenario):
         agents_n = sum(self.n_agents)
 
         world = World(agents_n=agents_n, grid_size=grid_size)
-        self.spg = SpawnGenerator(world, num_pos=agents_n)
 
         world.collaborative = True
 
@@ -66,8 +64,8 @@ class TeamsScenario(BaseTeamScenario):
 
         # random team spawns
         if self.team_spawns is None:
-            self.team_spawns = self.spg.generate_team_spawns(radius=team_spread, grid_size=world.grid_size)
-            agent_spawns = self.spg.generate(self.n_agents[0], world.grid_size, 1, agent_spread)
+            self.team_spawns = world.spg.generate_team_spawns(radius=team_spread, grid_size=world.grid_size)
+            agent_spawns = world.spg.generate(self.n_agents[0], world.grid_size, 1, agent_spread)
             self.agent_spawns[0] = agent_spawns + self.team_spawns[0]
             self.agent_spawns[1] = (- agent_spawns) + self.team_spawns[1]
 

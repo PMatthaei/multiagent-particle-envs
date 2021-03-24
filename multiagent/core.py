@@ -11,6 +11,7 @@ import scipy.spatial.distance
 
 from multiagent.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError, OverhealError
 from multiagent.exceptions.world_exceptions import NoTeamFoundError
+from multiagent.utils.spawn_generator import SpawnGenerator
 
 logger = logging.getLogger("ma-env")
 
@@ -318,6 +319,9 @@ class World(object):
 
         # Helper to calculate range queries
         self.kd_tree = scipy.spatial.kdtree.cKDTree(self.positions)
+
+        # Helper to generate points within the world
+        self.spg = SpawnGenerator(self.grid_center, grid_size, self.dim_p, agents_n)
 
     def get_team(self, tid):
         for team in self.teams:
