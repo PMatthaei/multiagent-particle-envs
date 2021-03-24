@@ -42,5 +42,6 @@ def make_env(args, benchmark=False):
                 reset_callback=scenario.reset_world,
                 reward_callback=scenario.reward,
                 observation_callback=scenario.observation,
-                done_callback=scenario.done)
+                done_callback=scenario.done,
+                fps=args.fps)
     return env

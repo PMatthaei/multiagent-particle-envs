@@ -56,7 +56,7 @@ MEDIUM = [
                          "role": RoleTypes.TANK,
                          "attack_type": UnitAttackTypes.RANGED
                      },
-                 ] * 15
+                 ] * 25
     },
     {
         "is_scripted": False,
@@ -65,7 +65,7 @@ MEDIUM = [
                          "role": RoleTypes.TANK,
                          "attack_type": UnitAttackTypes.RANGED
                      },
-                 ] * 15
+                 ] * 25
     },
 ]
 

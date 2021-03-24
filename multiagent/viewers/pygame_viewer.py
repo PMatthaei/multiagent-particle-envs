@@ -76,7 +76,7 @@ class PyGameViewer(object):
     def __init__(self,
                  env,
                  caption="Multi-Agent Environment",
-                 fps=30,
+                 fps=None,
                  infos=True,
                  draw_grid=True,
                  record=False,
@@ -86,7 +86,7 @@ class PyGameViewer(object):
         Create new PyGameViewer for the environment
         :param env: MultiAgentEnv to render
         :param caption: Caption of the window
-        :param fps: Frames per second
+        :param fps: Lock framrate to the provided frames per second
         :param infos: Show additional information about performance and current game state.
         :param draw_grid: Draw underlying movement grid induced by step size
         :param record: Activate recording
@@ -150,7 +150,7 @@ class PyGameViewer(object):
         """
 
         if self.infos:
-            dt = self.font.render("FPS: " + str(self.fps), False, (0, 0, 0))
+            dt = self.font.render("FPS: " + str(int(self.clock.get_fps())), False, (0, 0, 0))
             t = self.font.render("Time step: " + str(self.env.t), False, (0, 0, 0))
             episode = self.font.render("Episode: " + str(self.env.episode), False, (0, 0, 0))
             max_step = self.font.render("Max. Step: " + str(self.env.episode_limit), False, (0, 0, 0))
@@ -208,7 +208,7 @@ class PyGameViewer(object):
                 frame = pygame.surfarray.array3d(self.screen)
                 self.twitch.send_frame(np.true_divide(frame, 255))
 
-            self.dt = self.clock.tick(self.fps)
+            self.dt = self.clock.tick(self.fps if self.fps else 1000)
 
     def reset(self):
         """
