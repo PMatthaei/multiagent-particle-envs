@@ -34,9 +34,9 @@ class BasicScriptedAI(ScriptedAI):
         if world.distances is not None:  # if distance matrix initialized
             masked_distances = world.distances[agent.id].copy()
             if agent.has_heal():
-                mask = [a.tid != agent.tid or a.is_dead() for a in world.agents]  # mask out all enemies and dead
+                mask = (world.team_mask != agent.tid) | (world.alive == 0)  # mask out all enemies and dead
             else:
-                mask = [a.tid == agent.tid or a.is_dead() for a in world.agents]  # mask out all teammates and dead
+                mask = (world.team_mask == agent.tid) | (world.alive == 0)  # mask out all teammates and dead
 
             masked_distances[mask] = np.inf  # infinite distance all non-targetable agents
             target_id = np.argmin(masked_distances)
