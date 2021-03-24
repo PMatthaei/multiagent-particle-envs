@@ -65,7 +65,9 @@ class TeamsScenario(BaseTeamScenario):
         # random team spawns
         if self.team_spawns is None:
             self.team_spawns = world.spg.generate_team_spawns(radius=team_spread, grid_size=world.grid_size)
+            # take first teams size since symmetric for spawn generation
             agent_spawns = world.spg.generate(self.n_agents[0], world.grid_size, 1, agent_spread)
+            # mirror spawns
             self.agent_spawns[0] = agent_spawns + self.team_spawns[0]
             self.agent_spawns[1] = (- agent_spawns) + self.team_spawns[1]
 

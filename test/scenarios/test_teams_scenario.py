@@ -5,7 +5,7 @@ import numpy as np
 
 from bin.team_plans_example import SMALL_1x1, AI_SMALL_1x1
 from multiagent.scenarios.team.teams import TeamsScenario
-from test.mock import mock_world, mock_team, mock_spawn_generator, mock_agent
+from test.mock import mock_world, mock_team, mock_spawn_generator, mock_agent, mock_ai
 
 AGENTS_N = 2
 
@@ -93,3 +93,33 @@ class TeamsScenarioResetTestCases(unittest.TestCase):
         result_arg_1 = self.world.connect.call_args[0][1]
         self.assertEqual(self.d, result_arg_0)
         np.testing.assert_array_equal(np.array([0, 0]), result_arg_1)
+
+
+class TeamsScenarioObservationTestCases(unittest.TestCase):
+    def setUp(self):
+        self.c = mock_agent(id=0, tid=0)
+        self.d = mock_agent(id=1, tid=1)
+        self.a = mock_team(0, members=[self.c])
+        self.b = mock_team(1, members=[self.d])
+        self.world = mock_world(2, teams=[self.a, self.b])
+        self.scenario = TeamsScenario(SMALL_1x1)
+
+    def test_observation_shape(self):
+        result = self.scenario.observation(self.c, self.world)
+        np.testing.assert_array_equal(result, [1] * 16)
+        self.assertEqual(result.shape, (16,))
+
+
+class TeamsScenarioAITestCases(unittest.TestCase):
+    def setUp(self):
+        self.c = mock_agent(id=0, tid=0)
+        self.d = mock_agent(id=1, tid=1)
+        self.a = mock_team(0, members=[self.c])
+        self.b = mock_team(1, members=[self.d])
+        self.world = mock_world(2, teams=[self.a, self.b])
+        self.scenario = TeamsScenario(SMALL_1x1)
+        self.scenario.scripted_ai = mock_ai()
+
+    def test_ai_is_called(self):
+        self.scenario.scripted_agent_callback(self.c, self.world)
+        self.assertEqual(self.scenario.scripted_ai.act.call_count, 1)

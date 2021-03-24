@@ -2,8 +2,6 @@ from unittest.mock import MagicMock, Mock
 
 import numpy as np
 
-from multiagent.core import Team, World
-
 
 def mock_agent(id: int, tid: int = 0, sight_range=2):
     agent = Mock()
@@ -26,12 +24,14 @@ def mock_team(tid: int, members=None, is_scripted=False):
     return team
 
 
-def mock_world(agents_n, grid_size=10, teams=None):
+def mock_world(agents_n, grid_size=10, teams=None, obs_dims_per_agent=8):
     if teams is None:
         teams = []
     world = Mock(agents_n=agents_n, grid_size=grid_size)
     world.teams = teams
     world.connect = MagicMock()
+    world.obs = np.zeros((agents_n, agents_n, int(obs_dims_per_agent * agents_n / 2)))
+    world.obs[0, :] = 1.0
     return world
 
 
@@ -40,3 +40,9 @@ def mock_spawn_generator(n_teams, n_agents):
     spg.generate_team_spawns = MagicMock(return_value=np.repeat([[0, 0]], n_teams, axis=0))
     spg.generate = MagicMock(return_value=np.repeat([[0, 0]], n_agents, axis=0))
     return spg
+
+
+def mock_ai():
+    ai = Mock()
+    ai.act = MagicMock()
+    return ai
