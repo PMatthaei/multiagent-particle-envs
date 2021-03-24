@@ -1,8 +1,11 @@
 import unittest
+from array import array
+
+import numpy as np
 
 from bin.team_plans_example import SMALL_1x1, AI_SMALL_1x1
 from multiagent.scenarios.team.teams import TeamsScenario
-from test.mock import mock_world, mock_team, mock_spawn_generator
+from test.mock import mock_world, mock_team, mock_spawn_generator, mock_agent
 
 AGENTS_N = 2
 
@@ -67,7 +70,11 @@ class TeamsScenarioMakeTestCases(unittest.TestCase):
 class TeamsScenarioResetTestCases(unittest.TestCase):
     def setUp(self):
         self.scenario = TeamsScenario(SMALL_1x1)
-        self.world = self.scenario._make_world(grid_size=10)
+        self.c = mock_agent(id=0, tid=0)
+        self.d = mock_agent(id=1, tid=1)
+        self.a = mock_team(0, members=[self.c])
+        self.b = mock_team(1, members=[self.d])
+        self.world = mock_world(2, teams=[self.a, self.b])
         self.world.spg = mock_spawn_generator(n_teams=len(self.world.teams), n_agents=1)  # 1 agent per team
 
     def test_no_initial_spawns(self):
@@ -78,3 +85,11 @@ class TeamsScenarioResetTestCases(unittest.TestCase):
         self.scenario.reset_world(self.world)
         self.assertEqual(len(self.scenario.team_spawns), 2)
         self.assertEqual(len(self.scenario.agent_spawns), 2)
+
+    def test_reset_world_calls_connect_agents(self):
+        self.scenario.reset_world(self.world)
+        self.assertEqual(self.world.connect.call_count, 2)
+        result_arg_0 = self.world.connect.call_args[0][0]
+        result_arg_1 = self.world.connect.call_args[0][1]
+        self.assertEqual(self.d, result_arg_0)
+        np.testing.assert_array_equal(np.array([0, 0]), result_arg_1)

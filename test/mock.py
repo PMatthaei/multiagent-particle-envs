@@ -31,6 +31,7 @@ def mock_world(agents_n, grid_size=10, teams=None):
         teams = []
     world = Mock(agents_n=agents_n, grid_size=grid_size)
     world.teams = teams
+    world.connect = MagicMock()
     return world
 
 
