@@ -1,6 +1,7 @@
 import unittest
 
-from multiagent.core import Agent, RoleTypes, UnitAttackTypes
+from multiagent.core import Agent, RoleTypes, UnitAttackTypes, World
+from multiagent.exceptions.agent_exceptions import OverhealError
 from test.core.mock import mock_agent
 
 BUILD_PLAN = {
@@ -13,6 +14,8 @@ BUILD_PLAN_HEALER = {
     "attack_type": UnitAttackTypes.RANGED
 }
 
+N_AGENTS = 4
+
 
 class AgentTestCases(unittest.TestCase):
     def setUp(self):
@@ -20,6 +23,12 @@ class AgentTestCases(unittest.TestCase):
         self.h = Agent(id=1, tid=0, build_plan=BUILD_PLAN_HEALER, color=None)
         self.b = Agent(id=2, tid=1, build_plan=BUILD_PLAN, color=None)
         self.c = Agent(id=3, tid=0, build_plan=BUILD_PLAN, color=None)
+
+        self.world = World(grid_size=10, agents_n=N_AGENTS)
+        self.world.connect(self.a)
+        self.world.connect(self.h)
+        self.world.connect(self.b)
+        self.world.connect(self.c)
         pass
 
     def test_build_plan(self):
@@ -34,7 +43,7 @@ class AgentTestCases(unittest.TestCase):
 
     def test_attack(self):
         self.a.attack(self.b)
-        self.assertEqual(-self.a.attack_damage, self.b.state.health)
+        self.assertEqual(self.b.state.max_health-self.a.attack_damage, self.b.state.health)
 
     def test_cannot_heal_if_not_healer(self):
         result = self.a.can_heal(self.c)
@@ -58,6 +67,5 @@ class AgentTestCases(unittest.TestCase):
         result = self.h.can_heal(self.c)
         self.assertEqual(False, result)
 
-    def test_heal(self):
-        self.a.heal(self.c)
-        self.assertEqual(self.a.attack_damage, self.c.state.health)
+    def test_overheal_raises_error(self):
+        self.assertRaises(OverhealError, self.a.heal, self.c)

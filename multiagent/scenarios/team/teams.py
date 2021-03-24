@@ -87,7 +87,7 @@ class TeamsScenario(BaseTeamScenario):
 
     def done(self, team: Team, world: World):
         # if only one team is not wiped and this team is the team under testing -> winner winner chicken dinner
-        return not team.is_wiped() and world.wiped_teams.count(False) == 1
+        return not world.wiped_teams[team.tid] and world.wiped_teams.count(False) == 1
 
     def observation(self, agent: Agent, world: World):
         obs = world.obs[agent.id].flatten()

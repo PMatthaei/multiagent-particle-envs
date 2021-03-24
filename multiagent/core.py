@@ -9,7 +9,7 @@ import numpy as np
 import scipy.spatial.ckdtree
 import scipy.spatial.distance
 
-from multiagent.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError
+from multiagent.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError, OverhealError
 from multiagent.exceptions.world_exceptions import NoTeamFoundError
 
 logger = logging.getLogger("ma-env")
@@ -56,11 +56,19 @@ class EntityState(object):
         self.pos = None
         self.max_health = 0
         self.max_shield = 0
-        self.health = 0
+        self._health = []
         self.shield = 0
 
+    @property
+    def health(self):
+        return self._health[0]
+
+    @health.setter
+    def health(self, health):
+        self._health[0] = health
+
     def reset(self):
-        self.health = self.max_health
+        self._health = self.max_health
         self.shield = self.max_shield
 
 
@@ -152,9 +160,6 @@ class Team:
         self.is_scripted = is_scripted
         self.size = len(members)  # team size not influenced by deaths
 
-    def is_wiped(self):
-        return all([agent.is_dead() for agent in self.members])
-
 
 class PerformanceStatistics:
     def __init__(self, kills=0, assists=0, dmg_dealt=0, dmg_healed=0, attacks_performed=0, heals_performed=0,
@@ -223,6 +228,8 @@ class Agent(Entity):
         if target.tid != self.tid:  # Agents can not heal their enemies. This indicates a bug.
             raise IllegalTargetError(self)
         target.state.health += self.attack_damage
+        if target.state.health > target.state.max_health:
+            raise OverhealError(self)
         self.stats.dmg_healed += self.attack_damage
         logger.debug("Agent {0} in team {1} healed Agent {2} in team {3} for {4}"
                      .format(self.id, self.tid, target.id, target.tid, self.attack_damage))
@@ -276,6 +283,8 @@ class World(object):
 
         # Holds each agents alive boolean
         self.alive = np.zeros((agents_n,), dtype=np.int)
+        # Team mask
+        self.team_mask = np.full((agents_n,), -1, dtype=np.int)
         # Holds each agents health and max health
         self.health = np.zeros((agents_n,), dtype=np.float)
         self.max_health = np.zeros((agents_n,), dtype=np.int)
@@ -445,7 +454,10 @@ class World(object):
         self.calculate_avail_target_actions()
 
         # After update test if world is done aka only one team left
-        self.wiped_teams = [team.is_wiped() for team in self.teams]
+        self._calculate_wiped_teams()
+
+    def _calculate_wiped_teams(self):
+        self.wiped_teams = [np.all(np.logical_not(self.alive[self.team_mask == team.tid])) for team in self.teams]
 
     def _update_pos(self, agent):
         """
@@ -512,14 +524,12 @@ class World(object):
             axis=2
         )
 
-    def connect(self, agent, spawn):
-        # Init update-able data
+    def connect(self, agent, spawn=None):
         self.health[agent.id] = agent.state.max_health
-        self.positions[agent.id] = spawn
+        agent.state._health = self.health[agent.id:(agent.id+1)]
         self.alive[agent.id] = agent.is_alive()
 
-        # Assign update-able data by reference to numpy data structures- this data is mainly needed for rendering
-        agent.state.health = self.health[agent.id]
+        self.positions[agent.id] = spawn
         agent.state.pos = self.positions[agent.id]
 
         # Static data
@@ -530,6 +540,7 @@ class World(object):
         self.heal_target_mask[agent.id][team_mates] = agent.has_heal()
         enemies = [enemy.id for enemy in self.agents if enemy.tid != agent.tid]
         self.attack_target_mask[agent.id][enemies] = True
+        self.team_mask[agent.id] = agent.tid
 
     def _update_alive_status(self):
         self.alive = self.health > 0
