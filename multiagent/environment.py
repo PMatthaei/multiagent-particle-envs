@@ -5,7 +5,7 @@ import numpy as np
 from gym import spaces
 
 from multiagent.core import World, Team
-from multiagent.exceptions.environment_exceptions import TooManyWinners, MissingActions
+from multiagent.exceptions.environment_exceptions import MissingActions
 
 
 class MAEnv(gym.Env):
