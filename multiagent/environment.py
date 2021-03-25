@@ -88,7 +88,6 @@ class MAEnv(gym.Env):
 
         self.world = world
         self.agents = self.world.policy_agents
-        self.movement_step_amount = self.world.grid_size  # move X pixels per action - de-facto grid size
         # set required vectorized gym env property
         self.n = len(world.policy_agents)
         # scenario callbacks
@@ -374,7 +373,7 @@ class MAEnv(gym.Env):
         agent.stats.reset()  # reset agent stats which were used to calculate step reward for next step
         return reward
 
-    def _set_action(self, action, agent, action_space, time=None):
+    def _set_action(self, action, agent, time=None):
         """
         Set env action for a particular agent. Convert action index to environment/world state update and
         provide these state changes to the agent for later update f.e of position and stats.
@@ -411,7 +410,7 @@ class MAEnv(gym.Env):
             agent.action.u[2] = target_id  # attack >= 5 --> index 2
 
         # first two dimensions hold x and y axis movement -> multiply with movement step amount
-        agent.action.u[:2] *= self.movement_step_amount
+        agent.action.u[:2] *= self.world.grid_size
 
     def _reset_render(self):
         """

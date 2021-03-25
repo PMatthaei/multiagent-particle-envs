@@ -8,7 +8,7 @@ def mock_agent(id: int, tid: int = 0, sight_range=2):
     agent = Mock()
     agent.id = id
     agent.tid = tid
-    agent.state.pos
+    agent.action = Mock()
     agent.state.max_health = 100
     agent.state.health = 100
     agent.is_alive = MagicMock(return_value=True)
@@ -33,6 +33,7 @@ def mock_world(agents_n, grid_size=10, teams=None, obs_dims_per_agent=8, teams_n
     world.agents = reduce(lambda agents, team: agents + team.members, teams, [])
     world.team_affiliations = np.array(list(map(lambda a: a.tid, world.agents)))
     world.teams = teams
+    world.policy_agents = []
     world.dim_p = 2
     world.connect = MagicMock()
     world.obs = np.zeros((agents_n, agents_n, int(obs_dims_per_agent * agents_n / 2)))
