@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import logging
 import math
+import time
 from enum import Enum, IntEnum
 
 import numpy as np
@@ -462,7 +463,8 @@ class World(object):
         self._calculate_wiped_teams()
 
     def _calculate_wiped_teams(self):
-        self.wiped_teams = [np.all(np.logical_not(self.alive[self.team_affiliations == team.tid])) for team in self.teams]
+        self.wiped_teams = [np.all(np.logical_not(self.alive[self.team_affiliations == team.tid])) for team in
+                            self.teams]
 
     def _update_pos(self, agent):
         """
@@ -472,13 +474,14 @@ class World(object):
         @param agent:
         @return:
         """
-        move_vector = agent.action.u[:2]
-        if not any(move_vector):
-            return  # no movement
-        pos = self.positions[agent.id, :2]
-        new_pos = pos + move_vector
-        if self.is_free(new_pos):
-            pos += move_vector
+        move_vector = agent.action.u[:2].copy()
+        if np.any(move_vector):
+            pos = self.positions[agent.id]
+            new_pos = pos + move_vector
+            if self.is_free(new_pos):  # move is allowed
+                self.positions[agent.id] += move_vector
+            else:  # reset action if not allowed -> important to keep state consistent for rendering
+                agent.action.u[:2] = 0.0
 
     def _update_visibility(self):
         self.kd_tree = scipy.spatial.cKDTree(data=self.positions)
@@ -555,8 +558,8 @@ class World(object):
         if self.bounds is not None:
             w_steps = self.positions - [self.grid_size, 0]
             e_steps = self.positions + [self.grid_size, 0]
-            n_steps = self.positions - [0, self.grid_size]
-            s_steps = self.positions + [0, self.grid_size]
+            n_steps = self.positions + [0, self.grid_size]
+            s_steps = self.positions - [0, self.grid_size]
             stepped_positions = np.concatenate((w_steps, e_steps, n_steps, s_steps), axis=1) \
                 .reshape((self.agents_n, self.get_movement_dims, 2))
 
@@ -568,8 +571,8 @@ class World(object):
             # In bounds checks
             x_in_left_bound = stepped_positions[:, :, 0] >= 0
             x_in_right_bound = stepped_positions[:, :, 0] <= self.bounds[0]
-            y_in_up_bound = stepped_positions[:, :, 1] >= 0
-            y_in_down_bound = stepped_positions[:, :, 1] <= self.bounds[1]
+            y_in_down_bound = stepped_positions[:, :, 1] >= 0
+            y_in_up_bound = stepped_positions[:, :, 1] <= self.bounds[1]
             all_in_bound = (x_in_left_bound & x_in_right_bound) & (y_in_up_bound & y_in_down_bound)
             mask = illegal_step_mask & all_in_bound
 

@@ -36,11 +36,10 @@ class BasicScriptedAI(ScriptedAI):
             if distance <= agent.sight_range:  # set closest agent as target if in range
                 action.u[2] = target_id  # attack >= 5 --> index 2
             else:  # move towards the closest agent if not in range
-                d_pos = world.positions[agent.id] - world.positions[closest_agent.id]
+                d_pos = world.positions[closest_agent.id] - world.positions[agent.id]
                 max_difference_dimension = np.argmax(np.abs(d_pos))
                 max_diff = d_pos[max_difference_dimension]
-                # Negate signum since the coordinate system of pygame - y movement means up and -x means left
-                action.u[max_difference_dimension] = - np.sign(max_diff)  # x-axis left == 1 --> index 0
+                action.u[max_difference_dimension] = np.sign(max_diff)  # x-axis left == 1 --> index 0
         else:  # No-Op
             action.u[0] = 0
             action.u[1] = 0

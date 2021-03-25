@@ -247,16 +247,23 @@ class _PyGameEntity(pygame.sprite.Sprite):
         self.alpha = 255
         self.surf = pygame.Surface((self.sight_range * 2, self.sight_range * 2), pygame.SRCALPHA, 32).convert_alpha()
         self.rect: Rect = self.surf.get_rect()
-        self.rect.center = self.agent.state.pos.copy()
+        self.rect.center = self.agent.state.pos
         self.update()
 
     def is_dead(self):
         return self.agent.is_dead()
 
     def update(self):
+        # Update visual position
+        if self.agent.action.u is not None:
+            move_by = self.agent.action.u[:2]
+            if np.any(move_by):
+                print("Agent {} moves {}".format(self.agent.id, move_by))
+                self.rect.move_ip(move_by)
+                self.agent.action.u[:2] = 0
+
         self._draw()
         # Important: The simulation is updating with a move_by update while here we set the resulted new pos
-        self.rect.center = self.agent.state.pos
 
     def _draw(self):
         self.alpha = 80 if self.agent.is_dead() else 255

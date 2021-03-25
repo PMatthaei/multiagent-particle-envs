@@ -22,21 +22,21 @@ class WorldPositionsTestCases(unittest.TestCase):
         self.world.connect(self.agent2, self.agent_spawn2)
 
     def test_update_pos_if_not_occupied(self):
-        self.agent.action.u[:2] = [0, 1]  # move to -> 1,0 -> free
+        self.agent.action.u[:2] = np.array([0, 1])  # move to -> 1,0 -> free
         self.world._update_pos(self.agent)
 
         np.testing.assert_array_equal(self.world.positions[0], [1, 2])
         np.testing.assert_array_equal(self.agent.state.pos, [1, 2])
 
     def test_no_update_pos_if_occupied(self):
-        self.agent.action.u = [0, -1]  # move to -> 1,0 -> occupied by agent 2
+        self.agent.action.u = np.array([0, -1])  # move to -> 1,0 -> occupied by agent 2
         self.world._update_pos(self.agent)
 
         np.testing.assert_array_equal(self.world.positions[0], [1, 1])
         np.testing.assert_array_equal(self.agent.state.pos, [1, 1])
 
     def test_no_update_pos_if_noop(self):
-        self.agent.action.u[:2] = [0, 0]  # noop action
+        self.agent.action.u[:2] = np.array([0, 0])  # noop action
         self.world._update_pos(self.agent)
 
         np.testing.assert_array_equal(self.world.positions[0], [1, 1])

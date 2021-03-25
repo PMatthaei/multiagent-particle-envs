@@ -25,14 +25,13 @@ if __name__ == '__main__':
     controls = HeadlessControls(env=env)
     controls.start()
 
-    # render call to create viewer window (necessary only for interactive policies)
-    env.render()
-
     policy_teams = env.world.policy_teams
     # create random policies for each agent in each team
     all_policies = [[RandomPolicy(env, agent) for agent in team.members] for team in policy_teams]
     # execution loop
     obs_n = env.reset()
+    # render call to create viewer window (necessary only for interactive policies)
+    env.render()
 
     profiler = None
     if args.profile:
