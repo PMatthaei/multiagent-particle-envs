@@ -413,7 +413,7 @@ class World(object):
         """
         Update state of the world.
         """
-        # Set actions for scripted/heuristic agents
+        # Set actions for scripted/heuristic agents BEFORE advancing state
         for agent in self.scripted_agents:
             agent.action = agent.action_callback(agent, self)
 
@@ -463,8 +463,7 @@ class World(object):
         self._calculate_wiped_teams()
 
     def _calculate_wiped_teams(self):
-        self.wiped_teams = [np.all(np.logical_not(self.alive[self.team_affiliations == team.tid])) for team in
-                            self.teams]
+        self.wiped_teams = [np.all(np.logical_not(self.alive[self.team_affiliations == t.tid])) for t in self.teams]
 
     def _update_pos(self, agent):
         """
@@ -582,6 +581,6 @@ class World(object):
 
     def calculate_avail_target_actions(self):
         self.avail_target_actions[:, :] = 0.0  # Reset
-        mask = (self.visibility == 1) & self.alive & self.self_target_mask & (
-                self.attack_target_mask | self.heal_target_mask)
+        mask = (self.visibility == 1) & self.alive & self.self_target_mask & \
+               (self.attack_target_mask | self.heal_target_mask)
         self.avail_target_actions[mask] = 1.0

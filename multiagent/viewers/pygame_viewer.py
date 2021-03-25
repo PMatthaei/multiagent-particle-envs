@@ -258,12 +258,11 @@ class _PyGameEntity(pygame.sprite.Sprite):
         if self.agent.action.u is not None:
             move_by = self.agent.action.u[:2]
             if np.any(move_by):
-                print("Agent {} moves {}".format(self.agent.id, move_by))
+                move_by[1] *= -1  # Flip y-axis to convert to PyGame coordinates
                 self.rect.move_ip(move_by)
                 self.agent.action.u[:2] = 0
 
         self._draw()
-        # Important: The simulation is updating with a move_by update while here we set the resulted new pos
 
     def _draw(self):
         self.alpha = 80 if self.agent.is_dead() else 255

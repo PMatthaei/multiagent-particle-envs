@@ -394,16 +394,12 @@ class MAEnv(gym.Env):
         if act_ind == 0:
             return  # no-op
         elif act_ind == 1:  # WEST
-            print("Agent {} moves WEST".format(agent.id))
             agent.action.u[0] = -1.0  # x-axis left == 1 --> index 0
         elif act_ind == 2:  # EAST
-            print("Agent {} moves EAST".format(agent.id))
             agent.action.u[0] = +1.0  # x-axis right == 2 --> index 0
         elif act_ind == 3:  # NORTH
-            print("Agent {} moves NORTH".format(agent.id))
             agent.action.u[1] = +1.0  # y-axis up == 3 --> index 1 - pygame y axis is flipped !
         elif act_ind == 4:  # SOUTH
-            print("Agent {} moves SOUTH".format(agent.id))
             agent.action.u[1] = -1.0  # y-axis down == 4 --> index 1 - pygame y axis is flipped !
         else:
             target_id = act_ind - 5  # convert action index into target id

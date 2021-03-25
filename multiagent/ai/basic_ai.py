@@ -19,8 +19,7 @@ class BasicScriptedAI(ScriptedAI):
         action.u = np.zeros(world.dim_p + 1)
         action.u[2] = -1  # default is no target == -1
 
-        # TODO: Vectorize all AI acts? How are these actions applied in state? also like agents?
-        #  one by one to prevent illegal actions taken
+        # TODO: Vectorize
         if world.distances is not None:  # if distance matrix initialized
             masked_distances = world.distances[agent.id].copy()
             if agent.has_heal():
@@ -36,10 +35,10 @@ class BasicScriptedAI(ScriptedAI):
             if distance <= agent.sight_range:  # set closest agent as target if in range
                 action.u[2] = target_id  # attack >= 5 --> index 2
             else:  # move towards the closest agent if not in range
-                d_pos = world.positions[closest_agent.id] - world.positions[agent.id]
-                max_difference_dimension = np.argmax(np.abs(d_pos))
-                max_diff = d_pos[max_difference_dimension]
-                action.u[max_difference_dimension] = np.sign(max_diff)  # x-axis left == 1 --> index 0
+                position_difference = world.positions[closest_agent.id] - world.positions[agent.id]
+                max_difference_dimension = np.argmax(np.abs(position_difference))
+                max_diff = position_difference[max_difference_dimension]
+                action.u[max_difference_dimension] = np.sign(max_diff)
         else:  # No-Op
             action.u[0] = 0
             action.u[1] = 0
