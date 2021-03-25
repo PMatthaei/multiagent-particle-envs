@@ -26,8 +26,8 @@ class RoleTypes(Enum):
 
 
 class UnitAttackTypes(Enum):
-    RANGED = {"attack_range": 35}
-    MELEE = {"attack_range": 5}
+    RANGED = {"attack_range": 20}
+    MELEE = {"attack_range": 10}
 
 
 # Calculate all unique unit types

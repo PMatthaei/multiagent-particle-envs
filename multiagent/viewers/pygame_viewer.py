@@ -255,12 +255,8 @@ class _PyGameEntity(pygame.sprite.Sprite):
 
     def update(self):
         # Update visual position
-        if self.agent.action.u is not None:
-            move_by = self.agent.action.u[:2]
-            if np.any(move_by):
-                move_by[1] *= -1  # Flip y-axis to convert to PyGame coordinates
-                self.rect.move_ip(move_by)
-                self.agent.action.u[:2] = 0
+        if self.agent.action.u is not None and np.any(self.agent.action.u[:2]):
+            self.rect.center = self.agent.state.pos
 
         self._draw()
 
