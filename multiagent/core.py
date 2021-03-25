@@ -13,10 +13,9 @@ import scipy.spatial.distance
 from multiagent.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError, OverhealError
 from multiagent.exceptions.world_exceptions import NoTeamFoundError
 from multiagent.utils.spawn_generator import SpawnGenerator
+from multiagent.utils.unit_type_bit_encoder import unit_type_bits, bits_needed, UNKNOWN_TYPE
 
 logger = logging.getLogger("ma-env")
-
-UNKNOWN_TYPE = "UNIT_TYPE_NONE"
 
 
 class RoleTypes(Enum):
@@ -30,18 +29,9 @@ class UnitAttackTypes(Enum):
     MELEE = {"attack_range": 10}
 
 
-# Calculate all unique unit types
-UNIQUE_UNIT_TYPES = list(itertools.product(RoleTypes, UnitAttackTypes))
-UNIQUE_UNIT_TYPES.insert(0, UNKNOWN_TYPE)
-# Calculate bits needed to represent all unique units
-UNIT_BITS_NEEDED = math.ceil(math.log(len(UNIQUE_UNIT_TYPES), 2))
-
-
-def _to_bits(num):
-    return list(map(float, bin(num)[2:].zfill(UNIT_BITS_NEEDED)))
-
-
-UNIT_TYPE_BITS: dict = dict((unit, _to_bits(index)) for index, unit in enumerate(UNIQUE_UNIT_TYPES))
+TYPES = [RoleTypes, UnitAttackTypes]
+UNIT_BITS_NEEDED = bits_needed(TYPES)
+UNIT_TYPE_BITS = unit_type_bits(TYPES)
 
 
 class ActionTypes(IntEnum):
@@ -63,6 +53,8 @@ class EntityState(object):
 
     @property
     def health(self):
+        # This getter and setter setup is needed to convert the reference to the numpy array
+        # Reference to numpy array values does not work
         return self._health[0]
 
     @health.setter

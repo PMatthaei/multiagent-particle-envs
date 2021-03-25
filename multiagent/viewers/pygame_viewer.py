@@ -254,10 +254,10 @@ class _PyGameEntity(pygame.sprite.Sprite):
         return self.agent.is_dead()
 
     def update(self):
-        # Update visual position
+        # Update visual position if agent moved
         if self.agent.action.u is not None and np.any(self.agent.action.u[:2]):
             self.rect.center = self.agent.state.pos
-
+        # Update visuals
         self._draw()
 
     def _draw(self):

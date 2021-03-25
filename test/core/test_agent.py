@@ -1,9 +1,12 @@
 import unittest
 
+import numpy as np
+
 from multiagent.core import Agent, RoleTypes, UnitAttackTypes, World
 from multiagent.exceptions.agent_exceptions import OverhealError
+from test.mock import mock_world
 
-BUILD_PLAN = {
+BUILD_PLAN_AGENT = {
     "role": RoleTypes.TANK,
     "attack_type": UnitAttackTypes.RANGED
 }
@@ -18,17 +21,15 @@ N_AGENTS = 4
 
 class AgentTestCases(unittest.TestCase):
     def setUp(self):
-        self.a = Agent(id=0, tid=0, build_plan=BUILD_PLAN, color=None)
+        self.a = Agent(id=0, tid=0, build_plan=BUILD_PLAN_AGENT, color=None)
         self.h = Agent(id=1, tid=0, build_plan=BUILD_PLAN_HEALER, color=None)
-        self.b = Agent(id=2, tid=1, build_plan=BUILD_PLAN, color=None)
-        self.c = Agent(id=3, tid=0, build_plan=BUILD_PLAN, color=None)
-        # TODO mock
-        self.world = World(grid_size=10, teams_n=2, agents_n=N_AGENTS)
-        self.world.connect(self.a)
-        self.world.connect(self.h)
-        self.world.connect(self.b)
-        self.world.connect(self.c)
-        pass
+        self.b = Agent(id=2, tid=1, build_plan=BUILD_PLAN_AGENT, color=None)
+        self.c = Agent(id=3, tid=0, build_plan=BUILD_PLAN_AGENT, color=None)
+
+        self.a.state._health = [self.a.state.max_health]
+        self.h.state._health = [self.h.state.max_health]
+        self.b.state._health = [self.b.state.max_health]
+        self.c.state._health = [self.c.state.max_health]
 
     def test_build_plan(self):
         self.assertEqual(self.a.unit_type_bits, [0, 0, 1])
@@ -38,7 +39,6 @@ class AgentTestCases(unittest.TestCase):
         self.assertEqual(self.a.attack_range, UnitAttackTypes.RANGED.value['attack_range'])
         self.assertEqual(self.a.attack_range, self.a.sight_range)
         self.assertEqual(self.a.attack_damage, RoleTypes.TANK.value['attack_damage'])
-        pass
 
     def test_attack(self):
         self.a.attack(self.b)

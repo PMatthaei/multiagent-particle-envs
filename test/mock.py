@@ -10,7 +10,7 @@ def mock_agent(id: int, tid: int = 0, sight_range=2):
     agent.tid = tid
     agent.action = Mock()
     agent.state.max_health = 100
-    agent.state.health = 100
+    agent.state._health = np.array([100])
     agent.is_alive = MagicMock(return_value=True)
     agent.sight_range = sight_range
     agent.has_heal = MagicMock(return_value=False)
