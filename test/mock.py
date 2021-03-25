@@ -1,3 +1,4 @@
+from functools import reduce
 from unittest.mock import MagicMock, Mock
 
 import numpy as np
@@ -7,6 +8,7 @@ def mock_agent(id: int, tid: int = 0, sight_range=2):
     agent = Mock()
     agent.id = id
     agent.tid = tid
+    agent.state.pos
     agent.state.max_health = 100
     agent.state.health = 100
     agent.is_alive = MagicMock(return_value=True)
@@ -24,11 +26,14 @@ def mock_team(tid: int, members=None, is_scripted=False):
     return team
 
 
-def mock_world(agents_n, grid_size=10, teams=None, obs_dims_per_agent=8):
+def mock_world(agents_n, grid_size=10, teams=None, obs_dims_per_agent=8, teams_n=2):
     if teams is None:
         teams = []
-    world = Mock(agents_n=agents_n, grid_size=grid_size)
+    world = Mock(agents_n=agents_n, teams_n=teams_n, grid_size=grid_size)
+    world.agents = reduce(lambda agents, team: agents + team.members, teams, [])
+    world.team_affiliations = np.array(list(map(lambda a: a.tid, world.agents)))
     world.teams = teams
+    world.dim_p = 2
     world.connect = MagicMock()
     world.obs = np.zeros((agents_n, agents_n, int(obs_dims_per_agent * agents_n / 2)))
     world.obs[0, :] = 1.0

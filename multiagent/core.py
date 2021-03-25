@@ -256,7 +256,7 @@ class Agent(Entity):
 
 
 class World(object):
-    def __init__(self, grid_size: int, agents_n: int, bounds=np.array([1280, 720]), log=False):
+    def __init__(self, grid_size: int, agents_n: int, teams_n: int, bounds=np.array([1280, 720]), log=False):
         """
         Multi-agent world
         :param bounds: World bounds in which the agents can move
@@ -269,6 +269,7 @@ class World(object):
         self.collaborative = False
         # list of teams build by a subset of ...
         self.teams = []
+        self.teams_n = teams_n
         self.wiped_teams = []
         # list of agents
         self.agents = []
@@ -284,8 +285,8 @@ class World(object):
 
         # Holds each agents alive boolean
         self.alive = np.zeros((agents_n,), dtype=np.int)
-        # Team mask
-        self.team_mask = np.full((agents_n,), -1, dtype=np.int)
+        # Team affiliation (team id) for later masking
+        self.team_affiliations = np.full((agents_n,), -1, dtype=np.int)
         # Holds each agents health and max health
         self.health = np.zeros((agents_n,), dtype=np.float)
         self.max_health = np.zeros((agents_n,), dtype=np.int)
@@ -461,7 +462,7 @@ class World(object):
         self._calculate_wiped_teams()
 
     def _calculate_wiped_teams(self):
-        self.wiped_teams = [np.all(np.logical_not(self.alive[self.team_mask == team.tid])) for team in self.teams]
+        self.wiped_teams = [np.all(np.logical_not(self.alive[self.team_affiliations == team.tid])) for team in self.teams]
 
     def _update_pos(self, agent):
         """
@@ -544,7 +545,7 @@ class World(object):
         self.heal_target_mask[agent.id][team_mates] = True if agent.has_heal() else False
         enemies = [enemy.id for enemy in self.agents if enemy.tid != agent.tid]
         self.attack_target_mask[agent.id][enemies] = False if agent.has_heal() else True
-        self.team_mask[agent.id] = agent.tid
+        self.team_affiliations[agent.id] = agent.tid
 
     def _update_alive_status(self):
         self.alive = self.health > 0

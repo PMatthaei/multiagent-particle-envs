@@ -17,27 +17,27 @@ class TeamsScenario(BaseTeamScenario):
         n_teams: How many teams
         """
         self.team_build_plan = build_plan
-        self.n_teams = len(build_plan)
-        self.n_agents = [len(team["units"]) for team in build_plan]
-        self.is_symmetric = self.n_agents.count(self.n_agents[0]) == len(self.n_agents)
+        self.teams_n = len(build_plan)
+        self.agents_n = [len(team["units"]) for team in build_plan]
+        self.is_symmetric = self.agents_n.count(self.agents_n[0]) == len(self.agents_n)
         self.team_mixing_factor = 8  # build_plan["tmf"] if "tmf" in build_plan["tmf"] else 5
         self.scripted_ai = BasicScriptedAI()
         if not self.is_symmetric:
-            raise ScenarioNotSymmetricError(self.n_agents, self.n_teams)
+            raise ScenarioNotSymmetricError(self.agents_n, self.teams_n)
 
         self.team_spawns = None
-        self.agent_spawns = [None] * self.n_teams
+        self.agent_spawns = [None] * self.teams_n
 
     def _make_world(self, grid_size: int):
-        agents_n = sum(self.n_agents)
+        agents_n = sum(self.agents_n)
 
-        world = World(agents_n=agents_n, grid_size=grid_size)
+        world = World(agents_n=agents_n, teams_n=self.teams_n, grid_size=grid_size)
 
         world.collaborative = True
 
-        colors = generate_colors(self.n_teams)
+        colors = generate_colors(self.teams_n)
         agent_count = 0
-        for tid in range(self.n_teams):
+        for tid in range(self.teams_n):
             is_scripted = self.team_build_plan[tid]["is_scripted"]
             members = [
                 Agent(
@@ -47,9 +47,9 @@ class TeamsScenario(BaseTeamScenario):
                     build_plan=self.team_build_plan[tid]["units"][index],
                     action_callback=self.scripted_agent_callback if is_scripted else None
                 ) for index, aid in  # index is the team internal identifier
-                enumerate(range(agent_count, agent_count + self.n_agents[tid]))
+                enumerate(range(agent_count, agent_count + self.agents_n[tid]))
             ]
-            agent_count += self.n_agents[tid]
+            agent_count += self.agents_n[tid]
             world.agents += members
             team = Team(tid=tid, members=members, is_scripted=is_scripted)
             world.teams.append(team)
@@ -59,14 +59,14 @@ class TeamsScenario(BaseTeamScenario):
     def reset_world(self, world: World):
 
         # How far should team spawns and agents be spread
-        agent_spread = world.grid_size * sum(self.n_agents) / self.team_mixing_factor
-        team_spread = self.n_teams * agent_spread
+        agent_spread = world.grid_size * sum(self.agents_n) / self.team_mixing_factor
+        team_spread = self.teams_n * agent_spread
 
         # random team spawns
         if self.team_spawns is None:
             self.team_spawns = world.spg.generate_team_spawns(radius=team_spread, grid_size=world.grid_size)
             # take first teams size since symmetric for spawn generation
-            agent_spawns = world.spg.generate(self.n_agents[0], world.grid_size, 1, agent_spread)
+            agent_spawns = world.spg.generate(self.agents_n[0], world.grid_size, 1, agent_spread)
             # mirror spawns
             self.agent_spawns[0] = agent_spawns + self.team_spawns[0]
             self.agent_spawns[1] = (- agent_spawns) + self.team_spawns[1]

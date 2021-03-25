@@ -14,7 +14,7 @@ class WorldInitializationTestCases(unittest.TestCase):
         self.agent2 = mock_agent(id=1, tid=1)
         self.agent_spawn = np.array([1, 1])
 
-        self.world = World(grid_size=10, agents_n=N_AGENTS)
+        self.world = World(grid_size=10, teams_n=2, agents_n=N_AGENTS)
         self.world.agents = [self.agent, self.agent2]
 
     def test_occupied_position_matrix_init(self):

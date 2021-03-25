@@ -1,20 +1,7 @@
 import numpy as np
 
 from multiagent.core import World, Action, Agent
-
-
-class ScriptedAI(object):
-    def __init__(self):
-        pass
-
-    def act(self, agent: Agent, world: World) -> Action:
-        """
-        Act based upon the world and the agent state.
-        @param agent:
-        @param world:
-        @return:
-        """
-        raise NotImplementedError()
+from multiagent.interfaces.ai import ScriptedAI
 
 
 class BasicScriptedAI(ScriptedAI):
@@ -32,12 +19,14 @@ class BasicScriptedAI(ScriptedAI):
         action.u = np.zeros(world.dim_p + 1)
         action.u[2] = -1  # default is no target == -1
 
+        # TODO: Vectorize all AI acts? How are these actions applied in state? also like agents?
+        #  one by one to prevent illegal actions taken
         if world.distances is not None:  # if distance matrix initialized
             masked_distances = world.distances[agent.id].copy()
             if agent.has_heal():
-                mask = (world.team_mask != agent.tid) | (world.alive == 0)  # mask out all enemies and dead
+                mask = (world.team_affiliations != agent.tid) | (world.alive == 0)  # mask out all enemies and dead
             else:
-                mask = (world.team_mask == agent.tid) | (world.alive == 0)  # mask out all teammates and dead
+                mask = (world.team_affiliations == agent.tid) | (world.alive == 0)  # mask out all teammates and dead
 
             masked_distances[mask] = np.inf  # infinite distance all non-targetable agents
             target_id = np.argmin(masked_distances)
@@ -47,9 +36,10 @@ class BasicScriptedAI(ScriptedAI):
             if distance <= agent.sight_range:  # set closest agent as target if in range
                 action.u[2] = target_id  # attack >= 5 --> index 2
             else:  # move towards the closest agent if not in range
-                d_pos = agent.state.pos - closest_agent.state.pos
+                d_pos = world.positions[agent.id] - world.positions[closest_agent.id]
                 max_difference_dimension = np.argmax(np.abs(d_pos))
                 max_diff = d_pos[max_difference_dimension]
+                # Negate signum since the coordinate system of pygame - y movement means up and -x means left
                 action.u[max_difference_dimension] = - np.sign(max_diff)  # x-axis left == 1 --> index 0
         else:  # No-Op
             action.u[0] = 0

@@ -22,8 +22,8 @@ class AgentTestCases(unittest.TestCase):
         self.h = Agent(id=1, tid=0, build_plan=BUILD_PLAN_HEALER, color=None)
         self.b = Agent(id=2, tid=1, build_plan=BUILD_PLAN, color=None)
         self.c = Agent(id=3, tid=0, build_plan=BUILD_PLAN, color=None)
-
-        self.world = World(grid_size=10, agents_n=N_AGENTS)
+        # TODO mock
+        self.world = World(grid_size=10, teams_n=2, agents_n=N_AGENTS)
         self.world.connect(self.a)
         self.world.connect(self.h)
         self.world.connect(self.b)
@@ -42,7 +42,7 @@ class AgentTestCases(unittest.TestCase):
 
     def test_attack(self):
         self.a.attack(self.b)
-        self.assertEqual(self.b.state.max_health-self.a.attack_damage, self.b.state.health)
+        self.assertEqual(self.b.state.max_health - self.a.attack_damage, self.b.state.health)
 
     def test_cannot_heal_if_not_healer(self):
         result = self.a.can_heal(self.c)

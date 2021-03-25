@@ -273,13 +273,15 @@ class MAEnv(gym.Env):
             reward_n = np.concatenate(team_rewards)
             pass
             self.logger.debug(f"Local Rewards per policy controlled team: {team_rewards if self.log else None}")
+
         winner_id = np.where(done_n)[0]
         if len(winner_id) == 1:
             self.logger.info("------ Episode {} done - Team with id {} won the battle.".format(self.episode, winner_id))
             self.episode += 1
-        # Too many winners are prohibited (prevent case of episode limit reached)
-        elif len(winner_id) >= 1 and self.t != self.episode_limit:
-            raise TooManyWinners(winner_id)
+
+        # All teams won (in case of draw = both teams wiped in same step)
+        elif len(winner_id) == len(self.world.teams) and self.t != self.episode_limit:
+            info_n["draw"] = True
 
         # Episode limit reached - Place this code block after winner check !
         if self.episode_limit is not None and self.episode_limit == self.t:

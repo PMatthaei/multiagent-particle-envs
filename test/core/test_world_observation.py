@@ -17,7 +17,7 @@ class WorldObservationTestCases(unittest.TestCase):
         self.a_spawn = np.array([0, 0])
         self.b_spawn = np.array([1, 1])
 
-        self.world = World(grid_size=10, agents_n=N_AGENTS)
+        self.world = World(grid_size=10, teams_n=2, agents_n=N_AGENTS)
         self.world.agents = [self.a, self.b]
 
         self.world.connect(self.a, self.a_spawn)
