@@ -19,7 +19,7 @@ class MAEnv(gym.Env):
                  global_reward=True,
                  log=False, log_level=logging.ERROR,
                  fps=None, infos=True, draw_grid=True,
-                 record=False, headless=False, stream_key=None):
+                 record=False, headless=False, stream_key=None, seed=None):
         """
         Multi-Agent extension of gym.Env.
 
@@ -76,6 +76,7 @@ class MAEnv(gym.Env):
             provided twitch stream key to stream environment rendering to twitch.tv.
             If set streaming starts automatically.
         """
+        self.seed = seed
         self.logger = logging.getLogger("ma-env")
         self.logger.handlers = []
         ch = logging.StreamHandler()
