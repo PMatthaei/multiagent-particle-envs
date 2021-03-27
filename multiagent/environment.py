@@ -16,6 +16,7 @@ class MAEnv(gym.Env):
     def __init__(self, world: World,
                  reset_callback=None, reward_callback=None, observation_callback=None,
                  info_callback=None, done_callback=None,
+                 global_reward=True,
                  log=False, log_level=logging.ERROR,
                  fps=None, infos=True, draw_grid=True,
                  record=False, headless=False, stream_key=None):
@@ -98,7 +99,7 @@ class MAEnv(gym.Env):
         self.done_callback = done_callback
         # environment parameters
         # if true, every agent has the same reward
-        self.global_reward = world.collaborative
+        self.global_reward = global_reward
         self.t = 0
         self.episode = 0
         self.episode_limit = 60

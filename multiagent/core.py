@@ -258,8 +258,6 @@ class World(object):
         self.log = log
         self.positions = None
         self.grid_size = grid_size
-        # indicates if the reward will be global(cooperative) or local
-        self.collaborative = False
         # list of teams build by a subset of ...
         self.teams = []
         self.teams_n = teams_n

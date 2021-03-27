@@ -26,5 +26,7 @@ def as_enum(d):
 
 if __name__ == '__main__':
     t = json.dumps(AI_SMALL, cls=EnumEncoder)
+    print("JSON: ")
+    print(t)
     t = json.loads(t, object_hook=as_enum)
     assert t == AI_SMALL
