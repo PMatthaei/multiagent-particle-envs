@@ -22,7 +22,7 @@ class MAEnv(gym.Env):
         """
         Multi-Agent extension of gym.Env.
 
-        Parameters (defaults see: in init)
+        Parameters (defaults see: in __init__)
         ----------
         @param world: World
             world object representing the whole state. Computes state transitions and internal calculations not
@@ -454,6 +454,18 @@ class MAEnv(gym.Env):
                 self.viewer.close()
                 self.viewer = None
         return None
+
+
+class TeamsEnv(MAEnv):
+    def __init__(self, teams_build_plan, grid_size):
+        from multiagent.scenarios import team
+        scenario = team.load("teams.py").TeamsScenario(teams_build_plan)
+        world = scenario.make_teams_world(grid_size)
+        super().__init__(world,
+                         reset_callback=scenario.reset_world,
+                         reward_callback=scenario.reward,
+                         observation_callback=scenario.observation,
+                         done_callback=scenario.done)
 
 
 class BatchMultiAgentEnv(gym.Env):

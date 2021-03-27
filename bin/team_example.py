@@ -20,6 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('-stream_key', '--stream_key', default=None, help='Stream Key for Twitch.')
     parser.add_argument('-fps', '--fps', default=30, help='Locked frames per second. (Default: 30, None for unlocked.')
     args = parser.parse_args()
+
     env = make_env(args)
 
     controls = HeadlessControls(env=env)
