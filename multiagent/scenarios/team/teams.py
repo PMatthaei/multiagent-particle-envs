@@ -33,8 +33,6 @@ class TeamsScenario(BaseTeamScenario):
 
         world = World(agents_n=agents_n, teams_n=self.teams_n, grid_size=grid_size)
 
-        world.collaborative = True
-
         colors = generate_colors(self.teams_n)
         agent_count = 0
         for tid in range(self.teams_n):
