@@ -9,16 +9,16 @@ from multiagent.utils.spawn_generator import SpawnGenerator
 
 
 class TeamsScenario(BaseTeamScenario):
-    def __init__(self, build_plan):
+    def __init__(self, match_build_plan):
         """
         Constructor for a team scenario.
-        @param build_plan: Team setup supplied as needed
+        @param match_build_plan: Plan to setup the match and therefore team composition and possible AI`s.
         n_agents: How many agents per team
         n_teams: How many teams
         """
-        self.team_build_plan = build_plan
-        self.teams_n = len(build_plan)
-        self.agents_n = [len(team["units"]) for team in build_plan]
+        self.match_build_plan = match_build_plan
+        self.teams_n = len(match_build_plan)
+        self.agents_n = [len(team["units"]) for team in match_build_plan]
         self.is_symmetric = self.agents_n.count(self.agents_n[0]) == len(self.agents_n)
         self.team_mixing_factor = 8  # build_plan["tmf"] if "tmf" in build_plan["tmf"] else 5
         self.scripted_ai = BasicScriptedAI()
@@ -36,13 +36,13 @@ class TeamsScenario(BaseTeamScenario):
         colors = generate_colors(self.teams_n)
         agent_count = 0
         for tid in range(self.teams_n):
-            is_scripted = self.team_build_plan[tid]["is_scripted"]
+            is_scripted = self.match_build_plan[tid]["is_scripted"]
             members = [
                 Agent(
                     id=aid,  # is not reset per team. aid identifying all units globally
                     tid=tid,
                     color=colors[tid],
-                    build_plan=self.team_build_plan[tid]["units"][index],
+                    build_plan=self.match_build_plan[tid]["units"][index],
                     action_callback=self.scripted_agent_callback if is_scripted else None
                 ) for index, aid in  # index is the team internal identifier
                 enumerate(range(agent_count, agent_count + self.agents_n[tid]))
