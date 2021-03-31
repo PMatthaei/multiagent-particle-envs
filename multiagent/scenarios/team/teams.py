@@ -90,8 +90,8 @@ class TeamsScenario(BaseTeamScenario):
         return not world.wiped_teams[team.tid] and world.wiped_teams.count(False) == 1
 
     def observation(self, agent: Agent, world: World):
-        obs = world.obs[agent.id].flatten()
-        return obs
+        other_obs = world.obs[agent.id].flatten()
+        return np.concatenate((other_obs, agent.self_observation))
 
     def scripted_agent_callback(self, agent: Agent, world: World) -> Action:
         return self.scripted_ai.act(agent, world)

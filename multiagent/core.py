@@ -507,8 +507,8 @@ class World(object):
         health_obs = health_obs.reshape((*health_obs.shape, 1))
         health_obs[not_visible_mask] = 0.0  # health of invisible agents set to 0
 
-        unit_bits_obs = np.repeat([self.unit_bits_obs], self.agents_n, axis=0)
-        unit_bits_obs[not_visible_mask] = UNIT_TYPE_BITS[UNKNOWN_TYPE]  # unit bits of invisible agents set to unknown
+        others_unit_bits_obs = np.repeat([self.unit_bits_obs], self.agents_n, axis=0)
+        others_unit_bits_obs[not_visible_mask] = UNIT_TYPE_BITS[UNKNOWN_TYPE]  # unit bits of invisible agents set to unknown
 
         self.obs = np.concatenate(
             (
@@ -516,7 +516,7 @@ class World(object):
                 health_obs,
                 relative_positions_obs,
                 relative_distances_obs,
-                unit_bits_obs,
+                others_unit_bits_obs,
             ),
             axis=2
         )

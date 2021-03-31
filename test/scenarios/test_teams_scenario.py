@@ -106,8 +106,8 @@ class TeamsScenarioObservationTestCases(unittest.TestCase):
 
     def test_observation_shape(self):
         result = self.scenario.observation(self.c, self.world)
-        np.testing.assert_array_equal(result, [1] * 16)
-        self.assertEqual(result.shape, (16,))
+        self.assertEqual(result.shape, (20,))
+        np.testing.assert_array_equal(result, ([1] * 16) + self.c.self_observation)
 
 
 class TeamsScenarioAITestCases(unittest.TestCase):

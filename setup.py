@@ -9,5 +9,5 @@ setup(name='maenv',
       packages=find_packages(),
       include_package_data=True,
       zip_safe=False,
-      install_requires=['gym', 'numpy-stl', 'pygame', 'colour', 'python-twitch-stream']
-)
+      install_requires=['gym', 'pygame', 'colour', 'python-twitch-stream']
+      )
