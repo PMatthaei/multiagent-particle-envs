@@ -420,7 +420,8 @@ class MAEnv(gym.Env):
             self.viewer.clear()
 
     def close(self):
-        self.viewer.close()
+        if self.viewer:
+            self.viewer.close()
         del self.world
         self.world = None
 

@@ -59,7 +59,7 @@ class _Grid:
         self.screen.blit(self.surface, (0, 0))
 
 
-class _SpriteFactory:
+class _EntityFactory:
     @staticmethod
     def build(agent: Agent):
         if RoleTypes.TANK in agent.unit_id:
@@ -84,13 +84,14 @@ class PyGameViewer(object):
                  headless=True):
         """
         Create new PyGameViewer for the environment
-        :param env: MultiAgentEnv to render
-        :param caption: Caption of the window
-        :param fps: Lock framrate to the provided frames per second
-        :param infos: Show additional information about performance and current game state.
-        :param draw_grid: Draw underlying movement grid induced by step size
-        :param record: Activate recording
-        :param headless: Make rendering headless (no window)
+        @param env:  MultiAgentEnv to render
+        @param caption: Caption of the window
+        @param fps: Lock framrate to the provided frames per second
+        @param infos: Show additional information about performance and current game state.
+        @param draw_grid: Draw underlying movement grid induced by step size
+        @param record: Activate recording
+        @param stream_key:
+        @param headless: Make rendering headless (no window)
         """
         self.env = env
         self.entities = None
@@ -105,6 +106,7 @@ class PyGameViewer(object):
 
         # Skip audio module since it is not used and produced errors with ALSA lib on ubuntu
         pygame.display.init()
+        pygame.display.set_caption(caption)
         pygame.font.init()
         self.font = pygame.font.SysFont('', 25)
         flags = pygame.DOUBLEBUF
@@ -117,16 +119,14 @@ class PyGameViewer(object):
         if self.draw_grid:
             self.grid = _Grid(screen=self.screen, cell_size=int(self.env.world.grid_size))
 
-        pygame.display.set_caption(caption)
         self.clock = pygame.time.Clock()
         self.dt = 0
         self.fps = fps
         self.infos = infos
         self.clear()
 
-        width, height = self.env.world.bounds
-
         if self.record and check_ffmpeg():
+            width, height = self.env.world.bounds
             self.proc = sp.Popen(['ffmpeg',
                                   '-y',
                                   '-f', 'rawvideo',
@@ -138,17 +138,15 @@ class PyGameViewer(object):
                                   '-an',
                                   'env-recording.mov'], stdin=sp.PIPE)
         elif self.stream and check_ffmpeg():
+            width, height = self.env.world.bounds
             self.twitch = TwitchViewer(stream_key=stream_key, width=width, height=height)
         pass
 
     def update(self):
         """
-        Update data. This does not update visuals
-        :param t:
-        :param episode:
-        :return:
+        Update screen. This includes entities as well as HUD.
+        @return:
         """
-
         if self.infos:
             dt = self.font.render("FPS: " + str(int(self.clock.get_fps())), False, (0, 0, 0))
             t = self.font.render("Time step: " + str(self.env.t), False, (0, 0, 0))
@@ -173,16 +171,16 @@ class PyGameViewer(object):
     def init(self, world_entities):
         """
         Initialize viewer with its rendered entities, created from their counterparts in the environment data.
-        :param world_entities:
-        :return:
+        @param world_entities:
+        @return:
         """
         self.entities = pygame.sprite.Group()
-        self.entities.add(*[_SpriteFactory.build(entity) for entity in world_entities])
+        self.entities.add(*[_EntityFactory.build(entity) for entity in world_entities])
 
     def render(self):
         """
         Render current data and handle events
-        :return:
+        @return:
         """
         # Always track events
         for event in pygame.event.get():
@@ -213,7 +211,7 @@ class PyGameViewer(object):
     def reset(self):
         """
         Reset the visuals to default
-        :return:
+        @return:
         """
         self.entities = None
         self.clear()
@@ -221,11 +219,15 @@ class PyGameViewer(object):
     def clear(self):
         """
         Clear screen. Usually called to clear screen for next frame.
-        :return:
+        @return:
         """
         self.screen.fill((255, 255, 255))
 
     def close(self):
+        """
+        Close all used processes and main viewer
+        @return:
+        """
         self.entities = None
         pygame.quit()
         if self.proc is not None:
@@ -236,6 +238,12 @@ class PyGameViewer(object):
 
 class _PyGameEntity(pygame.sprite.Sprite):
     def __init__(self, agent: Agent, debug_range=False, debug_health=True):
+        """
+        Base entity to render.
+        @param agent:
+        @param debug_range:
+        @param debug_health:
+        """
         super(_PyGameEntity, self).__init__()
         self.agent = agent  # This reference is updated in world step
         self.debug_range = debug_range
@@ -257,7 +265,6 @@ class _PyGameEntity(pygame.sprite.Sprite):
         # Update visual position if agent moved
         if self.agent.action.u is not None and np.any(self.agent.action.u[:2]):
             self.rect.center = self.agent.state.pos
-        # Update visuals
         self._draw()
 
     def _draw(self):
