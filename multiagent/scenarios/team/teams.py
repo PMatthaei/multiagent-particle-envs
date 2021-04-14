@@ -5,7 +5,6 @@ from multiagent.core import World, Agent, Team, Action
 from multiagent.exceptions.scenario_exceptions import ScenarioNotSymmetricError
 from multiagent.interfaces.scenario import BaseTeamScenario
 from multiagent.utils.colors import generate_colors
-from multiagent.utils.spawn_generator import SpawnGenerator
 
 
 class TeamsScenario(BaseTeamScenario):

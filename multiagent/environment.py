@@ -461,8 +461,8 @@ class MAEnv(gym.Env):
 
 class TeamsEnv(MAEnv):
     def __init__(self, match_build_plan, grid_size, **kwargs):
-        from multiagent.scenarios import team
-        scenario = team.load("teams.py").TeamsScenario(match_build_plan)
+        from multiagent.scenarios.team.teams import TeamsScenario
+        scenario = TeamsScenario(match_build_plan)
         world = scenario.make_teams_world(grid_size)
         super().__init__(world,
                          reset_callback=scenario.reset_world,
