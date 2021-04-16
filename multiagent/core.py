@@ -221,10 +221,12 @@ class Agent(Entity):
     def heal(self, target: Agent):
         if target.tid != self.tid:  # Agents can not heal their enemies. This indicates a bug.
             raise IllegalTargetError(self)
-        target.state.health += self.attack_damage
-        if target.state.health > target.state.max_health:
-            raise OverhealError(self)
-        self.stats.dmg_healed += self.attack_damage
+        max_healed = target.state.health + self.attack_damage
+        new_health = np.minimum(max_healed, target.state.max_health)
+        healed = new_health - target.state.health
+        target.state.health = new_health
+
+        self.stats.dmg_healed += healed
         logger.debug("Agent {0} in team {1} healed Agent {2} in team {3} for {4}"
                      .format(self.id, self.tid, target.id, target.tid, self.attack_damage))
 

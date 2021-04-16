@@ -66,5 +66,7 @@ class AgentTestCases(unittest.TestCase):
         result = self.h.can_heal(self.c)
         self.assertEqual(False, result)
 
-    def test_overheal_raises_error(self):
-        self.assertRaises(OverhealError, self.a.heal, self.c)
+    def test_can_heal_if_healing_exceeds_max_health(self):
+        self.c.state.health = self.c.state.max_health - (self.h.attack_damage - 1)
+        result = self.h.can_heal(self.c)
+        self.assertEqual(True, result)
