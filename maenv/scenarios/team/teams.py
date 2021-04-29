@@ -1,10 +1,10 @@
 import numpy as np
 
-from multiagent.ai.basic_ai import BasicScriptedAI
-from multiagent.core import World, Agent, Team, Action
-from multiagent.exceptions.scenario_exceptions import ScenarioNotSymmetricError
-from multiagent.interfaces.scenario import BaseTeamScenario
-from multiagent.utils.colors import generate_colors
+from maenv.ai.basic_ai import BasicScriptedAI
+from maenv.core import World, Agent, Team, Action
+from maenv.exceptions.scenario_exceptions import ScenarioNotSymmetricError
+from maenv.interfaces.scenario import BaseTeamScenario
+from maenv.utils.colors import generate_colors
 
 
 class TeamsScenario(BaseTeamScenario):

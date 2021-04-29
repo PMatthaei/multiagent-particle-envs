@@ -10,10 +10,10 @@ import numpy as np
 import scipy.spatial.ckdtree
 import scipy.spatial.distance
 
-from multiagent.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError, OverhealError
-from multiagent.exceptions.world_exceptions import NoTeamFoundError
-from multiagent.utils.spawn_generator import SpawnGenerator
-from multiagent.utils.unit_type_bit_encoder import unit_type_bits, bits_needed, UNKNOWN_TYPE
+from maenv.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError, OverhealError
+from maenv.exceptions.world_exceptions import NoTeamFoundError
+from maenv.utils.spawn_generator import SpawnGenerator
+from maenv.utils.unit_type_bit_encoder import unit_type_bits, bits_needed, UNKNOWN_TYPE
 
 logger = logging.getLogger("ma-env")
 

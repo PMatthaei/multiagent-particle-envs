@@ -8,7 +8,7 @@ from pstats import SortKey
 from bin.controls.headless_controls import HeadlessControls
 from bin.team_plans_example import AI_SMALL, LARGE, AI_MEDIUM, AI_LARGE, SMALL, MEDIUM
 from make_env import make_env
-from multiagent.interfaces.policy import RandomPolicy
+from maenv.interfaces.policy import RandomPolicy
 
 if __name__ == '__main__':
 

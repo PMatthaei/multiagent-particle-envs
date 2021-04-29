@@ -2,8 +2,8 @@ import unittest
 
 import numpy as np
 
-from multiagent.core import Agent, RoleTypes, UnitAttackTypes, World
-from multiagent.exceptions.agent_exceptions import OverhealError
+from maenv.core import Agent, RoleTypes, UnitAttackTypes, World
+from maenv.exceptions.agent_exceptions import OverhealError
 from test.mock import mock_world
 
 BUILD_PLAN_AGENT = {

@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from multiagent.environment import MAEnv
+from maenv.environment import MAEnv
 from test.mock import mock_world, mock_agent
 
 

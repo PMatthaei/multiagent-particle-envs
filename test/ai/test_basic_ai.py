@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from multiagent.ai.basic_ai import BasicScriptedAI
+from maenv.ai.basic_ai import BasicScriptedAI
 from test.mock import mock_agent, mock_team, mock_world
 
 AGENTS_N = 4

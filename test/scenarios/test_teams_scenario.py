@@ -4,7 +4,7 @@ from array import array
 import numpy as np
 
 from bin.team_plans_example import SMALL_1x1, AI_SMALL_1x1
-from multiagent.scenarios.team.teams import TeamsScenario
+from maenv.scenarios.team.teams import TeamsScenario
 from test.mock import mock_world, mock_team, mock_spawn_generator, mock_agent, mock_ai
 
 AGENTS_N = 2

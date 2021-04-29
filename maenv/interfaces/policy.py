@@ -1,6 +1,6 @@
 import random
 
-from multiagent.environment import MAEnv
+from maenv.environment import MAEnv
 
 
 class Policy(object):

@@ -1,4 +1,4 @@
-from multiagent.core import Agent, World, Action
+from maenv.core import Agent, World, Action
 
 
 class ScriptedAI(object):

@@ -1,5 +1,5 @@
 """
-Code for creating a multiagent environment with one of the scenarios listed
+Code for creating a maenv environment with one of the scenarios listed
 in ./scenarios/.
 Can be called by using, for example:
     env = make_env('simple_speaker_listener')
@@ -30,14 +30,14 @@ def make_env(args, benchmark=False):
         .action_space       :   Returns the action space for each agent
         .n                  :   Returns the number of Agents
     '''
-    from multiagent.environment import MAEnv
-    from multiagent.scenarios import team
+    from maenv.environment import MAEnv
+    from maenv.scenarios import team
 
     # load scenario from script
     scenario = team.load(args.scenario + ".py").TeamsScenario(args.build_plan)
     # create world
     world = scenario.make_teams_world(grid_size=10.0)
-    # create multiagent environment
+    # create maenv environment
     env = MAEnv(world=world,
                 reset_callback=scenario.reset_world,
                 reward_callback=scenario.reward,

@@ -1,6 +1,6 @@
 import numpy as np
 
-from multiagent.core import Entity, Agent, Team
+from maenv.core import Entity, Agent, Team
 
 KILL_REWARD = 20
 ASSIST_REWARD = 5

@@ -1,5 +1,5 @@
 # defines scenario upon which the world is built
-from multiagent.core import World, Team, Agent, Action
+from maenv.core import World, Team, Agent, Action
 
 
 class BaseScenario(object):

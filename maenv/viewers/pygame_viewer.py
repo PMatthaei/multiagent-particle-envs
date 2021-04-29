@@ -9,9 +9,9 @@ import numpy as np
 import pygame
 from pygame.rect import Rect
 
-from multiagent.core import RoleTypes, Agent
-from multiagent.utils.colors import tuple_to_color, colour_to_color
-from multiagent.viewers.twitch_viewer import TwitchViewer
+from maenv.core import RoleTypes, Agent
+from maenv.utils.colors import tuple_to_color, colour_to_color
+from maenv.viewers.twitch_viewer import TwitchViewer
 from colour import Color
 
 HEALTH_BAR_HEIGHT = 2

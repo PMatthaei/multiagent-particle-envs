@@ -1,7 +1,7 @@
 import json
 
 from bin.team_plans_example import AI_SMALL
-from multiagent.core import RoleTypes, UnitAttackTypes
+from maenv.core import RoleTypes, UnitAttackTypes
 
 PUBLIC_ENUMS = {
     'RoleTypes': RoleTypes,

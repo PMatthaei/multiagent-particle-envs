@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from multiagent.core import World
+from maenv.core import World
 from test.mock import mock_agent
 
 N_AGENTS = 5

@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from multiagent.core import RoleTypes, UnitAttackTypes
+from maenv.core import RoleTypes, UnitAttackTypes
 SMALL_1x1 = [
     {
         "is_scripted": False,

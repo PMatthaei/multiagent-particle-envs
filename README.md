@@ -40,17 +40,17 @@ ffmpeg version 4.2.4-1ubuntu0.1 Copyright (c) 2000-2020 the FFmpeg developers
 
 - `make_env.py`: contains code for importing a multiagent environment as an OpenAI Gym-like object.
 
-- `./multiagent/environment.py`: contains code for environment simulation (interaction physics, `_step()` function, etc.)
+- `./maenv/environment.py`: contains code for environment simulation (interaction physics, `_step()` function, etc.)
 
-- `./multiagent/core.py`: contains classes for various objects (Entities, Game Objects, Agents, etc.) that are used throughout the code.
+- `./maenv/core.py`: contains classes for various objects (Entities, Game Objects, Agents, etc.) that are used throughout the code.
 
-- `./multiagent/pygame_rendering.py`: used for displaying agent behaviors on the screen.
+- `./maenv/pygame_rendering.py`: used for displaying agent behaviors on the screen.
 
-- `./multiagent/policy.py`: contains code for interactive policy based on keyboard input.
+- `./maenv/policy.py`: contains code for interactive policy based on keyboard input.
 
-- `./multiagent/scenario.py`: contains base scenario object that is extended for all scenarios.
+- `./maenv/scenario.py`: contains base scenario object that is extended for all scenarios.
 
-- `./multiagent/interfaces/scenario`: folder where various scenarios/ environments are stored. scenario code consists of several functions:
+- `./maenv/interfaces/scenario`: folder where various scenarios/ environments are stored. scenario code consists of several functions:
     1) `make_teams_world()`: creates all of the entities that inhabit the world, assigns their capabilities and team affiliation. called once at the beginning of each training session
     
     `_build_teams`: called internally via `make_teams_world`. defines team affiliations of entities.

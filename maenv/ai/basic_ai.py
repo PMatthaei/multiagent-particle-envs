@@ -1,7 +1,7 @@
 import numpy as np
 
-from multiagent.core import World, Action, Agent
-from multiagent.interfaces.ai import ScriptedAI
+from maenv.core import World, Action, Agent
+from maenv.interfaces.ai import ScriptedAI
 
 
 class BasicScriptedAI(ScriptedAI):
