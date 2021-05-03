@@ -44,6 +44,9 @@ SMALL = [
                  ] * 5
     },
 ]
+AI_VS_AI_SMALL = deepcopy(SMALL)
+AI_VS_AI_SMALL[0]["is_scripted"] = True
+AI_VS_AI_SMALL[1]["is_scripted"] = True
 
 AI_SMALL = deepcopy(SMALL)
 AI_SMALL[0]["is_scripted"] = True
