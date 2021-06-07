@@ -397,6 +397,8 @@ class World(object):
         return [agent for agent in self.agents if agent.action_callback is not None]
 
     def can_attack(self, agent: Agent, target: Agent):
+        if agent.has_heal():
+            return False
         if target.tid == agent.tid:
             raise IllegalTargetError("Cannot attack team mates.")
         return self.visibility[agent.id][target.id]

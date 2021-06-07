@@ -25,7 +25,10 @@ class TeamsScenario(BaseTeamScenario):
             raise ScenarioNotSymmetricError(self.agents_n, self.teams_n)
 
         self.team_spawns = None
-        self.agent_spawns = [None] * self.teams_n
+        if "agent_spawns" in self.match_build_plan:
+            self.agent_spawns = self.match_build_plan["agent_spawns"]
+        else:
+            self.agent_spawns = [None] * self.teams_n
 
     def _make_world(self, grid_size: int):
         agents_n = sum(self.agents_n)

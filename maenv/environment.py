@@ -462,13 +462,16 @@ class MAEnv(gym.Env):
 class TeamsEnv(MAEnv):
     def __init__(self, match_build_plan, grid_size, **kwargs):
         from maenv.scenarios.team.teams import TeamsScenario
-        scenario = TeamsScenario(match_build_plan)
-        world = scenario.make_teams_world(grid_size)
+        self._scenario = TeamsScenario(match_build_plan)
+        world = self._scenario.make_teams_world(grid_size)
         super().__init__(world,
-                         reset_callback=scenario.reset_world,
-                         reward_callback=scenario.reward,
-                         observation_callback=scenario.observation,
-                         done_callback=scenario.done, **kwargs)
+                         reset_callback=self._scenario.reset_world,
+                         reward_callback=self._scenario.reward,
+                         observation_callback=self._scenario.observation,
+                         done_callback=self._scenario.done, **kwargs)
+
+    def get_spawns(self):
+        return self._scenario.agent_spawns
 
 
 class BatchMultiAgentEnv(gym.Env):
