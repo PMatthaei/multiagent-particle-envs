@@ -14,7 +14,7 @@ class EnvironmentStateTestCases(unittest.TestCase):
         self.at = mock_team(tid=0, members=[self.a])
         self.bt = mock_team(tid=1, members=[self.b])
         self.world = mock_world(agents_n=2, teams=[self.at, self.bt])
-        self.env = MAEnv(self.world, headless=True)
+        self.env = MAEnv(self.world, headless=True, observation_callback=lambda x,y: [])
 
     def test_get_state_returns_both_in_top_left_corner_relative_to_world_center(self):
         result = self.env.get_state()

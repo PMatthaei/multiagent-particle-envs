@@ -13,12 +13,45 @@ class EnvironmentAvailableActionTestCases(unittest.TestCase):
         self.b = mock_agent(id=1)
         self.c = mock_agent(id=2)
         self.d = mock_agent(id=3)
-        team_1 = mock_team(tid=0, members=[self.a, self.b], is_scripted=False)
-        team_2 = mock_team(tid=1, members=[self.c, self.d], is_scripted=True)
-        self.world = mock_world(agents_n=2, teams=[team_1, team_2])
-        self.env = MAEnv(self.world, headless=True)
+        agents_n = 4
+        t1 = mock_team(tid=0, members=[self.a, self.b], is_scripted=False)
+        t2 = mock_team(tid=1, members=[self.c, self.d], is_scripted=True)
+        self.world = mock_world(agents_n=agents_n, teams=[t1, t2])
+        self.world.avail_target_actions = np.array([
+            [0, 0, 1, 1],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+            [1, 0, 0, 0],
+        ])
+        self.world.avail_movement_actions = np.array([
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ])
+        self.env = MAEnv(self.world, headless=True, observation_callback=lambda x, y: [])
         self.env.reset()
 
-    def test_get_avail_actions_healer(self):
-        avail_actions = self.env.get_avail_actions()
-        np.testing.assert_array_equal(avail_actions, [1])
+    def test_get_avail_actions_agent_a(self):
+        avail_action_ids = self.env.get_available_action_ids(self.a)
+        np.testing.assert_array_equal(avail_action_ids, [0, 1, 7, 8])
+        avail_actions = self.env.get_available_actions(self.a)
+        np.testing.assert_array_equal(avail_actions, [1., 1., 0., 0., 0., 0., 0., 1., 1., 0., 0., 0., 0.])
+
+    def test_get_avail_actions_agent_b(self):
+        avail_action_ids = self.env.get_available_action_ids(self.b)
+        np.testing.assert_array_equal(avail_action_ids, [0, 2, 5, 6])
+        avail_actions = self.env.get_available_actions(self.b)
+        np.testing.assert_array_equal(avail_actions, [1., 0., 1., 0., 0., 1., 1., 0., 0., 0., 0., 0., 0.])
+
+    def test_get_avail_actions_agent_c(self):
+        avail_action_ids = self.env.get_available_action_ids(self.c)
+        np.testing.assert_array_equal(avail_action_ids, [0, 3])
+        avail_actions = self.env.get_available_actions(self.c)
+        np.testing.assert_array_equal(avail_actions, [1., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+
+    def test_get_avail_actions_agent_d(self):
+        avail_action_ids = self.env.get_available_action_ids(self.d)
+        np.testing.assert_array_equal(avail_action_ids, [0, 4, 5])
+        avail_actions = self.env.get_available_actions(self.d)
+        np.testing.assert_array_equal(avail_actions, [1., 0., 0., 0., 1., 1., 0., 0., 0., 0., 0., 0., 0.])

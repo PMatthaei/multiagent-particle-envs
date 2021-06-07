@@ -114,7 +114,7 @@ class MAEnv(gym.Env):
 
             # observation space
             obs_dim = len(observation_callback(agent, self.world))
-            self.observation_space.append(spaces.Box(low=0.0, high=1.0, shape=(obs_dim,), dtype=np.float32))
+            self.observation_space.append(spaces.Box(low=0.0, high=1.0, shape=(obs_dim,), dtype=float))
 
         self.state_n = self._get_state_dim()
         self._state = np.zeros((self.state_n,))
@@ -165,10 +165,7 @@ class MAEnv(gym.Env):
         avail_actions += avail_movement_action_indices.tolist()
         offset += 4  # Add movement actions to offset
         avail_target_action_indices = np.where(self.world.avail_target_actions[agent.id])[0]
-        if (agent.tid == 0 and not agent.has_heal()) or (agent.tid == 1 and agent.has_heal()):
-            avail_target_action_indices -= offset  # Apply offset from no-op + movement
-        else:
-            avail_target_action_indices += offset  # Apply offset from no-op + movement
+        avail_target_action_indices += offset  # Apply offset from no-op
         avail_actions += avail_target_action_indices.tolist()
         self.logger.debug(
             f"Agent {agent.id,} has available actions with indices: {avail_actions if self.log else None}")
@@ -200,12 +197,12 @@ class MAEnv(gym.Env):
         heal_dims = 0
         # get amount of attack-able and heal-able agents in other/own team(s)
         for team in self.world.teams:
-            if team.tid == agent.tid and agent.has_heal():
-                heal_dims += team.size  # cannot heal himself
-            if team.tid != agent.tid and not agent.has_heal():
-                attack_dims += team.size
-        return movement_dims + self.n + 1  # no-op
-        # return movement_dims + attack_dims + heal_dims + 1  # no-op
+            #if team.tid == agent.tid and agent.has_heal():
+            heal_dims += team.size  # cannot heal himself
+            #if team.tid != agent.tid and not agent.has_heal():
+            attack_dims += team.size
+        # return movement_dims + self.n + 1  # no-op
+        return movement_dims + attack_dims + heal_dims + 1  # no-op
 
     def step(self, action_n, heuristic_opponent=False):
         """

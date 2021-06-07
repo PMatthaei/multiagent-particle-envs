@@ -277,31 +277,31 @@ class World(object):
         self.dim_color = 3
 
         # Holds each agents alive boolean
-        self.alive = np.zeros((agents_n,), dtype=np.int)
+        self.alive = np.zeros((agents_n,), dtype=int)
         # Team affiliation (team id) for later masking
-        self.team_affiliations = np.full((agents_n,), -1, dtype=np.int)
+        self.team_affiliations = np.full((agents_n,), -1, dtype=int)
         # Holds each agents health and max health
-        self.health = np.zeros((agents_n,), dtype=np.float)
-        self.max_health = np.zeros((agents_n,), dtype=np.int)
+        self.health = np.zeros((agents_n,), dtype=float)
+        self.max_health = np.zeros((agents_n,), dtype=int)
         # Holds each agents action
         self.actions = np.zeros((agents_n, self.dim_p + 1))
         # Holds all available movement actions in the current step
         self.avail_movement_actions = np.ones((agents_n, self.get_movement_dims),
-                                              dtype=np.float)  # four movement directions
+                                              dtype=float)  # four movement directions
         # Holds all available target actions in the current step
-        self.avail_target_actions = np.zeros((agents_n, agents_n), dtype=np.float)  # target action for each agent
+        self.avail_target_actions = np.zeros((agents_n, agents_n), dtype=float)  # target action for each agent
         # Mask out each agent if its himself
         self.self_target_mask = (np.ones_like(self.avail_target_actions) - np.diag(np.ones(self.agents_n))) \
-            .astype(np.bool)
+            .astype(bool)
         # Mask all healable targets
-        self.heal_target_mask = np.zeros_like(self.avail_target_actions).astype(np.bool)
+        self.heal_target_mask = np.zeros_like(self.avail_target_actions).astype(bool)
         # Mask all attackable targets
-        self.attack_target_mask = np.zeros_like(self.avail_target_actions).astype(np.bool)
+        self.attack_target_mask = np.zeros_like(self.avail_target_actions).astype(bool)
 
         # Holds each agents sight range
-        self.ranges = np.zeros((agents_n,), dtype=np.float)
+        self.ranges = np.zeros((agents_n,), dtype=float)
         # Holds each agents unit representation encoded as bit array
-        self.unit_bits_obs = np.zeros((agents_n, UNIT_BITS_NEEDED), dtype=np.float)
+        self.unit_bits_obs = np.zeros((agents_n, UNIT_BITS_NEEDED), dtype=float)
         # Holds each agents position
         self.positions = np.zeros((agents_n, self.dim_p))
         # Holds each agents distance to other agents (and himself on diag = always 0)
@@ -556,7 +556,7 @@ class World(object):
             stepped_positions = np.concatenate((w_steps, e_steps, n_steps, s_steps), axis=1) \
                 .reshape((self.agents_n, self.get_movement_dims, 2))
 
-            illegal_step_mask = np.ones((self.agents_n, self.get_movement_dims), dtype=np.bool)
+            illegal_step_mask = np.ones((self.agents_n, self.get_movement_dims), dtype=bool)
             for pos in self.positions:
                 mask = np.all(stepped_positions == pos, axis=2)
                 illegal_step_mask[mask] = False
