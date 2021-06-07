@@ -27,6 +27,7 @@ def mock_team(tid: int, members=None, is_scripted=False):
     if members is None:
         members = []
     team = Mock(tid=tid, members=members, is_scripted=is_scripted)
+    team.size = len(members)
     return team
 
 
@@ -39,7 +40,7 @@ def mock_world(agents_n, grid_size=10, teams=None, obs_dims_per_agent=8, teams_n
     world.agents = reduce(lambda agents, team: agents + team.members, teams, [])
     world.team_affiliations = np.array(list(map(lambda a: a.tid, world.agents)))
     world.teams = teams
-    world.policy_agents = []
+    world.policy_agents = [] if teams is None else teams[0].members
     world.dim_p = 2
     world.connect = MagicMock()
     world.obs = np.zeros((agents_n, agents_n, int(obs_dims_per_agent * agents_n / 2)))

@@ -29,7 +29,7 @@ H2_T2_A1 = [
         ]
     },
     {
-        "is_scripted": False,
+        "is_scripted": True,
     },
 ]
 H2_T2_A1[1]["units"] = H2_T2_A1[0]["units"]

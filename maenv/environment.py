@@ -165,7 +165,10 @@ class MAEnv(gym.Env):
         avail_actions += avail_movement_action_indices.tolist()
         offset += 4  # Add movement actions to offset
         avail_target_action_indices = np.where(self.world.avail_target_actions[agent.id])[0]
-        avail_target_action_indices += offset  # Apply offset from no-op + movement
+        if (agent.tid == 0 and not agent.has_heal()) or (agent.tid == 1 and agent.has_heal()):
+            avail_target_action_indices -= offset  # Apply offset from no-op + movement
+        else:
+            avail_target_action_indices += offset  # Apply offset from no-op + movement
         avail_actions += avail_target_action_indices.tolist()
         self.logger.debug(
             f"Agent {agent.id,} has available actions with indices: {avail_actions if self.log else None}")
@@ -300,7 +303,7 @@ class MAEnv(gym.Env):
         :return:
         """
         self.t = 0
-        self.reset_callback(self.world)
+        self.reset_callback(self.world) if self.reset_callback else None
         self._reset_render()
         obs_n = []
         self.agents = self.world.policy_agents
