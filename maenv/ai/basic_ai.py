@@ -29,12 +29,12 @@ class BasicScriptedAI(ScriptedAI):
             masked_distances[agent.id] = np.inf  # infinite distance to self to prevent to be chosen as target
             masked_distances[mask] = np.inf  # infinite distance all non-targetable agents
             target_id = np.argmin(masked_distances)
-            closest_agent = world.agents[target_id]
             distance = masked_distances[target_id]
 
             if distance <= agent.sight_range:  # set closest agent as target if in range
                 action.u[2] = target_id  # attack >= 5 --> index 2
             else:  # move towards the closest agent if not in range
+                closest_agent = world.agents[target_id]
                 position_difference = world.positions[closest_agent.id] - world.positions[agent.id]
                 max_difference_dimension = np.argmax(np.abs(position_difference))
                 max_diff = position_difference[max_difference_dimension]

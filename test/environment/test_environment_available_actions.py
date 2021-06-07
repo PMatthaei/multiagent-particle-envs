@@ -23,12 +23,14 @@ class EnvironmentAvailableActionTestCases(unittest.TestCase):
             [0, 0, 0, 0],
             [1, 0, 0, 0],
         ])
+        self.assertEqual(self.world.avail_target_actions.shape, (agents_n, agents_n))
         self.world.avail_movement_actions = np.array([
             [1, 0, 0, 0],
             [0, 1, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1],
         ])
+        self.assertEqual(self.world.avail_target_actions.shape, (4, 4)) # 4 movement dims in 2d space
         self.env = MAEnv(self.world, headless=True, observation_callback=lambda x, y: [])
         self.env.reset()
 
