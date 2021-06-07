@@ -26,7 +26,7 @@ class BasicScriptedAI(ScriptedAI):
                 mask = (world.team_affiliations != agent.tid) | (world.alive == 0)  # mask out all enemies and dead
             else:
                 mask = (world.team_affiliations == agent.tid) | (world.alive == 0)  # mask out all teammates and dead
-
+            masked_distances[agent.id] = np.inf  # infinite distance to self to prevent to be chosen as target
             masked_distances[mask] = np.inf  # infinite distance all non-targetable agents
             target_id = np.argmin(masked_distances)
             closest_agent = world.agents[target_id]
