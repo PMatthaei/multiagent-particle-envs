@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from utils import _unique_unit_types, bits_needed, unit_type_bits
+from maenv.utils import _unique_unit_types, bits_needed, unit_type_bits
 
 
 class UnitTypeBitEncoderTestCases(unittest.TestCase):

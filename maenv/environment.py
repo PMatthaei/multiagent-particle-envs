@@ -5,7 +5,7 @@ import numpy as np
 from gym import spaces
 
 from maenv.core import World, Team
-from maenv.exceptions.environment_exceptions import MissingActions
+from maenv.exceptions.environment_exceptions import ActionCountMismatch
 
 
 class MAEnv(gym.Env):
@@ -218,7 +218,7 @@ class MAEnv(gym.Env):
         # Set action for each agent - this needs to be performed before stepping world !
 
         if len(self.agents) != len(action_n):  # Make sure we received an action for every agent
-            raise MissingActions()
+            raise ActionCountMismatch(len(self.agents), len(action_n))
 
         for aid, agent in enumerate(self.agents):
             self._set_action(action_n[aid], agent, self.action_space[aid])
@@ -244,19 +244,18 @@ class MAEnv(gym.Env):
             for agent in team.members:
                 obs_n.append(self._get_obs(agent))
                 local_rewards.append(self._get_reward(agent))
+            local_rewards = np.array(local_rewards)
 
             # Check if the policy team won and add reward
             won = self._get_done(team)
-            if won:
-                # This is why we are not using np.mean in global reward since it would cause division by (n+1)
-                local_rewards.append(200)
             done_n.append(won)
 
             # Calculate the reward depending on the reward function category
             if self.global_reward:
-                global_reward = np.sum(local_rewards) / team.size
+                global_reward = np.sum(local_rewards) / team.size + 200 if won else 0
                 team_rewards.append(global_reward)  # float
             else:
+                local_rewards += (200.0 / team.size) if won else 0
                 team_rewards.append(local_rewards)  # list of floats
 
         for team in self.world.scripted_teams:
@@ -269,11 +268,9 @@ class MAEnv(gym.Env):
 
         if self.global_reward:
             reward_n = team_rewards
-            pass
             self.logger.debug(f"Global Rewards per policy controlled team: {team_rewards if self.log else None}")
         else:
             reward_n = np.concatenate(team_rewards)
-            pass
             self.logger.debug(f"Local Rewards per policy controlled team: {team_rewards if self.log else None}")
 
         winner_id = np.where(done_n)[0]
