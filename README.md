@@ -1,5 +1,5 @@
 [![Python package](https://github.com/PMatthaei/ma-env/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/PMatthaei/ma-env/actions/workflows/python-package.yml)
-
+[![codecov](https://codecov.io/gh/PMatthaei/ma-env/branch/master/graph/badge.svg?token=YMA67UWT20)](https://codecov.io/gh/PMatthaei/ma-env)
 ```
 This is a fork of: https://github.com/openai/multiagent-particle-envs
 ```
