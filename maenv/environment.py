@@ -197,11 +197,10 @@ class MAEnv(gym.Env):
         heal_dims = 0
         # get amount of attack-able and heal-able agents in other/own team(s)
         for team in self.world.teams:
-            #if team.tid == agent.tid and agent.has_heal():
-            heal_dims += team.size  # cannot heal himself
-            #if team.tid != agent.tid and not agent.has_heal():
-            attack_dims += team.size
-        # return movement_dims + self.n + 1  # no-op
+            if team.tid == agent.tid:
+                heal_dims += team.size
+            if team.tid != agent.tid:
+                attack_dims += team.size
         return movement_dims + attack_dims + heal_dims + 1  # no-op
 
     def step(self, action_n, heuristic_opponent=False):

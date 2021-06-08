@@ -31,9 +31,11 @@ def mock_team(tid: int, members=None, is_scripted=False):
     return team
 
 
-def mock_world(agents_n, grid_size=10, teams=None, obs_dims_per_agent=8, teams_n=2):
+def mock_world(agents_n=None, grid_size=10, teams=None, obs_dims_per_agent=8, teams_n=2):
     if teams is None:
         teams = []
+    if agents_n is None:
+        agents_n = sum([len(t.members) for t in teams])
     world = Mock(agents_n=agents_n, teams_n=teams_n, grid_size=grid_size)
     world.bounds = np.array([1280, 720])
     world.center = world.bounds / 2
