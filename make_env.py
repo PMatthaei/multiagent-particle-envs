@@ -36,7 +36,7 @@ def make_env(args, benchmark=False):
     # load scenario from script
     scenario = team.load(args.scenario + ".py").TeamsScenario(args.build_plan)
     # create world
-    world = scenario.make_teams_world(grid_size=10.0)
+    world = scenario.make_teams_world(grid_size=20.0)
     # create maenv environment
     env = MAEnv(world=world,
                 reset_callback=scenario.reset_world,

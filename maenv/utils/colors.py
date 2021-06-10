@@ -28,3 +28,15 @@ def generate_colors(n):
         b = int(b) % 256
         rgb_values.append((r, g, b))
     return rgb_values
+
+
+def hilo(a, b, c):
+    if c < b: b, c = c, b
+    if b < a: a, b = b, a
+    if c < b: b, c = c, b
+    return a + c
+
+
+def complement(r, g, b):
+    k = hilo(r, g, b)
+    return tuple(k - u for u in (r, g, b))

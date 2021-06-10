@@ -10,7 +10,7 @@ import pygame
 from pygame.rect import Rect
 
 from maenv.core import RoleTypes, Agent
-from maenv.utils.colors import tuple_to_color, colour_to_color
+from maenv.utils.colors import tuple_to_color, colour_to_color, complement
 from maenv.viewers.twitch_viewer import TwitchViewer
 from colour import Color
 
@@ -253,6 +253,7 @@ class _PyGameEntity(pygame.sprite.Sprite):
         self.attack_range = self.agent.attack_range
         self.body_radius = self.agent.bounding_circle_radius
         self.alpha = 255
+        self.font = pygame.font.SysFont('', 15)
         self.surf = pygame.Surface((self.sight_range * 2, self.sight_range * 2), pygame.SRCALPHA, 32).convert_alpha()
         self.rect: Rect = self.surf.get_rect()
         self.rect.center = self.agent.state.pos
@@ -266,6 +267,14 @@ class _PyGameEntity(pygame.sprite.Sprite):
         if self.agent.action.u is not None and np.any(self.agent.action.u[:2]):
             self.rect.center = self.agent.state.pos
         self._draw()
+        self._draw_agent_id_label() # Always on top
+
+    def _draw_agent_id_label(self):
+        label_color = complement(*self.agent.color)
+        agent_id_label = self.font.render(f"{self.agent.id}", False, label_color)
+        label_width = agent_id_label.get_width()
+        label_height = agent_id_label.get_height()
+        self.surf.blit(agent_id_label, [self.sight_range - label_width / 2, self.sight_range - label_height / 2])
 
     def _draw(self):
         self.alpha = 80 if self.agent.is_dead() else 255
