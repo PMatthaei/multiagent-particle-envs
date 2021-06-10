@@ -1,4 +1,3 @@
-# defines scenario upon which the world is built
 from maenv.core import World, Team, Agent, Action
 
 
@@ -57,7 +56,6 @@ class BaseTeamScenario(object):
         self.reset_world(world)
         return world
 
-    # create elements of the world
     def _make_world(self, grid_size: int) -> World:
         """
         Create elements of the world

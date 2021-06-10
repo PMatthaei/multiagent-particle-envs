@@ -11,10 +11,6 @@ class Policy(object):
         raise NotImplementedError()
 
 
-#
-# Example/Test policies
-#
-# random agent policy
 class RandomPolicy(Policy):
     def __init__(self, env: MAEnv, agent):
         super(RandomPolicy, self).__init__()

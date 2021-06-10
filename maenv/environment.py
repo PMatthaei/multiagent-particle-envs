@@ -251,10 +251,10 @@ class MAEnv(gym.Env):
 
             # Calculate the reward depending on the reward function category
             if self.global_reward:
-                global_reward = np.sum(local_rewards) / team.size + 200 if won else 0
+                global_reward = np.sum(local_rewards) / float(team.size) + (200 if won else 0)
                 team_rewards.append(global_reward)  # float
             else:
-                local_rewards += (200.0 / team.size) if won else 0
+                local_rewards += ((200.0 / team.size) if won else 0)
                 team_rewards.append(local_rewards)  # list of floats
 
         for team in self.world.scripted_teams:
