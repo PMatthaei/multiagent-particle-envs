@@ -300,8 +300,9 @@ class World(object):
         self.ranges = np.zeros((agents_n,), dtype=float)
         # Holds each agents unit representation encoded as bit array
         self.unit_bits_obs = np.zeros((agents_n, UNIT_BITS_NEEDED), dtype=float)
-        # Holds each agents position
+        # Holds each agents position in real and complex space
         self.positions = np.zeros((agents_n, self.dim_p))
+        self.positions_c = np.zeros((1, agents_n), dtype=complex)
         # Holds each agents distance to other agents (and himself on diag = always 0)
         self.distances = np.zeros((agents_n, agents_n))
         # Holds each agents visibility of other agents (and himself on diag = always True)
@@ -471,6 +472,7 @@ class World(object):
             new_pos = pos + move_vector
             if self.is_free(new_pos):  # move is allowed
                 self.positions[agent.id] += move_vector
+                self.positions_c[0, agent.id] += complex(*move_vector)  # update complex position
             else:  # reset action if not allowed -> important to keep state consistent for rendering
                 agent.action.u[:2] = 0.0
 
@@ -479,14 +481,13 @@ class World(object):
         self.visibility[:, :] = False  # Reset
         query = self.kd_tree.query_ball_point(self.positions, self.ranges)
         visible = [[(agent, other, self.alive[agent]) for other in visibles] for agent, visibles in enumerate(query)]
-        visible = np.array([item for sublist in visible for item in sublist])
+        visible = np.array([item for sublist in visible for item in sublist])  # flatten
         xs, ys, alives = list(zip(*visible))  # Matrix coordinates and their corresponding value
         self.visibility[xs, ys] = alives  # If the agent is alive set its visible indices to True else False
         self.visibility[:, self.alive == 0] = False  # Set the visibility of all dead agents to False
 
     def _update_dist_matrix(self):
-        z = np.array([[complex(*pos) for pos in self.positions]])
-        self.distances = abs(z.T - z)  # abs in complex space is distance in real space
+        self.distances = abs(self.positions_c.T - self.positions_c)  # abs in complex space is distance in real space
 
     def _calculate_obs(self):
         not_visible_mask = self.visibility == 0
@@ -534,7 +535,8 @@ class World(object):
         self.health[agent.id] = agent.state.max_health  # Set initial health
         agent.state._health = self.health[agent.id:(agent.id + 1)]  # Connect agent health with world data storage
 
-        self.positions[agent.id] = spawn  # Set initial position
+        self.positions[agent.id] = spawn  # Set initial position in real and complex space
+        self.positions_c[0, agent.id] = complex(*spawn) if spawn is not None else complex()
         agent.state.pos = self.positions[agent.id]  # Connect agent position with world data storage
 
         self.alive[agent.id] = agent.is_alive()  # Set initial alive status - agents assumed to be dead in the beginning
