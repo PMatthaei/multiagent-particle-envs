@@ -479,18 +479,16 @@ class World(object):
     def _update_visibility(self):
         self.kd_tree = scipy.spatial.cKDTree(data=self.positions)
         self.visibility[:, :] = False  # Reset
-        visible = self.kd_tree.query_ball_point(self.positions, self.ranges)
-        for agent_id, visible_indices in enumerate(visible):
-            # If the agent is alive set its visible indices to True else False
-            self.visibility[agent_id, visible_indices] = self.alive[agent_id]
-            dead = self.alive == 0
-            # Set the visibility of all dead agents to False
-            self.visibility[agent_id, dead] = False
+        query = self.kd_tree.query_ball_point(self.positions, self.ranges)
+        visible = [[(agent, other, self.alive[agent]) for other in visibles] for agent, visibles in enumerate(query)]
+        visible = np.array([item for sublist in visible for item in sublist])
+        xs, ys, alives = list(zip(*visible))  # Matrix coordinates and their corresponding value
+        self.visibility[xs, ys] = alives  # If the agent is alive set its visible indices to True else False
+        self.visibility[:, self.alive == 0] = False  # Set the visibility of all dead agents to False
 
     def _update_dist_matrix(self):
-        z = np.array([complex(*pos) for pos in self.positions])
-        m, n = np.meshgrid(z, z)
-        self.distances = abs(m - n)  # abs in complex space is distance in real space
+        z = np.array([[complex(*pos) for pos in self.positions]])
+        self.distances = abs(z.T - z)  # abs in complex space is distance in real space
 
     def _calculate_obs(self):
         not_visible_mask = self.visibility == 0
