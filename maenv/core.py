@@ -287,6 +287,8 @@ class World(object):
         self.actions = np.zeros((agents_n, self.dim_p + 1))
         # Holds all available movement actions in the current step
         self.avail_movement_actions = np.ones((agents_n, self.get_movement_dims), dtype=float)  # 4 movement directions
+        self.moves = np.array([[-1, 0], [1, 0], [0, 1], [0, -1]]) * self.grid_size  # W/E/N/S move
+
         # Holds all available target actions in the current step
         self.avail_target_actions = np.zeros((agents_n, agents_n), dtype=float)  # target action for each agent
         # Mask out each agent if its himself
@@ -549,11 +551,10 @@ class World(object):
     def calculate_avail_movements_actions(self):
         self.avail_movement_actions[:, :] = 0  # Reset
         if self.bounds is not None:
-            moves = np.array([[-1, 0], [1, 0], [0, 1], [0, -1]]) * self.grid_size  # W/E/N/S move
             m_dims = self.get_movement_dims
             n = self.agents_n
             positions = self.positions.repeat(m_dims, axis=0).reshape(n, m_dims, -1)
-            stepped_positions = positions + moves
+            stepped_positions = positions + self.moves
 
             legal_step_mask = np.ones((n, m_dims), dtype=bool)  # Marks legal moves
             # Stepped pos for every agents pos
