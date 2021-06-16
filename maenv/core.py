@@ -286,13 +286,11 @@ class World(object):
         # Holds each agents action
         self.actions = np.zeros((agents_n, self.dim_p + 1))
         # Holds all available movement actions in the current step
-        self.avail_movement_actions = np.ones((agents_n, self.get_movement_dims),
-                                              dtype=float)  # four movement directions
+        self.avail_movement_actions = np.ones((agents_n, self.get_movement_dims), dtype=float)  # 4 movement directions
         # Holds all available target actions in the current step
         self.avail_target_actions = np.zeros((agents_n, agents_n), dtype=float)  # target action for each agent
         # Mask out each agent if its himself
-        self.self_target_mask = (np.ones_like(self.avail_target_actions) - np.diag(np.ones(self.agents_n))) \
-            .astype(bool)
+        self.self_target_mask = (np.ones_like(self.avail_target_actions) - np.diag(np.ones(self.agents_n))).astype(bool)
         # Mask all healable targets
         self.heal_target_mask = np.zeros_like(self.avail_target_actions).astype(bool)
         # Mask all attackable targets
@@ -468,7 +466,7 @@ class World(object):
         @return:
         """
         move_vector = agent.action.u[:2].copy()
-        if np.any(move_vector):
+        if np.any(move_vector):  # has movement
             pos = self.positions[agent.id]
             new_pos = pos + move_vector
             if self.is_free(new_pos):  # move is allowed
@@ -481,8 +479,10 @@ class World(object):
         self.visibility[:, :] = False  # Reset
         visible = self.kd_tree.query_ball_point(self.positions, self.ranges)
         for agent_id, visible_indices in enumerate(visible):
+            # If the agent is alive set its visible indices to True else False
             self.visibility[agent_id, visible_indices] = self.alive[agent_id]
             dead = self.alive == 0
+            # Set the visibility of all dead agents to False
             self.visibility[agent_id, dead] = False
 
     def _update_dist_matrix(self):
@@ -512,7 +512,7 @@ class World(object):
         health_obs[not_visible_mask] = 0.0  # health of invisible agents set to 0
 
         others_unit_bits_obs = np.repeat([self.unit_bits_obs], self.agents_n, axis=0)
-        others_unit_bits_obs[not_visible_mask] = UNIT_TYPE_BITS[UNKNOWN_TYPE]  # unit bits of invisible agents set to unknown
+        others_unit_bits_obs[not_visible_mask] = UNIT_TYPE_BITS[UNKNOWN_TYPE]  # unit-bits of invisible agents = unknown
 
         self.obs = np.concatenate(
             (
@@ -549,17 +549,18 @@ class World(object):
     def calculate_avail_movements_actions(self):
         self.avail_movement_actions[:, :] = 0  # Reset
         if self.bounds is not None:
-            w_steps = self.positions - [self.grid_size, 0]
-            e_steps = self.positions + [self.grid_size, 0]
-            n_steps = self.positions + [0, self.grid_size]
-            s_steps = self.positions - [0, self.grid_size]
-            stepped_positions = np.concatenate((w_steps, e_steps, n_steps, s_steps), axis=1) \
-                .reshape((self.agents_n, self.get_movement_dims, 2))
+            moves = np.array([[-1, 0], [1, 0], [0, 1], [0, -1]]) * self.grid_size  # W/E/N/S move
+            m_dims = self.get_movement_dims
+            n = self.agents_n
+            positions = self.positions.repeat(m_dims, axis=0).reshape(n, m_dims, -1)
+            stepped_positions = positions + moves
 
-            illegal_step_mask = np.ones((self.agents_n, self.get_movement_dims), dtype=bool)
-            for pos in self.positions:
-                mask = np.all(stepped_positions == pos, axis=2)
-                illegal_step_mask[mask] = False
+            legal_step_mask = np.ones((n, m_dims), dtype=bool)  # Marks legal moves
+            # Stepped pos for every agents pos
+            stepped_positions_n_agent = stepped_positions.repeat(n, axis=1).reshape(n, m_dims, n, -1)
+            # np.all = pos overlap in x and y, np.any = any step overlap with any agent pos
+            occupied_mask = np.any(np.all(stepped_positions_n_agent == self.positions, axis=3), axis=2)
+            legal_step_mask[occupied_mask] = False  # Mask contains entries which are occupied
 
             # In bounds checks
             x_in_left_bound = stepped_positions[:, :, 0] >= 0
@@ -567,11 +568,11 @@ class World(object):
             y_in_down_bound = stepped_positions[:, :, 1] >= 0
             y_in_up_bound = stepped_positions[:, :, 1] <= self.bounds[1]
             all_in_bound = (x_in_left_bound & x_in_right_bound) & (y_in_up_bound & y_in_down_bound)
-            mask = illegal_step_mask & all_in_bound
+            mask = legal_step_mask & all_in_bound
 
             self.avail_movement_actions[mask] = 1.0
         else:  # unbounded map -> always add all_in_bound movement directions
-            self.avail_movement_actions[:, :] = 1
+            self.avail_movement_actions[:, :] = 1.0
 
     def calculate_avail_target_actions(self):
         self.avail_target_actions[:, :] = 0.0  # Reset
