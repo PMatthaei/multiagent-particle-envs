@@ -16,9 +16,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
     parser.add_argument('-s', '--scenario', default='teams', help='Path of the scenario Python script.')
     parser.add_argument('-p', '--profile', default=False, help='Profile the example for performance issues.')
-    parser.add_argument('-bp', '--build_plan', default=H2_T2_A1, help='Build plan for the teams.')
+    parser.add_argument('-bp', '--build_plan', default=LARGE, help='Build plan for the teams.')
     parser.add_argument('-stream_key', '--stream_key', default=None, help='Stream Key for Twitch.')
-    parser.add_argument('-fps', '--fps', default=30, help='Locked frames per second. (Default: 30, None for unlocked.')
+    parser.add_argument('-fps', '--fps', default=None, help='Locked frames per second. (Default: 30, None for unlocked.')
     args = parser.parse_args()
 
     env = make_env(args)
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     # execution loop
     obs_n = env.reset()
     # render call to create viewer window (necessary only for interactive policies)
-    env.render()
+    #env.render()
 
     profiler = None
     if args.profile:
@@ -51,9 +51,10 @@ if __name__ == '__main__':
 
             # step environment
             obs_n, reward_n, done_n, _ = env.step(act_n)
+            print(reward_n)
             state = env.get_state()
             # render all agent views
-            env.render()
+            #env.render()
 
             if args.profile and profiler:
                 s = io.StringIO()

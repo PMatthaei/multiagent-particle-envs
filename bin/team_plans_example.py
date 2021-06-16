@@ -116,7 +116,7 @@ LARGE = [
                          "role": RoleTypes.TANK,
                          "attack_type": UnitAttackTypes.RANGED
                      },
-                 ] * 100
+                 ] * 500
     },
     {
         "is_scripted": False,
@@ -125,7 +125,7 @@ LARGE = [
                          "role": RoleTypes.TANK,
                          "attack_type": UnitAttackTypes.RANGED
                      },
-                 ] * 100
+                 ] * 500
     },
 ]
 

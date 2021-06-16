@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import itertools
 import logging
 import math
-import time
 from enum import Enum, IntEnum
 
 import numpy as np
@@ -493,22 +491,20 @@ class World(object):
     def _calculate_obs(self):
         not_visible_mask = self.visibility == 0
 
-        ranges = np.repeat(self.ranges.reshape(-1, 1), self.agents_n, axis=1)
+        ranges = self.ranges[:, np.newaxis]
+        range_matrix = np.repeat(ranges, self.agents_n, axis=1)[:, :, np.newaxis]
         position_differences = (self.positions - self.positions[:, None])[..., :]
 
-        relative_positions_obs = position_differences / ranges.reshape(*ranges.shape, 1)
+        relative_positions_obs = position_differences / range_matrix
         relative_positions_obs[not_visible_mask] = [0.0, 0.0]  # relative position to invisible agents set to 0,0
 
-        relative_distances_obs = (self.distances / self.ranges[:, None])
-        relative_distances_obs = relative_distances_obs.reshape(*relative_distances_obs.shape, 1)
+        relative_distances_obs = (self.distances / ranges)[:, :, np.newaxis]
         relative_distances_obs[not_visible_mask] = 0.0  # relative distance to invisible agents set to 0
 
-        visibility_obs = self.visibility.reshape(*self.visibility.shape, 1)
-
-        health_obs = np.repeat(self.health.reshape(*self.health.shape, 1), self.agents_n, axis=1)
-        max_health = np.repeat(self.max_health.reshape(*self.max_health.shape, 1), self.agents_n, axis=1)
-        health_obs /= max_health
-        health_obs = health_obs.reshape((*health_obs.shape, 1))
+        health_obs = np.repeat(self.health[:, np.newaxis], self.agents_n, axis=1)
+        max_health = np.repeat(self.max_health[:, np.newaxis], self.agents_n, axis=1)
+        health_obs /= max_health  # Normalize by max health
+        health_obs = health_obs[:, :, np.newaxis]
         health_obs[not_visible_mask] = 0.0  # health of invisible agents set to 0
 
         others_unit_bits_obs = np.repeat([self.unit_bits_obs], self.agents_n, axis=0)
@@ -516,7 +512,7 @@ class World(object):
 
         self.obs = np.concatenate(
             (
-                visibility_obs,
+                self.visibility[:, :, np.newaxis],
                 health_obs,
                 relative_positions_obs,
                 relative_distances_obs,
@@ -526,12 +522,22 @@ class World(object):
         )
 
     def connect(self, agent, spawn=None):
-        self.health[agent.id] = agent.state.max_health
-        agent.state._health = self.health[agent.id:(agent.id + 1)]
-        self.alive[agent.id] = agent.is_alive()
+        """
+        Connect an agent with the world. World data concerning the agent is referenced to keep up-to-date data such as
+        health, position and the alive status.
 
-        self.positions[agent.id] = spawn
-        agent.state.pos = self.positions[agent.id]
+        Static data such as sight range, max health and others are once set
+        @param agent:
+        @param spawn:
+        @return:
+        """
+        self.health[agent.id] = agent.state.max_health  # Set initial health
+        agent.state._health = self.health[agent.id:(agent.id + 1)]  # Connect agent health with world data storage
+
+        self.positions[agent.id] = spawn  # Set initial position
+        agent.state.pos = self.positions[agent.id]  # Connect agent position with world data storage
+
+        self.alive[agent.id] = agent.is_alive()  # Set initial alive status - agents assumed to be dead in the beginning
 
         # Static data
         self.ranges[agent.id] = agent.sight_range
