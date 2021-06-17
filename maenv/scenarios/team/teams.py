@@ -1,6 +1,7 @@
 import numpy as np
 
-from interfaces.ai import ScriptedAI
+from maenv.ai import BasicScriptedAI
+from maenv.interfaces.ai import ScriptedAI
 from maenv.core import World, Agent, Team, Action
 from maenv.exceptions.scenario_exceptions import ScenarioNotSymmetricError
 from maenv.interfaces.scenario import BaseTeamScenario
@@ -8,7 +9,7 @@ from maenv.utils.colors import generate_colors
 
 
 class TeamsScenario(BaseTeamScenario):
-    def __init__(self, match_build_plan, scripted_ai: ScriptedAI):
+    def __init__(self, match_build_plan, scripted_ai: ScriptedAI = BasicScriptedAI()):
         """
         Constructor for a team scenario.
         @param match_build_plan: Plan to setup the match and therefore team composition and possible AI`s.
