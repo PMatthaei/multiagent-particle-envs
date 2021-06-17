@@ -1,6 +1,6 @@
 import numpy as np
 
-from maenv.ai.basic_ai import BasicScriptedAI
+from interfaces.ai import ScriptedAI
 from maenv.core import World, Agent, Team, Action
 from maenv.exceptions.scenario_exceptions import ScenarioNotSymmetricError
 from maenv.interfaces.scenario import BaseTeamScenario
@@ -8,7 +8,7 @@ from maenv.utils.colors import generate_colors
 
 
 class TeamsScenario(BaseTeamScenario):
-    def __init__(self, match_build_plan):
+    def __init__(self, match_build_plan, scripted_ai: ScriptedAI):
         """
         Constructor for a team scenario.
         @param match_build_plan: Plan to setup the match and therefore team composition and possible AI`s.
@@ -20,7 +20,7 @@ class TeamsScenario(BaseTeamScenario):
         self.agents_n = [len(team["units"]) for team in match_build_plan]
         self.is_symmetric = self.agents_n.count(self.agents_n[0]) == len(self.agents_n)
         self.team_mixing_factor = 8  # build_plan["tmf"] if "tmf" in build_plan["tmf"] else 5
-        self.scripted_ai = BasicScriptedAI()
+        self.scripted_ai = scripted_ai
         if not self.is_symmetric:
             raise ScenarioNotSymmetricError(self.agents_n, self.teams_n)
 

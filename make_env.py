@@ -32,9 +32,11 @@ def make_env(args, benchmark=False):
     '''
     from maenv.environment import MAEnv
     from maenv.scenarios import team
+    from maenv.ai import REGISTRY as ai_REGISTRY
 
+    scripted_ai = ai_REGISTRY[args.ai]()
     # load scenario from script
-    scenario = team.load(args.scenario + ".py").TeamsScenario(args.build_plan)
+    scenario = team.load(args.scenario + ".py").TeamsScenario(args.build_plan, scripted_ai)
     # create world
     world = scenario.make_teams_world(grid_size=20.0)
     # create maenv environment

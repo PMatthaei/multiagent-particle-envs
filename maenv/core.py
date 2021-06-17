@@ -188,19 +188,21 @@ class Agent(Entity):
         self.unit_id = (build_plan['role'], build_plan['attack_type'])
         self.unit_type_bits = UNIT_TYPE_BITS[self.unit_id]
         self.unit_type_bits_n = len(self.unit_type_bits)
-        self.attack_type = build_plan['attack_type'].value
-        self.role = build_plan['role'].value
+        self.attack_type = build_plan['attack_type']
+        self.attack_data = self.attack_type .value
+        self.role_type = build_plan['role']
+        self.role_data =  self.role_type.value
 
-        self.attack_range = self.attack_type['attack_range']
+        self.attack_range = self.attack_data['attack_range']
         self.sight_range = self.attack_range
         assert self.sight_range >= self.attack_range, "Sight range cannot be smaller than attack range."
-        self.attack_damage = self.role['attack_damage']
+        self.attack_damage = self.role_data['attack_damage']
 
         self.movable = True
         # control range
         # state
         self.state = AgentState()
-        self.state.max_health = self.role['max_health']
+        self.state.max_health = self.role_data['max_health']
 
         # action
         self.action = Action()
@@ -241,7 +243,7 @@ class Agent(Entity):
             logger.debug("Agent {0} is dead.".format(other.id))
 
     def has_heal(self):
-        return 'can_heal' in self.role and self.role['can_heal']
+        return 'can_heal' in self.role_data and self.role_data['can_heal']
 
     def can_heal(self, target=None):
         return self.has_heal() and (target is not None and target.tid == self.tid) \
