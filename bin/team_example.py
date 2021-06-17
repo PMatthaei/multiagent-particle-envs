@@ -7,6 +7,7 @@ from pstats import SortKey
 
 from bin.controls.headless_controls import HeadlessControls
 from bin.team_plans_example import AI_SMALL, LARGE, AI_MEDIUM, AI_LARGE, SMALL, MEDIUM, AI_VS_AI_SMALL, H2_T2_A1
+from core import RoleTypes
 from make_env import make_env
 from maenv.interfaces.policy import RandomPolicy
 
@@ -16,6 +17,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
     parser.add_argument('-s', '--scenario', default='teams', help='Path of the scenario Python script.')
     parser.add_argument('-a', '--ai', default='focus', help='Scripted AI to play against if team is configured.')
+    parser.add_argument('-c', '--ai_config', default={"focuses": [RoleTypes.HEALER]}, help='Scripted AI to play against if team is configured.')
     parser.add_argument('-p', '--profile', default=False, help='Profile the example for performance issues.')
     parser.add_argument('-bp', '--build_plan', default=AI_SMALL, help='Build plan for the teams.')
     parser.add_argument('-stream_key', '--stream_key', default=None, help='Stream Key for Twitch.')
