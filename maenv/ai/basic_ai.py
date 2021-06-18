@@ -38,17 +38,17 @@ class BasicScriptedAI(ScriptedAI):
         self.action.u[:2] *= world.grid_size  # (=movement step size)
         return self.action
 
-    def _get_target(self, masked_distances, world):
+    def _get_target(self, masked_distances, world) -> int:
         """
         Get closest agent id as target
         @param masked_distances:
         @param world:
-        @return:
+        @return: id of the target
         """
         target_id = np.argmin(masked_distances)
         return target_id
 
-    def _get_masked_distances(self, agent, world):
+    def _get_masked_distances(self, agent: Agent, world: World) -> np.array:
         """
         Mask distances depending on the agent role. Healers should only target team mates which alive while attacking
         agents should target enemies which are alive. Therefore the counter part should be masked out as non attackable.

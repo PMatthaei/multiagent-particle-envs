@@ -17,9 +17,12 @@ logger = logging.getLogger("ma-env")
 
 
 class RoleTypes(Enum):
-    TANK = {"max_health": 60, "attack_damage": 10}
-    ADC = {"max_health": 40, "attack_damage": 20}
-    HEALER = {"max_health": 60, "attack_damage": 5, "can_heal": True}
+    TANK = {"max_health": 60, "attack_damage": 10, "id": 0}
+    ADC = {"max_health": 40, "attack_damage": 20, "id": 1}
+    HEALER = {"max_health": 60, "attack_damage": 5, "can_heal": True, "id": 2}
+
+    def __int__(self):
+        return self.value["id"]
 
 
 class UnitAttackTypes(Enum):
@@ -189,9 +192,9 @@ class Agent(Entity):
         self.unit_type_bits = UNIT_TYPE_BITS[self.unit_id]
         self.unit_type_bits_n = len(self.unit_type_bits)
         self.attack_type = build_plan['attack_type']
-        self.attack_data = self.attack_type .value
+        self.attack_data = self.attack_type.value
         self.role_type = build_plan['role']
-        self.role_data =  self.role_type.value
+        self.role_data = self.role_type.value
 
         self.attack_range = self.attack_data['attack_range']
         self.sight_range = self.attack_range
