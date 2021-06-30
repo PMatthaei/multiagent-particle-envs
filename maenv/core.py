@@ -17,9 +17,9 @@ logger = logging.getLogger("ma-env")
 
 
 class RoleTypes(Enum):
-    TANK = {"max_health": 60, "attack_damage": 10, "id": 0}
+    TANK = {"max_health": 60, "attack_damage": 8, "id": 0}
     ADC = {"max_health": 40, "attack_damage": 20, "id": 1}
-    HEALER = {"max_health": 60, "attack_damage": 5, "can_heal": True, "id": 2}
+    HEALER = {"max_health": 40, "attack_damage": 10, "can_heal": True, "id": 2}
 
     def __int__(self):
         return self.value["id"]
