@@ -1,4 +1,4 @@
-from core import Agent
+from maenv.core import Agent
 
 
 class NoTargetFoundError(Exception):
