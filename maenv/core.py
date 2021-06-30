@@ -8,7 +8,7 @@ import numpy as np
 import scipy.spatial.ckdtree
 import scipy.spatial.distance
 
-from maenv.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError, OverhealError
+from maenv.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError
 from maenv.exceptions.world_exceptions import NoTeamFoundError
 from maenv.utils.spawn_generator import SpawnGenerator
 from maenv.utils.unit_type_bit_encoder import unit_type_bits, bits_needed, UNKNOWN_TYPE
@@ -404,7 +404,7 @@ class World(object):
         if agent.has_heal():
             return False
         if target.tid == agent.tid:
-            raise IllegalTargetError("Cannot attack team mates.")
+            raise IllegalTargetError(agent)
         return self.visibility[agent.id][target.id]
 
     def step(self):
