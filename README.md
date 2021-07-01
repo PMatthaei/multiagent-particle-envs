@@ -13,6 +13,10 @@ A simple multi-agent environment, allowing for team-based micro-management tasks
 - Recording via ffmpeg (optional headless)
 - Streaming via twitch
 
+## Example:
+
+Look at the [example](https://github.com/PMatthaei/ma-env/blob/master/bin/team_example.py) to learn basic usage of the environment.
+
 ## Getting started:
 
 - To install, `cd` into the root directory and type `pip install -r requirements.txt`
