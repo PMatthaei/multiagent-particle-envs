@@ -72,25 +72,3 @@ You can create new scenarios by implementing the first 5 functions above (`make_
 ### Why numpy 1.16?
 
 See performance problems with [`numpy.core._multiarray_umath.implement_array_function`](https://stackoverflow.com/questions/58909525/what-is-numpy-core-multiarray-umath-implement-array-function-and-why-it-costs-l)
-## References
-
-This repository is based on work of:
-
-<pre>
-@article{lowe2017multi,
-  title={Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments},
-  author={Lowe, Ryan and Wu, Yi and Tamar, Aviv and Harb, Jean and Abbeel, Pieter and Mordatch, Igor},
-  journal={Neural Information Processing Systems (NIPS)},
-  year={2017}
-}
-</pre>
-
-Original particle world environment:
-<pre>
-@article{mordatch2017emergence,
-  title={Emergence of Grounded Compositional Language in Multi-Agent Populations},
-  author={Mordatch, Igor and Abbeel, Pieter},
-  journal={arXiv preprint arXiv:1703.04908},
-  year={2017}
-}
-</pre>
