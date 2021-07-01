@@ -4,7 +4,7 @@
 This is a fork of: https://github.com/openai/multiagent-particle-envs
 ```
 
-# Multi-Agent Environment
+# Teamfight(RTS/MMO) Micro-Management Multi-Agent Environment
 
 A simple multi-agent environment, allowing for team-based micro-management tasks. Most prominent features:
 - Role-based agents (f.e. healer, tank, etc)
