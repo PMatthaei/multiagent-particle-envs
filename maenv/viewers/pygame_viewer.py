@@ -60,14 +60,16 @@ class _Grid:
 
 
 class _EntityFactory:
-    @staticmethod
-    def build(agent: Agent):
+    def __init__(self, grid_size):
+        self.grid_size = grid_size
+
+    def build(self, agent: Agent):
         if RoleTypes.TANK in agent.unit_id:
-            return _Tank(agent)
+            return _Tank(agent, self.grid_size)
         elif RoleTypes.ADC in agent.unit_id:
-            return _ADC(agent)
+            return _ADC(agent, self.grid_size)
         elif RoleTypes.HEALER in agent.unit_id:
-            return _Healer(agent)
+            return _Healer(agent, self.grid_size)
         else:
             raise Exception()
 
@@ -95,6 +97,7 @@ class PyGameViewer(object):
         """
         self.env = env
         self.entities = None
+        self.factory = _EntityFactory(self.env.world.grid_size)
         self.draw_grid = draw_grid
         self.record = record
         self.stream = stream_key is not None
@@ -175,7 +178,7 @@ class PyGameViewer(object):
         @return:
         """
         self.entities = pygame.sprite.Group()
-        self.entities.add(*[_EntityFactory.build(entity) for entity in world_entities])
+        self.entities.add(*[self.factory.build(entity) for entity in world_entities])
 
     def render(self):
         """
@@ -237,7 +240,7 @@ class PyGameViewer(object):
 
 
 class _PyGameEntity(pygame.sprite.Sprite):
-    def __init__(self, agent: Agent, debug_range=False, debug_health=True):
+    def __init__(self, agent: Agent, grid_size: int, debug_range=False, debug_health=True):
         """
         Base entity to render.
         @param agent:
@@ -249,8 +252,8 @@ class _PyGameEntity(pygame.sprite.Sprite):
         self.debug_range = debug_range
         self.debug_health = debug_health
         self.color = self.agent.color
-        self.sight_range = self.agent.sight_range
-        self.attack_range = self.agent.attack_range
+        self.sight_range = self.agent.sight_range * grid_size
+        self.attack_range = self.agent.attack_range * grid_size
         self.body_radius = self.agent.bounding_circle_radius
         self.alpha = 255
         self.font = pygame.font.SysFont('', 15)
@@ -267,7 +270,7 @@ class _PyGameEntity(pygame.sprite.Sprite):
         if self.agent.action.u is not None and np.any(self.agent.action.u[:2]):
             self.rect.center = self.agent.state.pos
         self._draw()
-        self._draw_agent_id_label() # Always on top
+        self._draw_agent_id_label()  # Always on top
 
     def _draw_agent_id_label(self):
         label_color = complement(*self.agent.color)

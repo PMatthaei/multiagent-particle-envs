@@ -15,9 +15,10 @@ class WorldObservationTestCases(unittest.TestCase):
         self.b = mock_agent(id=1, tid=1)
         self.b.sight_range = 3
         self.a_spawn = np.array([0, 0])
-        self.b_spawn = np.array([1, 1])
+        self.b_spawn = np.array([10, 10])
 
-        self.world = World(grid_size=10, teams_n=2, agents_n=N_AGENTS)
+        self.grid_size = 10
+        self.world = World(grid_size=self.grid_size, teams_n=2, agents_n=N_AGENTS)
         self.world.agents = [self.a, self.b]
 
         self.world.connect(self.a, self.a_spawn)
@@ -37,7 +38,7 @@ class WorldObservationTestCases(unittest.TestCase):
     def test_b_observes_a_with_different_sight_range_if_visible_and_alive(self):
         r = self.b.sight_range
         b_obs_of_a = np.array([1.0, 1.0, -1.0 / r, -1.0 / r, np.sqrt(2) / r, 0, 0, 1])
-        np.testing.assert_array_equal(self.world.obs[self.b.id][self.a.id], b_obs_of_a)
+        np.testing.assert_almost_equal(self.world.obs[self.b.id][self.a.id], b_obs_of_a)
 
     def test_a_cannot_observe_b_if_b_dead(self):
         self.b.is_alive = MagicMock(return_value=False)
@@ -50,7 +51,7 @@ class WorldObservationTestCases(unittest.TestCase):
         np.testing.assert_array_equal(self.world.obs[self.a.id][self.b.id], a_obs_of_b)
 
     def test_a_cannot_observe_b_if_b_not_visible_and_alive(self):
-        self.b_spawn = np.array([4, 0])
+        self.b_spawn = np.array([40, 0])
         self.world.connect(self.b, self.b_spawn)
         self.world._update_visibility()
         self.world._update_dist_matrix()

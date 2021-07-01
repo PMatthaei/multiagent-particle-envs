@@ -36,7 +36,9 @@ def mock_world(agents_n=None, grid_size=10, teams=None, obs_dims_per_agent=8, te
         teams = []
     if agents_n is None:
         agents_n = sum([len(t.members) for t in teams])
+
     world = Mock(agents_n=agents_n, teams_n=teams_n, grid_size=grid_size)
+    world.grid_size = grid_size
     world.bounds = np.array([1280, 720])
     world.center = world.bounds / 2
     world.agents = reduce(lambda agents, team: agents + team.members, teams, [])

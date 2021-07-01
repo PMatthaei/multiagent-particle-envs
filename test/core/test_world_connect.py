@@ -15,7 +15,8 @@ class WorldInitializationTestCases(unittest.TestCase):
         self.agent2 = mock_agent(id=1, tid=1)
         self.agent_spawn = np.array([1, 1])
 
-        self.world = World(grid_size=10, teams_n=2, agents_n=N_AGENTS)
+        self.grid_size = 10
+        self.world = World(grid_size=self.grid_size, teams_n=2, agents_n=N_AGENTS)
         self.world.agents = [self.agent, self.agent2]
 
     def test_connects_as_alive(self):
@@ -42,7 +43,7 @@ class WorldInitializationTestCases(unittest.TestCase):
     def test_connects_range(self):
         self.world.connect(self.agent, None)
 
-        np.testing.assert_array_equal(self.world.ranges[0], 2)
+        np.testing.assert_array_equal(self.world.ranges[0], 2 * self.grid_size)
 
     def test_connects_attack_target_mask(self):
         self.world.connect(self.agent, None)

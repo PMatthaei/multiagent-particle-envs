@@ -51,7 +51,7 @@ class WorldVisibilityTestCases(unittest.TestCase):
         self.assertEqual(False, result)
 
     def test_no_visibility_for_not_in_range_and_alive(self):
-        self.world.connect(self.b, np.array([3, 3]))  # move out of range
+        self.world.connect(self.b, np.array([30, 30]))  # move out of range
 
         self.world._update_visibility()
 
@@ -63,7 +63,7 @@ class WorldVisibilityTestCases(unittest.TestCase):
 
     def test_no_visibility_for_not_in_range_and_dead(self):
         self.b.is_alive = MagicMock(return_value=False)  # declare dead
-        self.world.connect(self.b, np.array([3, 3]))  # move out of range
+        self.world.connect(self.b, np.array([30, 30]))  # move out of range
 
         self.world._update_visibility()
 

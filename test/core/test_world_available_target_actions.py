@@ -60,7 +60,7 @@ class WorldAvailableMovementActionsTestCases(unittest.TestCase):
 
         np.testing.assert_array_equal(self.world.avail_target_actions[self.a.id], [0, 0, 0, 0, 0, 0])
 
-    def test_only_mate_targets_available_if_healer_and_in_range(self):
+    def test_only_team_targets_available_if_healer_and_in_range(self):
         self.a.has_heal = MagicMock(return_value=True)
         self.world.connect(self.a, self.a_spawn)
 

@@ -9,7 +9,6 @@ import scipy.spatial.ckdtree
 import scipy.spatial.distance
 
 from maenv.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError
-from maenv.exceptions.world_exceptions import NoTeamFoundError
 from maenv.utils.spawn_generator import SpawnGenerator
 from maenv.utils.unit_type_bit_encoder import unit_type_bits, bits_needed, UNKNOWN_TYPE
 
@@ -26,8 +25,8 @@ class RoleTypes(Enum):
 
 
 class UnitAttackTypes(Enum):
-    RANGED = {"attack_range": 20}
-    MELEE = {"attack_range": 10}
+    RANGED = {"attack_range": 3} # attack range units are in grid cells!
+    MELEE = {"attack_range": 1}
 
 
 TYPES = [RoleTypes, UnitAttackTypes]
@@ -43,7 +42,6 @@ class ActionTypes(IntEnum):
     NORTH = 4,
 
 
-# physical/external base state of all entites
 class EntityState(object):
     def __init__(self):
         self.pos = None
@@ -81,52 +79,25 @@ class AgentState(EntityState):
 
 class Action(object):
     def __init__(self, index=None, owner=None, target=None, u=None, c=None):
-        """
-        # Action of the agent
-        :param index:
-        :param owner:
-        :param target:
-        :param u: list containing all physical actions with the following assignment:
-        - Index 0: X-Axis direction (multiplied with step size)
-        - Index 1: Y-Axis direction (multiplied with step size)
-        - Index 2: Action target id (agent id)
-        :param c:
-        """
-        # index associated with the action
-        self.index = index
-        # id of agent who deployed action
-        self.owner = owner
-        # target of the action
-        self.target = target
-        # physical action
-        self.u = u
-        # communication action
-        self.c = c
+        self.index = index  # index associated with the action
+        self.owner = owner  # id of agent who deployed action
+        self.target = target  # target of the action
+        self.u = u  # physical action
+        self.c = c  # communication action
 
 
 # properties and state of physical world entity
 class Entity(object):
     def __init__(self):
         self.id = None
-        # ID of the current target
-        self.target_id = None
-        # how far can an entity attack
-        self.attack_range = 15
-        self.attack_damage = 20
-        # how far can the entity see
-        self.sight_range = 25
-        # radius defines entity`s collision and visuals
-        self.bounding_circle_radius = 6
+        self.target_id = None  # agent id of the current target
+        self.attack_range = None  # attack range -> attacks available
+        self.attack_damage = None
+        self.sight_range = None  # observation range
+        self.bounding_circle_radius = 6  # visuals and optional collision
         self.name = ''
-        # entity can move / be pushed
-        self.movable = False
-        # color
         self.color = [0.75, 0, 0]
-
-        # state
         self.state = EntityState()
-        # mass
-        self.initial_mass = 1.0
 
     def is_alive(self):
         return self.state.health > 0
@@ -137,12 +108,7 @@ class Entity(object):
             logger.debug("Agent {0} is dead.".format(self.id))
         return is_dead
 
-    @property
-    def mass(self):
-        return self.initial_mass
 
-
-# properties of world objects
 class WorldObject(Entity):
     def __init__(self):
         super(WorldObject, self).__init__()
@@ -179,7 +145,6 @@ class PerformanceStatistics:
         self.distance_traveled = 0
 
 
-# properties of agent entities
 class Agent(Entity):
     def __init__(self, id, tid, color, build_plan, action_callback=None):
         super(Agent, self).__init__()
@@ -198,21 +163,16 @@ class Agent(Entity):
 
         self.attack_range = self.attack_data['attack_range']
         self.sight_range = self.attack_range
-        assert self.sight_range >= self.attack_range, "Sight range cannot be smaller than attack range."
+        assert self.sight_range == self.attack_range, "Sight range has to be equal to the attack range for now."
         self.attack_damage = self.role_data['attack_damage']
 
-        self.movable = True
-        # control range
-        # state
         self.state = AgentState()
         self.state.max_health = self.role_data['max_health']
 
-        # action
         self.action = Action()
-        # stats
-        self.stats = PerformanceStatistics()
-        # script behavior to execute
-        self.action_callback = action_callback
+        self.stats = PerformanceStatistics()  # collects stats about the agent
+
+        self.action_callback = action_callback  # scripted agents behaviour
 
     @property
     def self_observation(self):
@@ -321,15 +281,6 @@ class World(object):
         # Helper to generate points within the world
         self.spg = SpawnGenerator(self.grid_center, grid_size, self.dim_p, agents_n)
 
-    def get_team(self, tid):
-        for team in self.teams:
-            if team.tid == tid:
-                return team
-        raise NoTeamFoundError(tid)
-
-    def get_opposing_teams(self, tid: int):
-        return [team for team in self.teams if team.tid != tid]
-
     def is_free(self, pos: np.array):
         """
         Checks is a given position is not occupied in the world and therefore free to move.
@@ -371,6 +322,10 @@ class World(object):
         return [agent for agent in self.agents if agent.is_alive()]
 
     @property
+    def alive_scripted_agents(self):
+        return [agent for agent in self.scripted_agents if agent.is_alive()]
+
+    @property
     def grid_center(self):
         center = self.bounds / 2.0
         center -= center % self.grid_size
@@ -405,14 +360,14 @@ class World(object):
             return False
         if target.tid == agent.tid:
             raise IllegalTargetError(agent)
-        return self.visibility[agent.id][target.id]
+        return self.visibility[agent.id][target.id] # WARNING! This only works as long as attack range == sight range
 
     def step(self):
         """
         Update state of the world.
         """
         # Set actions for scripted/heuristic agents BEFORE advancing state
-        for agent in self.scripted_agents:
+        for agent in self.alive_scripted_agents:
             agent.action = agent.action_callback(agent, self)
 
         # Shuffle randomly to prevent favoring
@@ -547,7 +502,7 @@ class World(object):
         self.alive[agent.id] = agent.is_alive()  # Set initial alive status - agents assumed to be dead in the beginning
 
         # Static data
-        self.ranges[agent.id] = agent.sight_range
+        self.ranges[agent.id] = agent.sight_range * self.grid_size
         self.max_health[agent.id] = agent.state.max_health
         self.unit_bits_obs[agent.id] = agent.unit_type_bits
         team_mates = [mate.id for mate in self.agents if mate.tid == agent.tid]

@@ -34,6 +34,38 @@ H2_T2_A1 = [
 ]
 H2_T2_A1[1]["units"] = H2_T2_A1[0]["units"]
 
+H2_T2_A1_MELEE = [
+    {
+        "is_scripted": False,
+        "units": [  # Team 1
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.MELEE
+            },
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.MELEE
+            },
+            {
+                "role": RoleTypes.HEALER,
+                "attack_type": UnitAttackTypes.MELEE
+            },
+            {
+                "role": RoleTypes.ADC,
+                "attack_type": UnitAttackTypes.MELEE
+            },
+            {
+                "role": RoleTypes.ADC,
+                "attack_type": UnitAttackTypes.MELEE
+            },
+        ]
+    },
+    {
+        "is_scripted": True,
+    },
+]
+H2_T2_A1_MELEE[1]["units"] = H2_T2_A1_MELEE[0]["units"]
+
 SMALL_1x1 = [
     {
         "is_scripted": False,

@@ -22,7 +22,7 @@ class BasicScriptedAI(ScriptedAI):
             target_id = self._get_target(masked_distances, world)
             distance = masked_distances[target_id]
 
-            if distance <= agent.sight_range:  # set closest agent as target if in range
+            if distance <= (agent.sight_range * world.grid_size):  # set closest agent as target if in range
                 self.action.u[2] = target_id  # attack >= 5 --> index 2
             else:  # move towards the closest agent if not in range
                 closest_agent = world.agents[target_id]
