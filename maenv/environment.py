@@ -146,6 +146,7 @@ class MAEnv(gym.Env):
         """
         avail_actions = np.zeros((self._get_action_dim(agent),))
         ids = self.get_available_action_ids(agent)
+        assert agent.id + 5 not in ids, "Illegal available action included"
         avail_actions[ids] = 1
         return avail_actions
 

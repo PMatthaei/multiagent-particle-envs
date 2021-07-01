@@ -19,7 +19,7 @@ class BasicScriptedAI(ScriptedAI):
         # TODO: Vectorize
         masked_distances = self._get_masked_distances(agent, world)
         if np.all(np.isinf(masked_distances)):
-            return self.action
+            return self.action # distances undefined -> no-op
         target_id = self._get_target(masked_distances, world)
         distance = masked_distances[target_id]
         if distance <= (agent.sight_range * world.grid_size):  # set closest agent as target if in range
