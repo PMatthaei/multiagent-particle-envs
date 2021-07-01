@@ -11,7 +11,7 @@ N_AGENTS = 6
 
 class WorldAvailableMovementActionsTestCases(unittest.TestCase):
     def setUp(self):
-        self.a = mock_agent(id=0, sight_range=20)
+        self.a = mock_agent(id=0, sight_range=2)
         self.b = mock_agent(id=1, tid=0)
         self.c = mock_agent(id=2, tid=0)
         self.d = mock_agent(id=3, tid=1)

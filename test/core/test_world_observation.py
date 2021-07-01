@@ -11,7 +11,7 @@ N_AGENTS = 2
 
 class WorldObservationTestCases(unittest.TestCase):
     def setUp(self):
-        self.a = mock_agent(id=0)
+        self.a = mock_agent(id=0, sight_range=2)
         self.b = mock_agent(id=1, tid=1)
         self.b.sight_range = 3
         self.a_spawn = np.array([0, 0])

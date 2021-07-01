@@ -248,11 +248,11 @@ class World(object):
         self.max_health = np.zeros((agents_n,), dtype=int)
         # Holds each agents action
         self.actions = np.zeros((agents_n, self.dim_p + 1))
-        # Holds all available movement actions in the current step
+        # Holds all available movement actions in the current step - all moves are initially allowed if spawns are correct
         self.avail_movement_actions = np.ones((agents_n, self.get_movement_dims), dtype=float)  # 4 movement directions
         self.moves = np.array([[-1, 0], [1, 0], [0, 1], [0, -1]]) * self.grid_size  # W/E/N/S move
 
-        # Holds all available target actions in the current step
+        # Holds all available target actions in the current step - all targets are blocked in the beginning
         self.avail_target_actions = np.zeros((agents_n, agents_n), dtype=float)  # target action for each agent
         # Mask out each agent if its himself
         self.self_target_mask = (np.ones_like(self.avail_target_actions) - np.diag(np.ones(self.agents_n))).astype(bool)
@@ -269,7 +269,7 @@ class World(object):
         self.positions = np.zeros((agents_n, self.dim_p))
         self.positions_c = np.zeros((1, agents_n), dtype=complex)
         # Holds each agents distance to other agents (and himself on diag = always 0)
-        self.distances = np.zeros((agents_n, agents_n))
+        self.distances = np.full((agents_n, agents_n), fill_value=np.inf)
         # Holds each agents visibility of other agents (and himself on diag = always True)
         self.visibility = np.zeros((agents_n, agents_n))
         # Holds each agents observation of all other agents

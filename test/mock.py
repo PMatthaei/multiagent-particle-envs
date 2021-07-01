@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, Mock
 import numpy as np
 
 
-def mock_agent(id: int, tid: int = 0, sight_range=2, pos=np.array([0, 0])):
+def mock_agent(id: int, tid: int = 0, sight_range=1, pos=np.array([0, 0])):
     agent = Mock()
     agent.id = id
     agent.tid = tid

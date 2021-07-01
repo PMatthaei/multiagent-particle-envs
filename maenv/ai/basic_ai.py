@@ -17,22 +17,19 @@ class BasicScriptedAI(ScriptedAI):
         """
         self.action = super(BasicScriptedAI, self).act(agent, world)
         # TODO: Vectorize
-        if world.distances is not None:  # if distance matrix initialized
-            masked_distances = self._get_masked_distances(agent, world)
-            target_id = self._get_target(masked_distances, world)
-            distance = masked_distances[target_id]
-
-            if distance <= (agent.sight_range * world.grid_size):  # set closest agent as target if in range
-                self.action.u[2] = target_id  # attack >= 5 --> index 2
-            else:  # move towards the closest agent if not in range
-                closest_agent = world.agents[target_id]
-                position_difference = world.positions[closest_agent.id] - world.positions[agent.id]
-                max_difference_dimension = np.argmax(np.abs(position_difference))
-                max_diff = position_difference[max_difference_dimension]
-                self.action.u[max_difference_dimension] = np.sign(max_diff)
-        else:  # No-Op
-            self.action.u[0] = 0
-            self.action.u[1] = 0
+        masked_distances = self._get_masked_distances(agent, world)
+        if np.all(np.isinf(masked_distances)):
+            return self.action
+        target_id = self._get_target(masked_distances, world)
+        distance = masked_distances[target_id]
+        if distance <= (agent.sight_range * world.grid_size):  # set closest agent as target if in range
+            self.action.u[2] = target_id  # attack >= 5 --> index 2
+        else:  # move towards the closest agent if not in range
+            closest_agent = world.agents[target_id]
+            position_difference = world.positions[closest_agent.id] - world.positions[agent.id]
+            max_difference_dimension = np.argmax(np.abs(position_difference))
+            max_diff = position_difference[max_difference_dimension]
+            self.action.u[max_difference_dimension] = np.sign(max_diff)
 
         # first two dimensions hold x and y axis movement -> multiply with movement step amount
         self.action.u[:2] *= world.grid_size  # (=movement step size)
@@ -57,9 +54,9 @@ class BasicScriptedAI(ScriptedAI):
         @return:
         """
         masked_distances = world.distances[agent.id].copy()
-        if agent.has_heal():  # mask out all enemies and dead
+        if agent.has_heal():  # mask out all enemies or dead
             non_target_mask = (world.team_affiliations != agent.tid) | (world.alive == 0)
-        else:  # mask out all teammates and dead
+        else:  # mask out all teammates or dead
             non_target_mask = (world.team_affiliations == agent.tid) | (world.alive == 0)
         masked_distances[agent.id] = np.inf  # infinite distance to self to prevent to be chosen as target
         masked_distances[non_target_mask] = np.inf  # infinite distance all non-attackable agents

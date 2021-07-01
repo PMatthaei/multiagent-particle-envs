@@ -12,7 +12,7 @@ N_AGENTS = 2
 class WorldVisibilityTestCases(unittest.TestCase):
     def setUp(self):
         self.a = mock_agent(id=0)
-        self.b = mock_agent(id=1, tid=1)
+        self.b = mock_agent(id=1, tid=1, sight_range=3)
         self.a_spawn = np.array([1, 1])
         self.b_spawn = np.array([1, 0])
 
