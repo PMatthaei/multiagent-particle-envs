@@ -453,8 +453,8 @@ class MAEnv(gym.Env):
 
 class TeamsEnv(MAEnv):
     def __init__(self, match_build_plan, grid_size, ai, **kwargs):
-        from scenarios.teams import TeamsScenario
         from maenv.ai import REGISTRY as ai_REGISTRY
+        from maenv.scenarios import TeamsScenario
         self._scenario = TeamsScenario(match_build_plan, ai_REGISTRY[ai]())
         world = self._scenario.make_teams_world(grid_size)
         super().__init__(world,
