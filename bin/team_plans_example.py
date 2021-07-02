@@ -34,6 +34,9 @@ H2_T2_A1 = [
 ]
 H2_T2_A1[1]["units"] = H2_T2_A1[0]["units"]
 
+H2_T2_A1_POLICY = deepcopy(H2_T2_A1)
+H2_T2_A1_POLICY[1]["is_scripted"] = False
+
 H2_T2_A1_MELEE = [
     {
         "is_scripted": False,

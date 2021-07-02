@@ -31,12 +31,12 @@ def make_env(args, benchmark=False):
         .n                  :   Returns the number of Agents
     '''
     from maenv.environment import MAEnv
-    from maenv.scenarios import team
+    from maenv import scenarios
     from maenv.ai import REGISTRY as ai_REGISTRY
 
     scripted_ai = ai_REGISTRY[args.ai](**args.ai_config)
     # load scenario from script
-    scenario = team.load(args.scenario + ".py").TeamsScenario(args.build_plan, scripted_ai)
+    scenario = scenarios.load(args.scenario + ".py").TeamsScenario(args.build_plan, scripted_ai)
     # create world
     world = scenario.make_teams_world(grid_size=20.0)
     # create maenv environment
@@ -45,5 +45,6 @@ def make_env(args, benchmark=False):
                 reward_callback=scenario.reward,
                 observation_callback=scenario.observation,
                 done_callback=scenario.done,
-                fps=args.fps)
+                fps=args.fps,
+                headless=args.headless)
     return env

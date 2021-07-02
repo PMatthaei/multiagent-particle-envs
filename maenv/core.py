@@ -323,7 +323,7 @@ class World(object):
 
     @property
     def alive_scripted_agents(self):
-        return [agent for agent in self.scripted_agents if agent.is_alive()]
+        return [agent for agent in self.scripted_agents if agent.action_callback is not None and agent.is_alive()]
 
     @property
     def grid_center(self):
@@ -367,16 +367,19 @@ class World(object):
         Update state of the world.
         """
         # Set actions for scripted/heuristic agents BEFORE advancing state
-        for agent in self.alive_scripted_agents:
-            agent.action = agent.action_callback(agent, self)
+        for scripted_agent in self.alive_scripted_agents:
+            # TODO: This is weird
+            scripted_agent.action = scripted_agent.action_callback(scripted_agent, self)
+
 
         # Shuffle randomly to prevent favoring
         import random
-        shuffled_agents = self.alive_agents.copy()
-        random.shuffle(shuffled_agents)
+        #shuffled_agents = self.alive_agents.copy()
+        #random.shuffle(shuffled_agents)
 
-        # Calculate influence actions BEFORE updating positions to prevent moving out of range
-        for agent in shuffled_agents:
+        # Calculate influence actions BEFORE updating positions to prevent moving out of range after action was set
+        #for agent in shuffled_agents:
+        for agent in random.sample(self.alive_agents, len(self.alive_agents)):
             # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1
             if agent_has_action_target:
@@ -399,8 +402,8 @@ class World(object):
         self._update_alive_status()
 
         # Update positions BEFORE recalculating visibility and observations
-        for agent in shuffled_agents:
-            self._update_pos(agent)
+        for a in random.sample(self.alive_agents, len(self.alive_agents)):
+            self._update_pos(a)
 
         self._update_visibility()
 

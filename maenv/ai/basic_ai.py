@@ -15,25 +15,29 @@ class BasicScriptedAI(ScriptedAI):
         @param world:
         @return: action
         """
-        self.action = super(BasicScriptedAI, self).act(agent, world)
-        # TODO: Vectorize
+        action = Action()
+        action.u = np.zeros(world.dim_p + 1)  # reset previous action
+        action.u[2] = -1  # default is no target == -1
+
         masked_distances = self._get_masked_distances(agent, world)
         if np.all(np.isinf(masked_distances)):
-            return self.action # distances undefined -> no-op
+            return action # distances undefined -> no-op
         target_id = self._get_target(masked_distances, world)
+        closest_agent = world.agents[target_id]
+
+
         distance = masked_distances[target_id]
         if distance <= (agent.sight_range * world.grid_size):  # set closest agent as target if in range
-            self.action.u[2] = target_id  # attack >= 5 --> index 2
+            action.u[2] = target_id  # attack >= 5 --> index 2
         else:  # move towards the closest agent if not in range
-            closest_agent = world.agents[target_id]
             position_difference = world.positions[closest_agent.id] - world.positions[agent.id]
             max_difference_dimension = np.argmax(np.abs(position_difference))
             max_diff = position_difference[max_difference_dimension]
-            self.action.u[max_difference_dimension] = np.sign(max_diff)
-
+            action.u[max_difference_dimension] = np.sign(max_diff)
         # first two dimensions hold x and y axis movement -> multiply with movement step amount
-        self.action.u[:2] *= world.grid_size  # (=movement step size)
-        return self.action
+        action.u[:2] *= world.grid_size  # (=movement step size)
+
+        return action
 
     def _get_target(self, masked_distances, world) -> int:
         """

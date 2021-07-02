@@ -18,14 +18,14 @@ class EnvironmentAvailableActionTestCases(unittest.TestCase):
         t2 = mock_team(tid=1, members=[self.c, self.d], is_scripted=True)
         self.world = mock_world(agents_n=agents_n, teams=[t1, t2])
         self.world.avail_target_actions = np.array([
-            [0, 0, 1, 1],
-            [1, 1, 0, 0],
-            [0, 0, 0, 0],
-            [1, 0, 0, 0],
+            [0, 0, 1, 1], # Agent A is a attacker and can only attack both enemies
+            [1, 0, 0, 0], # Agent B is a healer and can heal A
+            [0, 0, 0, 0], # Agent C cannot attack anyone
+            [1, 0, 0, 0], # Agent D can only attack A
         ])
         self.assertEqual(self.world.avail_target_actions.shape, (agents_n, agents_n))
         self.world.avail_movement_actions = np.array([
-            [1, 0, 0, 0],
+            [1, 0, 0, 0], # A can move
             [0, 1, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1],
@@ -42,9 +42,9 @@ class EnvironmentAvailableActionTestCases(unittest.TestCase):
 
     def test_get_avail_actions_agent_b(self):
         avail_action_ids = self.env.get_available_action_ids(self.b)
-        np.testing.assert_array_equal(avail_action_ids, [0, 2, 5, 6])
+        np.testing.assert_array_equal(avail_action_ids, [0, 2, 5])
         avail_actions = self.env.get_available_actions(self.b)
-        np.testing.assert_array_equal(avail_actions, [1., 0., 1., 0., 0., 1., 1., 0., 0.])
+        np.testing.assert_array_equal(avail_actions, [1., 0., 1., 0., 0., 1., 0., 0., 0.])
 
     def test_get_avail_actions_agent_c(self):
         avail_action_ids = self.env.get_available_action_ids(self.c)
@@ -64,5 +64,5 @@ class EnvironmentAvailableActionTestCases(unittest.TestCase):
         self.assertEqual(avail_actions.shape, (2, 9))
         np.testing.assert_array_equal(avail_actions, [
             [1., 1., 0., 0., 0., 0., 0., 1., 1.],  # Agent A
-            [1., 0., 1., 0., 0., 1., 1., 0., 0.]  # Agent B
+            [1., 0., 1., 0., 0., 1., 0., 0., 0.]  # Agent B
         ])

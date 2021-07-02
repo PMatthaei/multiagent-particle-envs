@@ -89,7 +89,6 @@ class MAEnv(gym.Env):
             logging.basicConfig(filename='env.log', level=log_level)
 
         self.world = world
-        self.agents = self.world.policy_agents
         # set required vectorized gym env property
         self.n = len(world.policy_agents)
         # scenario callbacks
@@ -108,7 +107,7 @@ class MAEnv(gym.Env):
         self.action_space = []
         self.observation_space = []
 
-        for agent in self.agents:
+        for agent in self.world.policy_agents:
             # physical action space
             self.action_space.append(spaces.Discrete(self._get_action_dim(agent)))
 
@@ -146,7 +145,6 @@ class MAEnv(gym.Env):
         """
         avail_actions = np.zeros((self._get_action_dim(agent),))
         ids = self.get_available_action_ids(agent)
-        assert agent.id + 5 not in ids, "Illegal available action included"
         avail_actions[ids] = 1
         return avail_actions
 
@@ -213,14 +211,12 @@ class MAEnv(gym.Env):
         self.t += 1
         self.logger.info("--- Step {0}".format(self.t))
         self.logger.debug(f"Perform Actions: {action_n if self.log else None}")
-        # Only consider policy agents when calling self.agents
-        self.agents = self.world.policy_agents
         # Set action for each agent - this needs to be performed before stepping world !
 
-        if len(self.agents) != len(action_n):  # Make sure we received an action for every agent
-            raise ActionCountMismatch(len(self.agents), len(action_n))
+        if len(self.world.policy_agents) != len(action_n):  # Make sure we received an action for every agent
+            raise ActionCountMismatch(len(self.world.policy_agents), len(action_n))
 
-        for aid, agent in enumerate(self.agents):
+        for aid, agent in enumerate(self.world.policy_agents):
             self._set_action(action_n[aid], agent, self.action_space[aid])
 
         self.logger.debug("Advance world state...")
@@ -300,8 +296,7 @@ class MAEnv(gym.Env):
         self.reset_callback(self.world) if self.reset_callback else None
         self._reset_render()
         obs_n = []
-        self.agents = self.world.policy_agents
-        for agent in self.agents:
+        for agent in self.world.policy_agents:
             obs_n.append(self._get_obs(agent))
         return obs_n
 
@@ -334,11 +329,11 @@ class MAEnv(gym.Env):
         NOTE: Agents should have access only to their local observations
         during decentralised execution.
         """
-        return [self._get_obs(agent) for agent in self.agents]
+        return [self._get_obs(agent) for agent in self.world.policy_agents]
 
     def get_avail_actions(self):
         """Returns the available actions of all agents in a list."""
-        avail_actions = [self.get_available_actions(agent) for agent in self.agents]
+        avail_actions = [self.get_available_actions(agent) for agent in self.world.policy_agents]
         return avail_actions
 
     def _get_obs(self, agent):
@@ -458,7 +453,7 @@ class MAEnv(gym.Env):
 
 class TeamsEnv(MAEnv):
     def __init__(self, match_build_plan, grid_size, ai, **kwargs):
-        from maenv.scenarios.team.teams import TeamsScenario
+        from scenarios.teams import TeamsScenario
         from maenv.ai import REGISTRY as ai_REGISTRY
         self._scenario = TeamsScenario(match_build_plan, ai_REGISTRY[ai]())
         world = self._scenario.make_teams_world(grid_size)

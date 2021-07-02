@@ -8,6 +8,7 @@ from pstats import SortKey
 from bin.controls.headless_controls import HeadlessControls
 from bin.team_plans_example import *
 from core import RoleTypes
+from exceptions.agent_exceptions import IllegalTargetError
 from make_env import make_env
 from maenv.interfaces.policy import RandomPolicy
 
@@ -22,6 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('-bp', '--build_plan', default=H2_T2_A1_MELEE, help='Build plan for the teams.')
     parser.add_argument('-stream_key', '--stream_key', default=None, help='Stream Key for Twitch.')
     parser.add_argument('-fps', '--fps', default=30, help='Locked frames per second. (Default: 30, None for unlocked.')
+    parser.add_argument('-hd', '--headless', default=True, help='Run simulation without visualization.')
     args = parser.parse_args()
 
     env = make_env(args)
