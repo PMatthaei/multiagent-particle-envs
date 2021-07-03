@@ -37,11 +37,9 @@ class BasicScriptedAI(ScriptedAI):
             # first two dimensions hold x and y axis movement -> multiply with movement step amount
             action.u[:2] *= world.grid_size  # (=movement step size)
             new_pos = agent_pos + action.u[:2]
-            if not world.is_free(new_pos):  # if the stepped pos is occupied -> search free pos to move to
-                possible_steps = np.expand_dims(agent_pos, axis=0).repeat(4, axis=0) + world.moves
-                np.testing.assert_array_equal(world.stepable_positions[agent.id], possible_steps)
+            if not world.is_free(new_pos):  # if the stepped pos is occupied -> move to random free pos
                 free = np.array([world.is_free(pos) for pos in world.stepable_positions[agent.id]])
-                move = world.moves[np.argmax(free > 0)]
+                move = world.moves[np.random.choice(np.argwhere(free).flatten())]
                 action.u[:2] = move
         return action
 

@@ -25,7 +25,7 @@ class RoleTypes(Enum):
 
 
 class UnitAttackTypes(Enum):
-    RANGED = {"attack_range": 3} # attack range units are in grid cells!
+    RANGED = {"attack_range": 3}  # attack range units are in grid cells!
     MELEE = {"attack_range": 1}
 
 
@@ -362,7 +362,7 @@ class World(object):
             return False
         if target.tid == agent.tid:
             raise IllegalTargetError(agent)
-        return self.visibility[agent.id][target.id] # WARNING! This only works as long as attack range == sight range
+        return self.visibility[agent.id][target.id]  # WARNING! This only works as long as attack range == sight range
 
     def step(self):
         """
@@ -409,11 +409,11 @@ class World(object):
         #
         # End of state transition - Calculate observations
         #
-        self._update_visibility() # Used for obs-calculation
+        self._update_visibility()  # Used for obs-calculation
 
-        self._update_dist_matrix() # Used for obs-calculation
+        self._update_dist_matrix()  # Used for obs-calculation
 
-        self._calculate_obs() # Calculate what is observed after the step is calculated
+        self._calculate_obs()  # Calculate what is observed after the step is calculated
 
         #
         # Calculate each agents available actions after the step is calculated
