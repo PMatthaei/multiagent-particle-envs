@@ -268,6 +268,8 @@ class World(object):
         # Holds each agents position in real and complex space
         self.positions = np.zeros((agents_n, self.dim_p))
         self.positions_c = np.zeros((1, agents_n), dtype=complex)
+        # Holds all positions an agent can step on in the current state
+        self.stepable_positions = np.zeros((agents_n, self.get_movement_dims, self.dim_p))
         # Holds each agents distance to other agents (and himself on diag = always 0)
         self.distances = np.full((agents_n, agents_n), fill_value=np.inf)
         # Holds each agents visibility of other agents (and himself on diag = always True)
@@ -366,19 +368,18 @@ class World(object):
         """
         Update state of the world.
         """
+        # Calculate stepable positions for AI
+        self._calculate_stepable_pos()
+
         # Set actions for scripted/heuristic agents BEFORE advancing state
         for scripted_agent in self.alive_scripted_agents:
             # TODO: This is weird
             scripted_agent.action = scripted_agent.action_callback(scripted_agent, self)
 
-
         # Shuffle randomly to prevent favoring
         import random
-        #shuffled_agents = self.alive_agents.copy()
-        #random.shuffle(shuffled_agents)
 
         # Calculate influence actions BEFORE updating positions to prevent moving out of range after action was set
-        #for agent in shuffled_agents:
         for agent in random.sample(self.alive_agents, len(self.alive_agents)):
             # Influence entity if target set f.e with attack, heal etc
             agent_has_action_target = agent.action.u[2] != -1
@@ -405,21 +406,32 @@ class World(object):
         for a in random.sample(self.alive_agents, len(self.alive_agents)):
             self._update_pos(a)
 
-        self._update_visibility()
+        #
+        # End of state transition - Calculate observations
+        #
+        self._update_visibility() # Used for obs-calculation
 
-        self._update_dist_matrix()
+        self._update_dist_matrix() # Used for obs-calculation
 
-        self._calculate_obs()
+        self._calculate_obs() # Calculate what is observed after the step is calculated
 
+        #
+        # Calculate each agents available actions after the step is calculated
+        #
         self.calculate_avail_movements_actions()
 
         self.calculate_avail_target_actions()
 
-        # After update test if world is done aka only one team left
+        # After state transition test win condition
         self._calculate_wiped_teams()
 
     def _calculate_wiped_teams(self):
         self.wiped_teams = [np.all(np.logical_not(self.alive[self.team_affiliations == t.tid])) for t in self.teams]
+
+    def _calculate_stepable_pos(self):
+        m = self.get_movement_dims
+        n = self.agents_n
+        self.stepable_positions = self.positions.repeat(m, axis=0).reshape(n, m, -1) + self.moves
 
     def _update_pos(self, agent):
         """
@@ -522,21 +534,22 @@ class World(object):
         if self.bounds is not None:
             m_dims = self.get_movement_dims
             n = self.agents_n
-            positions = self.positions.repeat(m_dims, axis=0).reshape(n, m_dims, -1)
-            stepped_positions = positions + self.moves
+
+            # Calculate stepable positions after position updates to provide info for avail movement calculation
+            self._calculate_stepable_pos()
 
             legal_step_mask = np.ones((n, m_dims), dtype=bool)  # Marks legal moves
             # Stepped pos for every agents pos
-            stepped_positions_n_agent = stepped_positions.repeat(n, axis=1).reshape(n, m_dims, n, -1)
+            stepped_positions_n_agent = self.stepable_positions.repeat(n, axis=1).reshape(n, m_dims, n, -1)
             # np.all = pos overlap in x and y, np.any = any step overlap with any agent pos
             occupied_mask = np.any(np.all(stepped_positions_n_agent == self.positions, axis=3), axis=2)
             legal_step_mask[occupied_mask] = False  # Mask contains entries which are occupied
 
             # In bounds checks
-            x_in_left_bound = stepped_positions[:, :, 0] >= 0
-            x_in_right_bound = stepped_positions[:, :, 0] <= self.bounds[0]
-            y_in_down_bound = stepped_positions[:, :, 1] >= 0
-            y_in_up_bound = stepped_positions[:, :, 1] <= self.bounds[1]
+            x_in_left_bound = self.stepable_positions[:, :, 0] >= 0
+            x_in_right_bound = self.stepable_positions[:, :, 0] <= self.bounds[0]
+            y_in_down_bound = self.stepable_positions[:, :, 1] >= 0
+            y_in_up_bound = self.stepable_positions[:, :, 1] <= self.bounds[1]
             all_in_bound = (x_in_left_bound & x_in_right_bound) & (y_in_up_bound & y_in_down_bound)
             mask = legal_step_mask & all_in_bound
 

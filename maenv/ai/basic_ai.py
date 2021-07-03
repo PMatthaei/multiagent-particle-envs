@@ -21,22 +21,28 @@ class BasicScriptedAI(ScriptedAI):
 
         masked_distances = self._get_masked_distances(agent, world)
         if np.all(np.isinf(masked_distances)):
-            return action # distances undefined -> no-op
+            return action  # distances undefined -> no-op
         target_id = self._get_target(masked_distances, world)
         closest_agent = world.agents[target_id]
-
-
         distance = masked_distances[target_id]
         if distance <= (agent.sight_range * world.grid_size):  # set closest agent as target if in range
             action.u[2] = target_id  # attack >= 5 --> index 2
         else:  # move towards the closest agent if not in range
-            position_difference = world.positions[closest_agent.id] - world.positions[agent.id]
+            agent_pos = world.positions[agent.id]
+
+            position_difference = world.positions[closest_agent.id] - agent_pos
             max_difference_dimension = np.argmax(np.abs(position_difference))
             max_diff = position_difference[max_difference_dimension]
             action.u[max_difference_dimension] = np.sign(max_diff)
-        # first two dimensions hold x and y axis movement -> multiply with movement step amount
-        action.u[:2] *= world.grid_size  # (=movement step size)
-
+            # first two dimensions hold x and y axis movement -> multiply with movement step amount
+            action.u[:2] *= world.grid_size  # (=movement step size)
+            new_pos = agent_pos + action.u[:2]
+            if not world.is_free(new_pos):  # if the stepped pos is occupied -> search free pos to move to
+                possible_steps = np.expand_dims(agent_pos, axis=0).repeat(4, axis=0) + world.moves
+                np.testing.assert_array_equal(world.stepable_positions[agent.id], possible_steps)
+                free = np.array([world.is_free(pos) for pos in world.stepable_positions[agent.id]])
+                move = world.moves[np.argmax(free > 0)]
+                action.u[:2] = move
         return action
 
     def _get_target(self, masked_distances, world) -> int:
@@ -57,7 +63,7 @@ class BasicScriptedAI(ScriptedAI):
         @param world:
         @return:
         """
-        masked_distances = world.distances[agent.id].copy()
+        masked_distances = np.copy(world.distances[agent.id])
         if agent.has_heal():  # mask out all enemies or dead
             non_target_mask = (world.team_affiliations != agent.tid) | (world.alive == 0)
         else:  # mask out all teammates or dead
