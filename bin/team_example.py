@@ -10,20 +10,26 @@ from bin.team_plans_example import *
 from core import RoleTypes
 from make_env import make_env
 from maenv.interfaces.policy import RandomPolicy
+import nestargs
 
 if __name__ == '__main__':
 
     # parse arguments
-    parser = argparse.ArgumentParser(description=None)
-    parser.add_argument('-s', '--scenario', default='teams', help='Path of the scenario Python script.')
-    parser.add_argument('-g', '--grid_size', default=20, help='Edge length of a grid cell. Step size of a unit.')
-    parser.add_argument('-a', '--ai', default='focus', help='Scripted AI to play against if team is configured.')
-    parser.add_argument('-c', '--ai_config', default={"focuses": [RoleTypes.HEALER]}, help='Scripted AI to play against if team is configured.')
-    parser.add_argument('-p', '--profile', default=False, help='Profile the example for performance issues.')
-    parser.add_argument('-bp', '--build_plan', default=AI_SMALL, help='Build plan for the teams.')
-    parser.add_argument('-stream_key', '--stream_key', default=None, help='Stream Key for Twitch.')
-    parser.add_argument('-fps', '--fps', default=30, help='Locked frames per second. (Default: 30, None for unlocked.')
-    parser.add_argument('-hd', '--headless', default=False, help='Run simulation without visualization.')
+    parser = nestargs.NestedArgumentParser()
+
+    parser.add_argument('--scenario', default='teams', help='Path of the scenario Python script.')
+    parser.add_argument('--profile', default=False, help='Profile the example for performance issues.')
+    parser.add_argument('--stream_key', default=None, help='Stream Key for Twitch.')
+
+    parser.add_argument('--scenario_args.match_build_plan', default=AI_SMALL, help='Build plan for the teams.')
+    parser.add_argument('--scenario_args.grid_size', default=20, help='Edge length of a grid cell. Step size of a unit.')
+    parser.add_argument('--scenario_args.random_spawns', default=False, help='')
+    parser.add_argument('--scenario_args.ai', default='focus', help='')
+    parser.add_argument('--scenario_args.ai_config', default={"focuses": [RoleTypes.HEALER]}, help='')
+
+    parser.add_argument('--env_args.fps', default=60, help='')
+    parser.add_argument('--env_args.headless', default=False, help='')
+
     args = parser.parse_args()
 
     env = make_env(args)

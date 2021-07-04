@@ -34,15 +34,14 @@ def make_env(args, benchmark=False):
     from maenv import scenarios
 
     # load scenario from script
-    scenario = scenarios.load(args.scenario + ".py").TeamsScenario(args.build_plan)
+    scenario = scenarios.load(args.scenario + ".py").TeamsScenario(**vars(args.scenario_args))
     # create world
-    world = scenario.make_teams_world(grid_size=args.grid_size)
+    world = scenario.make_teams_world()
     # create maenv environment
     env = MAEnv(world=world,
                 reset_callback=scenario.reset_world,
                 reward_callback=scenario.reward,
                 observation_callback=scenario.observation,
                 done_callback=scenario.done,
-                fps=args.fps,
-                headless=args.headless)
+                **vars(args.env_args))
     return env

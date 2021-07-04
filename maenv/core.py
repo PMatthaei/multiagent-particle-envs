@@ -214,7 +214,7 @@ class Agent(Entity):
 
 class World(object):
     def __init__(self, grid_size: int, n_agents: int, n_teams: int, bounds=np.array([1280, 720]), ai="basic",
-                 ai_config={},
+                 ai_config=None,
                  log=False):
         """
         Multi-agent world
@@ -223,7 +223,7 @@ class World(object):
         self.bounds = bounds
         self.log = log
         from maenv.ai import REGISTRY as ai_REGISTRY
-        self.scripted_ai = ai_REGISTRY[ai](**ai_config)
+        self.scripted_ai = ai_REGISTRY[ai](ai_config)
         self.positions = None
         self.grid_size = grid_size
         # list of teams build by a subset of ...

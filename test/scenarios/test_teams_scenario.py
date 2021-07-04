@@ -46,12 +46,12 @@ class TeamsScenarioMakeTestCases(unittest.TestCase):
         self.ai_scenario = TeamsScenario(AI_SMALL_1x1)
 
     def test_make_world_creates_agents(self):
-        result = self.scenario._make_world(grid_size=10)
+        result = self.scenario._make_world()
         self.assertEqual(len(result.agents), 2)
         self.assertEqual(len(result.teams), 2)
 
     def test_make_world_creates_teams(self):
-        result = self.scenario._make_world(grid_size=10)
+        result = self.scenario._make_world()
         self.assertEqual(len(result.teams), 2)
         self.assertEqual(len(result.teams[0].members), 1)
         self.assertEqual(result.teams[0].tid, 0)
@@ -59,7 +59,7 @@ class TeamsScenarioMakeTestCases(unittest.TestCase):
         self.assertEqual(result.teams[1].tid, 1)
 
     def test_make_world_creates_ai_team(self):
-        result = self.ai_scenario._make_world(grid_size=10)
+        result = self.ai_scenario._make_world()
         self.assertEqual(len(result.teams), 2)
         self.assertEqual(len(result.teams[0].members), 1)
         self.assertEqual(result.teams[0].tid, 0)

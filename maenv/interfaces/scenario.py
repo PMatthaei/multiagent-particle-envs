@@ -54,17 +54,17 @@ class BaseTeamScenario(object):
     Defines a team-based scenario within this environment. Inherit and implement to create custom team-based scenarios
     """
 
-    def make_teams_world(self, grid_size=10):
+    def make_teams_world(self):
         """
         This function needs to be called instead of make_world to create a team-based setup
         :return:
         """
-        world = self._make_world(grid_size)
+        world = self._make_world()
         # make initial conditions
         self.reset_world(world)
         return world
 
-    def _make_world(self, grid_size: int) -> World:
+    def _make_world(self) -> World:
         """
         Create elements of the world
         :return: world
