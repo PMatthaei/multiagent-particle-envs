@@ -8,7 +8,6 @@ from pstats import SortKey
 from bin.controls.headless_controls import HeadlessControls
 from bin.team_plans_example import *
 from core import RoleTypes
-from exceptions.agent_exceptions import IllegalTargetError
 from make_env import make_env
 from maenv.interfaces.policy import RandomPolicy
 
@@ -18,10 +17,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
     parser.add_argument('-s', '--scenario', default='teams', help='Path of the scenario Python script.')
     parser.add_argument('-g', '--grid_size', default=20, help='Edge length of a grid cell. Step size of a unit.')
-    parser.add_argument('-a', '--ai', default='basic', help='Scripted AI to play against if team is configured.')
-    parser.add_argument('-c', '--ai_config', default={}, help='Scripted AI to play against if team is configured.')
+    parser.add_argument('-a', '--ai', default='focus', help='Scripted AI to play against if team is configured.')
+    parser.add_argument('-c', '--ai_config', default={"focuses": [RoleTypes.HEALER]}, help='Scripted AI to play against if team is configured.')
     parser.add_argument('-p', '--profile', default=False, help='Profile the example for performance issues.')
-    parser.add_argument('-bp', '--build_plan', default=H2_T2_A1_MELEE, help='Build plan for the teams.')
+    parser.add_argument('-bp', '--build_plan', default=AI_SMALL, help='Build plan for the teams.')
     parser.add_argument('-stream_key', '--stream_key', default=None, help='Stream Key for Twitch.')
     parser.add_argument('-fps', '--fps', default=30, help='Locked frames per second. (Default: 30, None for unlocked.')
     parser.add_argument('-hd', '--headless', default=False, help='Run simulation without visualization.')

@@ -19,12 +19,12 @@ class BasicScriptedAI(ScriptedAI):
         action.u = np.zeros(world.dim_p + 1)  # reset previous action
         action.u[2] = -1  # default is no target == -1
 
-        masked_distances = self._get_masked_distances(agent, world)
-        if np.all(np.isinf(masked_distances)):
+        self.masked_distances = self._get_masked_distances(agent, world)
+        if np.all(np.isinf(self.masked_distances)):
             return action  # distances undefined -> no-op
-        target_id = self._get_target(masked_distances, world)
+        target_id = self._get_target(world)
         closest_agent = world.agents[target_id]
-        distance = masked_distances[target_id]
+        distance = self.masked_distances[target_id]
         if distance <= (agent.sight_range * world.grid_size):  # set closest agent as target if in range
             action.u[2] = target_id  # attack >= 5 --> index 2
         else:  # move towards the closest agent if not in range
@@ -39,18 +39,22 @@ class BasicScriptedAI(ScriptedAI):
             new_pos = agent_pos + action.u[:2]
             if not world.is_free(new_pos):  # if the stepped pos is occupied -> move to random free pos
                 free = np.array([world.is_free(pos) for pos in world.stepable_positions[agent.id]])
-                move = world.moves[np.random.choice(np.argwhere(free).flatten())]
-                action.u[:2] = move
+                move_ids = np.argwhere(free).flatten() # Get ids of moves which are allowed
+                if len(move_ids) == 0:  # No free positions to move to for this agent
+                    action.u[:2] = 0
+                else:
+                    move = world.moves[np.random.choice(move_ids)]
+                    action.u[:2] = move
         return action
 
-    def _get_target(self, masked_distances, world) -> int:
+    def _get_target(self, world) -> int:
         """
         Get closest agent id as target
         @param masked_distances:
         @param world:
         @return: id of the target
         """
-        target_id = np.argmin(masked_distances)
+        target_id = np.argmin(self.masked_distances)
         return target_id
 
     def _get_masked_distances(self, agent: Agent, world: World) -> np.array:

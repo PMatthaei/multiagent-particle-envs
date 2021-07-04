@@ -9,7 +9,7 @@ from maenv.utils.colors import generate_colors
 
 
 class TeamsScenario(BaseTeamScenario):
-    def __init__(self, match_build_plan, scripted_ai: ScriptedAI = BasicScriptedAI()):
+    def __init__(self, match_build_plan, scripted_ai: ScriptedAI = BasicScriptedAI(), random_spawns: bool = False):
         """
         Constructor for a team scenario.
         @param match_build_plan: Plan to setup the match and therefore team composition and possible AI`s.
@@ -17,6 +17,7 @@ class TeamsScenario(BaseTeamScenario):
         n_teams: How many teams
         """
         self.match_build_plan = match_build_plan
+        self.random_spawns = random_spawns
         self.teams_n = len(match_build_plan)
         self.agents_n = [len(team["units"]) for team in match_build_plan]
         self.is_symmetric = self.agents_n.count(self.agents_n[0]) == len(self.agents_n)
@@ -65,9 +66,9 @@ class TeamsScenario(BaseTeamScenario):
 
         # random team spawns
         if self.team_spawns is None:
-            self.team_spawns = world.spg.generate_team_spawns(radius=team_spread, grid_size=world.grid_size)
+            self.team_spawns = world.spg.generate_team_spawns(randomize=self.random_spawns, radius=team_spread)
             # take first teams size since symmetric for spawn generation
-            agent_spawns = world.spg.generate(self.agents_n[0], world.grid_size, 1, agent_spread)
+            agent_spawns = world.spg.generate(randomize=self.random_spawns, mean_radius=1, sigma_radius=agent_spread)
             # mirror spawns
             self.agent_spawns[0] = agent_spawns + self.team_spawns[0]
             self.agent_spawns[1] = (- agent_spawns) + self.team_spawns[1]

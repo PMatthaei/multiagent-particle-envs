@@ -16,7 +16,7 @@ class FocusScriptedAI(BasicScriptedAI):
         self.focuses = [int(f) for f in focuses]
         self.target_role_mask = None
 
-    def _get_target(self, masked_distances: np.array, world: World) -> int:
+    def _get_target(self, world: World) -> int:
         """
         Get the closest agent id matching the ordered list of focuses. The agent moves towards the focused target if
         it is not in range!
@@ -26,7 +26,7 @@ class FocusScriptedAI(BasicScriptedAI):
         """
         if self.target_role_mask is None:  # init role mask on first run
             self.target_role_mask = np.array([int(agent.role_type) for agent in world.agents])
-        focus_masked_distances = masked_distances.copy()
+        focus_masked_distances = self.masked_distances.copy()
         for focus in self.focuses:  # search for each focus until the closest possible target is found
             no_focus_mask = self.target_role_mask != focus
             focus_masked_distances[no_focus_mask] = np.inf  # mask out agents not in focus because of their role
@@ -36,4 +36,4 @@ class FocusScriptedAI(BasicScriptedAI):
             else:
                 return np.argmin(focus_masked_distances)
 
-        return np.argmin(masked_distances)  # no target is of the desired focus role -> fallback: just attack closest
+        return np.argmin(self.masked_distances)  # no target is of the desired focus role -> fallback: just attack closest
