@@ -21,7 +21,12 @@ class MAEnv(gym.Env):
                  fps=None, infos=True, draw_grid=True,
                  record=False, headless=False, stream_key=None, seed=None):
         """
-        Multi-Agent extension of gym.Env.
+        Multi-Agent extension of gym.Env
+
+        A Multi-Agent Environment is defined via the world which was created for a specific scenario and the scenarios
+        call back functions provided.
+
+        See how to construct an Multi-Agent Environment in:
 
         Parameters (defaults see: in __init__)
         ----------

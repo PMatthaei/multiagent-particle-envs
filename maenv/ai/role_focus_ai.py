@@ -1,19 +1,17 @@
-from typing import List
-
 import numpy as np
 
 from maenv.ai import BasicScriptedAI
-from maenv.core import World, RoleTypes
+from maenv.core import World
 
 
 class FocusScriptedAI(BasicScriptedAI):
-    def __init__(self, focuses: List[RoleTypes] = RoleTypes):
+    def __init__(self, config: dict):
         """
         BasicAI with special targeting on pre-selected roles as focus.
         @param focuses: List of Roles ordered by importance of focus
         """
         super().__init__()
-        self.focuses = [int(f) for f in focuses]
+        self.focuses = [int(role) for role in config["focuses"]]
         self.target_role_mask = None
 
     def _get_target(self, world: World) -> int:

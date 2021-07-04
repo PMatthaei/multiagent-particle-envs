@@ -4,6 +4,9 @@ from maenv.core import Agent, World, Action
 
 
 class ScriptedAI(object):
+    def __init__(self, config: dict = None):
+        self.config = config
+        self.masked_distances = None
 
     def act(self, agent: Agent, world: World) -> Action:
         raise NotImplementedError()
@@ -26,4 +29,3 @@ class ScriptedAI(object):
         @return:
         """
         raise NotImplementedError()
-

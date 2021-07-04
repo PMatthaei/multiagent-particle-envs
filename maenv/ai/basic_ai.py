@@ -21,6 +21,7 @@ class BasicScriptedAI(ScriptedAI):
 
         self.masked_distances = self._get_masked_distances(agent, world)
         if np.all(np.isinf(self.masked_distances)):
+            agent.action = action
             return action  # distances undefined -> no-op
         target_id = self._get_target(world)
         closest_agent = world.agents[target_id]
@@ -45,6 +46,7 @@ class BasicScriptedAI(ScriptedAI):
                 else:
                     move = world.moves[np.random.choice(move_ids)]
                     action.u[:2] = move
+        agent.action = action
         return action
 
     def _get_target(self, world) -> int:

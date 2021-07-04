@@ -146,11 +146,12 @@ class PerformanceStatistics:
 
 
 class Agent(Entity):
-    def __init__(self, id, tid, color, build_plan, action_callback=None):
+    def __init__(self, id, tid, color, build_plan, is_scripted=False):
         super(Agent, self).__init__()
         self.id = id
         # team id
         self.tid = tid
+        self.is_scripted = is_scripted
         self.name = 'Agent %d' % id
         self.color = color
         self.unit_id = (build_plan['role'], build_plan['attack_type'])
@@ -171,8 +172,6 @@ class Agent(Entity):
 
         self.action = Action()
         self.stats = PerformanceStatistics()  # collects stats about the agent
-
-        self.action_callback = action_callback  # scripted agents behaviour
 
     @property
     def self_observation(self):
@@ -214,22 +213,26 @@ class Agent(Entity):
 
 
 class World(object):
-    def __init__(self, grid_size: int, agents_n: int, teams_n: int, bounds=np.array([1280, 720]), log=False):
+    def __init__(self, grid_size: int, n_agents: int, n_teams: int, bounds=np.array([1280, 720]), ai="basic",
+                 ai_config={},
+                 log=False):
         """
         Multi-agent world
         :param bounds: World bounds in which the agents can move
         """
         self.bounds = bounds
         self.log = log
+        from maenv.ai import REGISTRY as ai_REGISTRY
+        self.scripted_ai = ai_REGISTRY[ai](**ai_config)
         self.positions = None
         self.grid_size = grid_size
         # list of teams build by a subset of ...
         self.teams = []
-        self.teams_n = teams_n
+        self.teams_n = n_teams
         self.wiped_teams = []
         # list of agents
         self.agents = []
-        self.agents_n = agents_n
+        self.agents_n = n_agents
         # list of non-agent objects in the world
         self.objects = []
         # communication channel dimensionality
@@ -240,20 +243,20 @@ class World(object):
         self.dim_color = 3
 
         # Holds each agents alive boolean
-        self.alive = np.zeros((agents_n,), dtype=int)
+        self.alive = np.zeros((n_agents,), dtype=int)
         # Team affiliation (team id) for later masking
-        self.team_affiliations = np.full((agents_n,), -1, dtype=int)
+        self.team_affiliations = np.full((n_agents,), -1, dtype=int)
         # Holds each agents health and max health
-        self.health = np.zeros((agents_n,), dtype=float)
-        self.max_health = np.zeros((agents_n,), dtype=int)
+        self.health = np.zeros((n_agents,), dtype=float)
+        self.max_health = np.zeros((n_agents,), dtype=int)
         # Holds each agents action
-        self.actions = np.zeros((agents_n, self.dim_p + 1))
+        self.actions = np.zeros((n_agents, self.dim_p + 1))
         # Holds all available movement actions in the current step - all moves are initially allowed if spawns are correct
-        self.avail_movement_actions = np.ones((agents_n, self.get_movement_dims), dtype=float)  # 4 movement directions
+        self.avail_movement_actions = np.ones((n_agents, self.get_movement_dims), dtype=float)  # 4 movement directions
         self.moves = np.array([[-1, 0], [1, 0], [0, 1], [0, -1]]) * self.grid_size  # W/E/N/S move
 
         # Holds all available target actions in the current step - all targets are blocked in the beginning
-        self.avail_target_actions = np.zeros((agents_n, agents_n), dtype=float)  # target action for each agent
+        self.avail_target_actions = np.zeros((n_agents, n_agents), dtype=float)  # target action for each agent
         # Mask out each agent if its himself
         self.self_target_mask = (np.ones_like(self.avail_target_actions) - np.diag(np.ones(self.agents_n))).astype(bool)
         # Mask all healable targets
@@ -262,26 +265,26 @@ class World(object):
         self.attack_target_mask = np.zeros_like(self.avail_target_actions).astype(bool)
 
         # Holds each agents sight range
-        self.ranges = np.zeros((agents_n,), dtype=float)
+        self.ranges = np.zeros((n_agents,), dtype=float)
         # Holds each agents unit representation encoded as bit array
-        self.unit_bits_obs = np.zeros((agents_n, UNIT_BITS_NEEDED), dtype=float)
+        self.unit_bits_obs = np.zeros((n_agents, UNIT_BITS_NEEDED), dtype=float)
         # Holds each agents position in real and complex space
-        self.positions = np.zeros((agents_n, self.dim_p))
-        self.positions_c = np.zeros((1, agents_n), dtype=complex)
+        self.positions = np.zeros((n_agents, self.dim_p))
+        self.positions_c = np.zeros((1, n_agents), dtype=complex)
         # Holds all positions an agent can step on in the current state
-        self.stepable_positions = np.zeros((agents_n, self.get_movement_dims, self.dim_p))
+        self.stepable_positions = np.zeros((n_agents, self.get_movement_dims, self.dim_p))
         # Holds each agents distance to other agents (and himself on diag = always 0)
-        self.distances = np.full((agents_n, agents_n), fill_value=np.inf)
+        self.distances = np.full((n_agents, n_agents), fill_value=np.inf)
         # Holds each agents visibility of other agents (and himself on diag = always True)
-        self.visibility = np.zeros((agents_n, agents_n))
+        self.visibility = np.zeros((n_agents, n_agents))
         # Holds each agents observation of all other agents
-        self.obs = np.zeros((agents_n, agents_n, self.obs_dims))
+        self.obs = np.zeros((n_agents, n_agents, self.obs_dims))
 
         # Helper to calculate range queries
         self.kd_tree = scipy.spatial.kdtree.cKDTree(self.positions)
 
         # Helper to generate points within the world
-        self.spg = SpawnGenerator(self.grid_center, grid_size, self.dim_p, agents_n)
+        self.spg = SpawnGenerator(self.grid_center, grid_size, self.dim_p, n_agents)
 
     def is_free(self, pos: np.array):
         """
@@ -325,7 +328,7 @@ class World(object):
 
     @property
     def alive_scripted_agents(self):
-        return [agent for agent in self.scripted_agents if agent.action_callback is not None and agent.is_alive()]
+        return [agent for agent in self.scripted_agents if agent.is_scripted and agent.is_alive()]
 
     @property
     def grid_center(self):
@@ -351,11 +354,11 @@ class World(object):
 
     @property
     def policy_agents(self):
-        return [agent for agent in self.agents if agent.action_callback is None]
+        return [agent for agent in self.agents if not agent.is_scripted]
 
     @property
     def scripted_agents(self):
-        return [agent for agent in self.agents if agent.action_callback is not None]
+        return [agent for agent in self.agents if agent.is_scripted]
 
     def can_attack(self, agent: Agent, target: Agent):
         if agent.has_heal():
@@ -373,8 +376,7 @@ class World(object):
 
         # Set actions for scripted/heuristic agents BEFORE advancing state
         for scripted_agent in self.alive_scripted_agents:
-            # TODO: This is weird
-            scripted_agent.action = scripted_agent.action_callback(scripted_agent, self)
+            self.scripted_ai.act(scripted_agent, self)
 
         # Shuffle randomly to prevent favoring
         import random
@@ -559,6 +561,6 @@ class World(object):
 
     def calculate_avail_target_actions(self):
         self.avail_target_actions[:, :] = 0.0  # Reset
-        mask = (self.visibility == 1) & self.alive & self.self_target_mask & \
-               (self.attack_target_mask | self.heal_target_mask)
+        target_mask = (self.attack_target_mask | self.heal_target_mask)
+        mask = (self.visibility == 1) & self.alive & self.self_target_mask & target_mask
         self.avail_target_actions[mask] = 1.0

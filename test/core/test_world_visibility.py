@@ -16,7 +16,7 @@ class WorldVisibilityTestCases(unittest.TestCase):
         self.a_spawn = np.array([1, 1])
         self.b_spawn = np.array([1, 0])
 
-        self.world = World(grid_size=10, teams_n=2, agents_n=N_AGENTS)
+        self.world = World(grid_size=10, n_teams=2, n_agents=N_AGENTS)
         self.world.agents = [self.a, self.b]
 
         self.world.connect(self.a, self.a_spawn)

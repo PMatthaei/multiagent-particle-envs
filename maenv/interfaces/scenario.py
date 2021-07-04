@@ -2,6 +2,10 @@ from maenv.core import World, Team, Agent, Action
 
 
 class BaseScenario(object):
+    """
+    Defines as scenario within this environment. Inherit and implement to create custom scenarios
+    """
+
     def _make_world(self) -> World:
         """
         Create elements of the world
@@ -46,6 +50,10 @@ class BaseScenario(object):
 
 
 class BaseTeamScenario(object):
+    """
+    Defines a team-based scenario within this environment. Inherit and implement to create custom team-based scenarios
+    """
+
     def make_teams_world(self, grid_size=10):
         """
         This function needs to be called instead of make_world to create a team-based setup
@@ -93,15 +101,6 @@ class BaseTeamScenario(object):
         """
         Return if this team has achieved his goal
         :param team:
-        :param world:
-        :return:
-        """
-        raise NotImplementedError()
-
-    def scripted_agent_callback(self, agent: Agent, world: World) -> Action:
-        """
-        Scripted action
-        :param agent:
         :param world:
         :return:
         """

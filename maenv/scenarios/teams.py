@@ -1,15 +1,12 @@
 import numpy as np
-
-from maenv.ai import BasicScriptedAI
-from maenv.interfaces.ai import ScriptedAI
-from maenv.core import World, Agent, Team, Action
+from maenv.core import World, Agent, Team
 from maenv.exceptions.scenario_exceptions import ScenarioNotSymmetricError
 from maenv.interfaces.scenario import BaseTeamScenario
 from maenv.utils.colors import generate_colors
 
 
 class TeamsScenario(BaseTeamScenario):
-    def __init__(self, match_build_plan, scripted_ai: ScriptedAI = BasicScriptedAI(), random_spawns: bool = False):
+    def __init__(self, match_build_plan: dict, random_spawns: bool = False):
         """
         Constructor for a team scenario.
         @param match_build_plan: Plan to setup the match and therefore team composition and possible AI`s.
@@ -22,7 +19,6 @@ class TeamsScenario(BaseTeamScenario):
         self.agents_n = [len(team["units"]) for team in match_build_plan]
         self.is_symmetric = self.agents_n.count(self.agents_n[0]) == len(self.agents_n)
         self.team_mixing_factor = 8  # build_plan["tmf"] if "tmf" in build_plan["tmf"] else 5
-        self.scripted_ai = scripted_ai
         if not self.is_symmetric:
             raise ScenarioNotSymmetricError(self.agents_n, self.teams_n)
 
@@ -33,9 +29,15 @@ class TeamsScenario(BaseTeamScenario):
             self.agent_spawns = [None] * self.teams_n
 
     def _make_world(self, grid_size: int):
-        agents_n = sum(self.agents_n)
+        """
+        A teams scenario creates a world with two equally sized teams with either a fixed spawn scheme or
+        a random generated spawn scheme. Spawns can be regenerated every episode or kept constant.
+        @param grid_size:
+        @return:
+        """
+        total_n_agents = sum(self.agents_n)
 
-        world = World(agents_n=agents_n, teams_n=self.teams_n, grid_size=grid_size)
+        world = World(n_agents=total_n_agents, n_teams=self.teams_n, grid_size=grid_size)
 
         colors = generate_colors(self.teams_n)
         agent_count = 0
@@ -47,7 +49,7 @@ class TeamsScenario(BaseTeamScenario):
                     tid=tid,
                     color=colors[tid],
                     build_plan=self.match_build_plan[tid]["units"][index],
-                    action_callback=self.scripted_agent_callback if is_scripted else None
+                    is_scripted=is_scripted,
                 ) for index, aid in  # index is the team internal identifier
                 enumerate(range(agent_count, agent_count + self.agents_n[tid]))
             ]
@@ -65,7 +67,7 @@ class TeamsScenario(BaseTeamScenario):
         team_spread = self.teams_n * agent_spread
 
         # random team spawns
-        if self.team_spawns is None:
+        if self.team_spawns is None: # if spawns already exist do not generate
             self.team_spawns = world.spg.generate_team_spawns(randomize=self.random_spawns, radius=team_spread)
             # take first teams size since symmetric for spawn generation
             agent_spawns = world.spg.generate(randomize=self.random_spawns, mean_radius=1, sigma_radius=agent_spread)
@@ -81,8 +83,6 @@ class TeamsScenario(BaseTeamScenario):
 
     def reward(self, agent: Agent, world: World):
         reward = 0
-        # reward += agent.state.health / agent.state.max_health
-        # reward -= agent.stats.dmg_received / agent.state.max_health
         reward += agent.stats.dmg_dealt / agent.attack_damage * 0.5
         reward += agent.stats.kills * 5
         return reward
@@ -96,6 +96,3 @@ class TeamsScenario(BaseTeamScenario):
     def observation(self, agent: Agent, world: World):
         other_obs = world.obs[agent.id].flatten()
         return np.concatenate((other_obs, agent.self_observation))
-
-    def scripted_agent_callback(self, agent: Agent, world: World) -> Action:
-        return self.scripted_ai.act(agent, world)

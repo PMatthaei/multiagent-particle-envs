@@ -16,7 +16,7 @@ class WorldAvailableMovementActionsTestCases(unittest.TestCase):
         self.d = mock_agent(id=3, tid=1)
         self.e = mock_agent(id=4, tid=1)
 
-        self.world = World(grid_size=10, teams_n=2, agents_n=N_AGENTS)
+        self.world = World(grid_size=10, n_teams=2, n_agents=N_AGENTS)
         self.world.agents = [self.a, self.b, self.c, self.d, self.e]
 
         self.a_spawn = np.array([100, 100])

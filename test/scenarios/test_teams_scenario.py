@@ -107,18 +107,3 @@ class TeamsScenarioObservationTestCases(unittest.TestCase):
         result = self.scenario.observation(self.c, self.world)
         self.assertEqual(result.shape, (20,))
         np.testing.assert_array_equal(result, ([1] * 16) + self.c.self_observation)
-
-
-class TeamsScenarioAITestCases(unittest.TestCase):
-    def setUp(self):
-        self.c = mock_agent(id=0, tid=0)
-        self.d = mock_agent(id=1, tid=1)
-        self.a = mock_team(0, members=[self.c])
-        self.b = mock_team(1, members=[self.d])
-        self.world = mock_world(2, teams=[self.a, self.b])
-        self.scenario = TeamsScenario(SMALL_1x1)
-        self.scenario.scripted_ai = mock_ai()
-
-    def test_ai_is_called(self):
-        self.scenario.scripted_agent_callback(self.c, self.world)
-        self.assertEqual(self.scenario.scripted_ai.act.call_count, 1)

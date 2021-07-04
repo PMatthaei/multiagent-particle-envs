@@ -15,7 +15,7 @@ class WorldPositionsTestCases(unittest.TestCase):
         self.agent_spawn = np.array([1, 1])
         self.agent_spawn2 = np.array([1, 0])
 
-        self.world = World(grid_size=10, teams_n=2, agents_n=N_AGENTS)
+        self.world = World(grid_size=10, n_teams=2, n_agents=N_AGENTS)
         self.world.agents = [self.agent, self.agent2]
 
         self.world.connect(self.agent, self.agent_spawn)

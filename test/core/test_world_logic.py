@@ -23,7 +23,7 @@ class WorldLogicTestCases(unittest.TestCase):
         self.a = Agent(id=0, tid=0, build_plan=BUILD_PLAN, color=None)
         self.b = Agent(id=1, tid=1, build_plan=BUILD_PLAN, color=None)
 
-        self.world = World(grid_size=10, teams_n=2, agents_n=2)
+        self.world = World(grid_size=10, n_teams=2, n_agents=2)
         self.world.agents = [self.a, self.b]
         team_a = mock_team(tid=0, members=[self.a])
         team_b = mock_team(tid=1, members=[self.b])
