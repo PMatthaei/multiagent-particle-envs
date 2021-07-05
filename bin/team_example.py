@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('--profile', default=False, help='Profile the example for performance issues.')
     parser.add_argument('--stream_key', default=None, help='Stream Key for Twitch.')
 
-    parser.add_argument('--scenario_args.match_build_plan', default=AI_SMALL, help='Build plan for the teams.')
+    parser.add_argument('--scenario_args.match_build_plan', default=H2_T2_A1_MELEE, help='Build plan for the teams.')
     parser.add_argument('--scenario_args.grid_size', default=20, help='Edge length of a grid cell. Step size of a unit.')
     parser.add_argument('--scenario_args.random_spawns', default=False, help='')
     parser.add_argument('--scenario_args.ai', default='focus', help='')
@@ -29,6 +29,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--viewer_args.fps', default=60, help='')
     parser.add_argument('--viewer_args.headless', default=False, help='')
+    parser.add_argument('--viewer_args.debug_health', default=True, help='')
+    parser.add_argument('--viewer_args.debug_range', default=False, help='')
 
     args = parser.parse_args()
 

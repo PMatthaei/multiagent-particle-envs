@@ -60,16 +60,18 @@ class _Grid:
 
 
 class _EntityFactory:
-    def __init__(self, grid_size):
+    def __init__(self, grid_size, debug_range, debug_health):
         self.grid_size = grid_size
+        self.debug_range = debug_range
+        self.debug_health = debug_health
 
     def build(self, agent: Agent):
         if RoleTypes.TANK in agent.unit_id:
-            return _Tank(agent, self.grid_size)
+            return _Tank(agent, self.grid_size, debug_health=self.debug_health, debug_range=self.debug_range)
         elif RoleTypes.ADC in agent.unit_id:
-            return _ADC(agent, self.grid_size)
+            return _ADC(agent, self.grid_size, debug_health=self.debug_health, debug_range=self.debug_range)
         elif RoleTypes.HEALER in agent.unit_id:
-            return _Healer(agent, self.grid_size)
+            return _Healer(agent, self.grid_size, debug_health=self.debug_health, debug_range=self.debug_range)
         else:
             raise Exception()
 
@@ -83,7 +85,9 @@ class PyGameViewer(object):
                  draw_grid=True,
                  record=False,
                  stream_key=None,
-                 headless=True):
+                 headless=True,
+                 debug_range=False,
+                 debug_health=True):
         """
         Create new PyGameViewer for the environment
         @param env:  MultiAgentEnv to render
@@ -97,7 +101,7 @@ class PyGameViewer(object):
         """
         self.env = env
         self.entities = None
-        self.factory = _EntityFactory(self.env.world.grid_size)
+        self.factory = _EntityFactory(self.env.world.grid_size, debug_health=debug_health, debug_range=debug_range)
         self.draw_grid = draw_grid
         self.record = record
         self.stream = stream_key is not None
@@ -240,7 +244,7 @@ class PyGameViewer(object):
 
 
 class _PyGameEntity(pygame.sprite.Sprite):
-    def __init__(self, agent: Agent, grid_size: int, debug_range=False, debug_health=True):
+    def __init__(self, agent: Agent, grid_size: int, debug_range=True, debug_health=True):
         """
         Base entity to render.
         @param agent:

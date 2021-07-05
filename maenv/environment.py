@@ -19,7 +19,7 @@ class MAEnv(gym.Env):
                  global_reward=True,
                  log=False, log_level=logging.ERROR,
                  fps=None, infos=True, draw_grid=True,
-                 record=False, headless=False, stream_key=None, seed=None, **kwargs):
+                 record=False, headless=False, stream_key=None, seed=None, debug_range=False, debug_health=True, **kwargs):
         """
         Multi-Agent extension of gym.Env
 
@@ -130,7 +130,9 @@ class MAEnv(gym.Env):
             from maenv.viewers import pygame_viewer
             self.viewer = pygame_viewer.PyGameViewer(self, fps=fps, infos=infos, draw_grid=draw_grid, record=record,
                                                      stream_key=stream_key,
-                                                     headless=headless)
+                                                     headless=headless,
+                                                     debug_range=debug_range,
+                                                     debug_health=debug_health)
         self._reset_render()
 
     def get_env_info(self):

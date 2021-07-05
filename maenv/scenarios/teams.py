@@ -19,6 +19,7 @@ class TeamsScenario(BaseTeamScenario):
         n_teams: How many teams
         """
         self.match_build_plan = match_build_plan
+        assert match_build_plan is not None, "Cannot build scenario from empty build plan."
         self.grid_size = grid_size
         self.random_spawns = random_spawns
         self.ai = ai
