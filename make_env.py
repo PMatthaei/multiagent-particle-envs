@@ -43,5 +43,5 @@ def make_env(args, benchmark=False):
                 reward_callback=scenario.reward,
                 observation_callback=scenario.observation,
                 done_callback=scenario.done,
-                **vars(args.env_args))
+                **vars(args.viewer_args))
     return env

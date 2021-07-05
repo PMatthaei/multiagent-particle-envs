@@ -19,7 +19,7 @@ class MAEnv(gym.Env):
                  global_reward=True,
                  log=False, log_level=logging.ERROR,
                  fps=None, infos=True, draw_grid=True,
-                 record=False, headless=False, stream_key=None, seed=None):
+                 record=False, headless=False, stream_key=None, seed=None, **kwargs):
         """
         Multi-Agent extension of gym.Env
 
@@ -457,11 +457,10 @@ class MAEnv(gym.Env):
 
 
 class TeamsEnv(MAEnv):
-    def __init__(self, match_build_plan, grid_size, ai, **kwargs):
-        from maenv.ai import REGISTRY as ai_REGISTRY
+    def __init__(self, **kwargs):
         from maenv.scenarios import TeamsScenario
-        self._scenario = TeamsScenario(match_build_plan, ai_REGISTRY[ai](), random_spawns=False)
-        world = self._scenario.make_teams_world(grid_size)
+        self._scenario = TeamsScenario(**kwargs)
+        world = self._scenario.make_teams_world()
         super().__init__(world,
                          reset_callback=self._scenario.reset_world,
                          reward_callback=self._scenario.reward,
@@ -498,7 +497,7 @@ class BatchMultiAgentEnv(gym.Env):
     def observation_space(self):
         return self.env_batch[0].observation_space
 
-    def step(self, action_n, time):
+    def step(self, action_n, time=None):
         obs_n = []
         reward_n = []
         done_n = []

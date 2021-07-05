@@ -6,7 +6,12 @@ from maenv.utils.colors import generate_colors
 
 
 class TeamsScenario(BaseTeamScenario):
-    def __init__(self, match_build_plan: dict, grid_size: int = 10, ai="basic", ai_config=None, random_spawns: bool = False):
+    def __init__(self,
+                 match_build_plan: dict,
+                 grid_size: int = 10,
+                 ai="basic", ai_config=None,
+                 random_spawns: bool = False,
+                 **kwargs):
         """
         Constructor for a team scenario.
         @param match_build_plan: Plan to setup the match and therefore team composition and possible AI`s.
@@ -40,7 +45,8 @@ class TeamsScenario(BaseTeamScenario):
         """
         total_n_agents = sum(self.agents_n)
 
-        world = World(n_agents=total_n_agents, n_teams=self.teams_n, grid_size=self.grid_size, ai=self.ai, ai_config=self.ai_config)
+        world = World(n_agents=total_n_agents, n_teams=self.teams_n, grid_size=self.grid_size, ai=self.ai,
+                      ai_config=self.ai_config)
 
         colors = generate_colors(self.teams_n)
         agent_count = 0
