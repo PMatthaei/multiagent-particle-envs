@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 from maenv.core import World, Agent, Team
 from maenv.exceptions.scenario_exceptions import ScenarioNotSymmetricError
@@ -81,6 +83,7 @@ class TeamsScenario(BaseTeamScenario):
         # random team spawns
         if self.stochastic_spawns:  # if spawns already exist do not generate
             self.team_spawns = world.spg.generate_team_spawns(randomize=self.random_spawns, radius=team_spread)
+            random.shuffle(self.team_spawns)
 
         if self.stochastic_spawns:
             # take first teams size since symmetric for spawn generation
