@@ -135,6 +135,8 @@ class PyGameViewer(object):
         if self.record and check_ffmpeg():
             width, height = self.env.world.bounds
             self.proc = sp.Popen(['ffmpeg',
+                                  '-hide_banner',
+                                  '-loglevel', 'error',
                                   '-y',
                                   '-f', 'rawvideo',
                                   '-vcodec', 'rawvideo',

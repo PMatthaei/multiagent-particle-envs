@@ -29,6 +29,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--viewer_args.fps', default=60, help='')
     parser.add_argument('--viewer_args.headless', default=False, help='')
+    parser.add_argument('--viewer_args.record', default=False, help='')
     parser.add_argument('--viewer_args.debug_health', default=True, help='')
     parser.add_argument('--viewer_args.debug_range', default=False, help='')
 
