@@ -11,6 +11,7 @@ class TeamsScenario(BaseTeamScenario):
                  grid_size: int = 10,
                  ai="basic", ai_config=None,
                  random_spawns: bool = False,
+                 stochastic_spawns: bool = False,
                  **kwargs):
         """
         Constructor for a team scenario.
@@ -22,6 +23,7 @@ class TeamsScenario(BaseTeamScenario):
         assert match_build_plan is not None, "Cannot build scenario from empty build plan."
         self.grid_size = grid_size
         self.random_spawns = random_spawns
+        self.stochastic_spawns = stochastic_spawns
         self.ai = ai
         self.ai_config = ai_config
         self.teams_n = len(match_build_plan)
@@ -77,15 +79,16 @@ class TeamsScenario(BaseTeamScenario):
         team_spread = self.teams_n * agent_spread
 
         # random team spawns
-        if self.team_spawns is None:  # if spawns already exist do not generate
+        if self.stochastic_spawns:  # if spawns already exist do not generate
             self.team_spawns = world.spg.generate_team_spawns(randomize=self.random_spawns, radius=team_spread)
+
+        if self.stochastic_spawns:
             # take first teams size since symmetric for spawn generation
             agent_spawns = world.spg.generate(randomize=self.random_spawns, mean_radius=1, sigma_radius=agent_spread)
             # mirror spawns
             self.agent_spawns[0] = agent_spawns + self.team_spawns[0]
             self.agent_spawns[1] = (- agent_spawns) + self.team_spawns[1]
 
-        # scatter agents of a team a little
         for team, team_spawn in zip(world.teams, self.team_spawns):
             for team_intern_id, agent in enumerate(team.members):
                 spawn = self.agent_spawns[team.tid][team_intern_id]
