@@ -81,11 +81,11 @@ class TeamsScenario(BaseTeamScenario):
         team_spread = self.teams_n * agent_spread
 
         # random team spawns
-        if self.stochastic_spawns:  # if spawns already exist do not generate
+        if self.stochastic_spawns or self.team_spawns is None:  # if spawns already exist do not generate
             self.team_spawns = world.spg.generate_team_spawns(randomize=self.random_spawns, radius=team_spread)
             random.shuffle(self.team_spawns)
 
-        if self.stochastic_spawns:
+        if self.stochastic_spawns or any([spawn is None for spawn in self.agent_spawns]):
             # take first teams size since symmetric for spawn generation
             agent_spawns = world.spg.generate(randomize=self.random_spawns, mean_radius=1, sigma_radius=agent_spread)
             # mirror spawns
