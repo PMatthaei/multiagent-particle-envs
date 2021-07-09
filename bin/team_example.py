@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--scenario_args.match_build_plan', default=H2_T2_A1_MELEE, help='Build plan for the teams.')
     parser.add_argument('--scenario_args.grid_size', default=20, help='Edge length of a grid cell. Step size of a unit.')
     parser.add_argument('--scenario_args.random_spawns', default=False, help='')
-    parser.add_argument('--scenario_args.stochastic_spawns', default=False, help='')
+    parser.add_argument('--scenario_args.stochastic_spawns', default=True, help='')
     parser.add_argument('--scenario_args.ai', default='focus', help='')
     parser.add_argument('--scenario_args.ai_config', default={"focuses": [RoleTypes.HEALER]}, help='')
 

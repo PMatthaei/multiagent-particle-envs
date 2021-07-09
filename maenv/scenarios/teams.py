@@ -30,7 +30,7 @@ class TeamsScenario(BaseTeamScenario):
         self.ai_config = ai_config
         self.teams_n = len(match_build_plan)
         self.agents_n = [len(team["units"]) for team in match_build_plan]
-        self.is_symmetric = self.agents_n.count(self.agents_n[0]) == len(self.agents_n)
+        self.is_symmetric = self.agents_n.count(self.agents_n[0]) == len(self.agents_n) # each agent n must be the same
         self.team_mixing_factor = 8  # build_plan["tmf"] if "tmf" in build_plan["tmf"] else 5
         if not self.is_symmetric:
             raise ScenarioNotSymmetricError(self.agents_n, self.teams_n)
@@ -83,7 +83,8 @@ class TeamsScenario(BaseTeamScenario):
         # random team spawns
         if self.stochastic_spawns or self.team_spawns is None:  # if spawns already exist do not generate
             self.team_spawns = world.spg.generate_team_spawns(randomize=self.random_spawns, radius=team_spread)
-            random.shuffle(self.team_spawns)
+            if random.random() < 0.5:
+                self.team_spawns[0], self.team_spawns[1] = self.team_spawns[1], self.team_spawns[0]
 
         if self.stochastic_spawns or any([spawn is None for spawn in self.agent_spawns]):
             # take first teams size since symmetric for spawn generation
