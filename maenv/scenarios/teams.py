@@ -14,6 +14,7 @@ class TeamsScenario(BaseTeamScenario):
                  ai="basic", ai_config=None,
                  random_spawns: bool = False,
                  stochastic_spawns: bool = False,
+                 attack_range_only: bool = False,
                  **kwargs):
         """
         Constructor for a team scenario.
@@ -28,6 +29,7 @@ class TeamsScenario(BaseTeamScenario):
         self.stochastic_spawns = stochastic_spawns
         self.ai = ai
         self.ai_config = ai_config
+        self.attack_range_only = attack_range_only
         self.teams_n = len(match_build_plan)
         self.agents_n = [len(team["units"]) for team in match_build_plan]
         self.is_symmetric = self.agents_n.count(self.agents_n[0]) == len(self.agents_n) # each agent n must be the same
@@ -51,7 +53,7 @@ class TeamsScenario(BaseTeamScenario):
         total_n_agents = sum(self.agents_n)
 
         world = World(n_agents=total_n_agents, n_teams=self.teams_n, grid_size=self.grid_size, ai=self.ai,
-                      ai_config=self.ai_config)
+                      ai_config=self.ai_config, attack_range_only=self.attack_range_only)
 
         colors = generate_colors(self.teams_n)
         agent_count = 0

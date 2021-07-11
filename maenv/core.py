@@ -214,8 +214,9 @@ class Agent(Entity):
 
 
 class World(object):
-    def __init__(self, grid_size: int, n_agents: int, n_teams: int, bounds=np.array([1280, 720]), ai="basic",
-                 ai_config=None,
+    def __init__(self, grid_size: int, n_agents: int, n_teams: int, bounds=np.array([1280, 720]),
+                 ai="basic", ai_config=None,
+                 attack_range_only=True,
                  log=False):
         """
         Multi-agent world
@@ -227,6 +228,7 @@ class World(object):
         self.scripted_ai = ai_REGISTRY[ai](ai_config)
         self.positions = None
         self.grid_size = grid_size
+        self.attack_range_only = attack_range_only
         # list of teams build by a subset of ...
         self.teams = []
         self.teams_n = n_teams
@@ -535,7 +537,7 @@ class World(object):
         self.alive[agent.id] = agent.is_alive()  # Set initial alive status - agents assumed to be dead in the beginning
 
         # Static data
-        self.sight_ranges[agent.id] = agent.sight_range * self.grid_size
+        self.sight_ranges[agent.id] = (agent.attack_range if self.attack_range_only else agent.sight_range)* self.grid_size
         self.attack_ranges[agent.id] = agent.attack_range * self.grid_size
         self.max_health[agent.id] = agent.state.max_health
         self.unit_bits_obs[agent.id] = agent.unit_type_bits
