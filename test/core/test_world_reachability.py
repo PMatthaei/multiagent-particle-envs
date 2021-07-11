@@ -1,6 +1,6 @@
 import unittest
-from unittest.mock import MagicMock
-
+import scipy.spatial.ckdtree
+import scipy.spatial.distance
 import numpy as np
 
 from maenv.core import World
@@ -21,6 +21,7 @@ class WorldReachabilityTestCases(unittest.TestCase):
         self.world.positions = np.array([[10, 10], [10, 0]])
         self.world.attack_ranges = np.array([attack_range_a * self.grid_size, attack_range_b * self.grid_size])
         self.world.alive = np.array([1, 1])
+        self.world.kd_tree = scipy.spatial.cKDTree(data=self.world.positions)
 
     def test_a_can_attack_b(self):
         self.world._update_reachability()
@@ -29,6 +30,7 @@ class WorldReachabilityTestCases(unittest.TestCase):
 
     def test_a_can_not_attack_b_because_out_of_range(self):
         self.world.positions[1] = [100, 0]  # move b out of range
+        self.world.kd_tree = scipy.spatial.cKDTree(data=self.world.positions)
         self.world._update_reachability()
         result = self.world.can_attack(self.a, self.b)
         self.assertEqual(False, result)
@@ -42,6 +44,7 @@ class WorldReachabilityTestCases(unittest.TestCase):
     def test_a_can_not_attack_b_because_not_alive_and_out_of_range(self):
         self.world.alive[1] = 0  # b dead
         self.world.positions[1] = [100, 0]  # move b out of range
+        self.world.kd_tree = scipy.spatial.cKDTree(data=self.world.positions)
         self.world._update_reachability()
         result = self.world.can_attack(self.a, self.b)
         self.assertEqual(False, result)

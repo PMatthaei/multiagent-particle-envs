@@ -4,7 +4,8 @@ import numpy as np
 
 from maenv.core import World
 from test.mock import mock_agent
-
+import scipy.spatial.ckdtree
+import scipy.spatial.distance
 N_AGENTS = 5
 
 
@@ -33,6 +34,7 @@ class WorldAvailableMovementActionsTestCases(unittest.TestCase):
         self.world.connect(self.c, self.c_spawn)
         self.world.connect(self.d, self.d_spawn)
         self.world.connect(self.e, self.e_spawn)
+        self.world.kd_tree = scipy.spatial.cKDTree(data=self.world.positions)
         self.world._update_alive_status()
         self.world._update_visibility()
         self.world._update_dist_matrix()

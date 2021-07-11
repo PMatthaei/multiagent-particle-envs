@@ -288,7 +288,7 @@ class World(object):
         self.obs = np.zeros((n_agents, n_agents, self.obs_dims))
 
         # Helper to calculate range queries
-        self.kd_tree = scipy.spatial.kdtree.cKDTree(self.positions)
+        self.kd_tree = None
 
         # Helper to generate points within the world
         self.spg = SpawnGenerator(self.grid_center, grid_size, self.dim_p, n_agents)
@@ -375,6 +375,30 @@ class World(object):
 
         return self.reachability[agent.id][target.id]
 
+    def init(self):
+        # Initial KD Tree
+        self.kd_tree = scipy.spatial.cKDTree(data=self.positions)
+        #
+        # End of state transition - Calculate observations
+        #
+        self._update_visibility()  # Used for obs-calculation
+
+        self._update_reachability()
+
+        self._update_dist_matrix()  # Used for obs-calculation
+
+        self._calculate_obs()  # Calculate what is observed after the step is calculated
+
+        #
+        # Calculate each agents available actions after the step is calculated
+        #
+        self.calculate_avail_movements_actions()
+
+        self.calculate_avail_target_actions()
+
+        # After state transition test win condition
+        self._calculate_wiped_teams()
+
     def step(self):
         """
         Update state of the world.
@@ -414,26 +438,11 @@ class World(object):
         for a in random.sample(self.alive_agents, len(self.alive_agents)):
             self._update_pos(a)
 
-        #
-        # End of state transition - Calculate observations
-        #
-        self._update_visibility()  # Used for obs-calculation
+        # Update KDTree after positions-update
+        self.kd_tree = scipy.spatial.cKDTree(data=self.positions)
 
-        self._update_reachability()
-
-        self._update_dist_matrix()  # Used for obs-calculation
-
-        self._calculate_obs()  # Calculate what is observed after the step is calculated
-
-        #
-        # Calculate each agents available actions after the step is calculated
-        #
-        self.calculate_avail_movements_actions()
-
-        self.calculate_avail_target_actions()
-
-        # After state transition test win condition
-        self._calculate_wiped_teams()
+        # Re-Init
+        self.init()
 
     def _calculate_wiped_teams(self):
         self.wiped_teams = [np.all(np.logical_not(self.alive[self.team_affiliations == t.tid])) for t in self.teams]
@@ -462,7 +471,6 @@ class World(object):
                 agent.action.u[:2] = 0.0
 
     def _update_visibility(self):
-        self.kd_tree = scipy.spatial.cKDTree(data=self.positions)
         self.visibility[:, :] = False  # Reset
         query = self.kd_tree.query_ball_point(self.positions, self.sight_ranges)
         visible = [[(agent, other, self.alive[agent]) for other in visibles] for agent, visibles in enumerate(query)]
@@ -472,14 +480,13 @@ class World(object):
         self.visibility[:, self.alive == 0] = False  # Set the visibility of all dead agents to False
 
     def _update_reachability(self):
-        self.kd_tree = scipy.spatial.cKDTree(data=self.positions)
         self.reachability[:, :] = False  # Reset
         query = self.kd_tree.query_ball_point(self.positions, self.attack_ranges)
-        visible = [[(agent, other, self.alive[agent]) for other in visibles] for agent, visibles in enumerate(query)]
-        visible = np.array([item for sublist in visible for item in sublist])  # flatten
-        xs, ys, alives = list(zip(*visible))  # Matrix coordinates and their corresponding value
-        self.reachability[xs, ys] = alives  # If the agent is alive set its visible indices to True else False
-        self.reachability[:, self.alive == 0] = False  # Set the visibility of all dead agents to False
+        reachable = [[(agent, other, self.alive[agent]) for other in reachables] for agent, reachables in enumerate(query)]
+        reachable = np.array([item for sublist in reachable for item in sublist])  # flatten
+        xs, ys, alives = list(zip(*reachable))  # Matrix coordinates and their corresponding value
+        self.reachability[xs, ys] = alives  # If the agent is alive set its reachable indices to True else False
+        self.reachability[:, self.alive == 0] = False  # Set the reachability of all dead agents to False
 
     def _update_dist_matrix(self):
         self.distances = abs(self.positions_c.T - self.positions_c)  # abs in complex space is distance in real space
@@ -583,3 +590,5 @@ class World(object):
         target_mask = (self.attack_target_mask | self.heal_target_mask)
         mask = (self.visibility == 1) & self.alive & self.self_target_mask & target_mask
         self.avail_target_actions[mask] = 1.0
+
+
