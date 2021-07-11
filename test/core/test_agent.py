@@ -37,7 +37,7 @@ class AgentTestCases(unittest.TestCase):
         self.assertEqual(self.a.attack_data, UnitAttackTypes.RANGED.value)
         self.assertEqual(self.a.role_data, RoleTypes.TANK.value)
         self.assertEqual(self.a.attack_range, UnitAttackTypes.RANGED.value['attack_range'])
-        self.assertEqual(self.a.attack_range, self.a.sight_range)
+        self.assertEqual(self.a.sight_range, self.a.sight_range)
         self.assertEqual(self.a.attack_damage, RoleTypes.TANK.value['attack_damage'])
 
     def test_attack(self):

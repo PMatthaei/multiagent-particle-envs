@@ -7,6 +7,7 @@ from enum import Enum, IntEnum
 import numpy as np
 import scipy.spatial.ckdtree
 import scipy.spatial.distance
+import random
 
 from maenv.exceptions.agent_exceptions import NoTargetFoundError, IllegalTargetError
 from maenv.utils.spawn_generator import SpawnGenerator
@@ -25,8 +26,8 @@ class RoleTypes(Enum):
 
 
 class UnitAttackTypes(Enum):
-    RANGED = {"attack_range": 3}  # attack range units are in grid cells!
-    MELEE = {"attack_range": 1}
+    RANGED = {"attack_range": 3, "sight_range": 4}  # attack range units are in grid cells!
+    MELEE = {"attack_range": 1, "sight_range": 2}
 
 
 TYPES = [RoleTypes, UnitAttackTypes]
@@ -163,8 +164,8 @@ class Agent(Entity):
         self.role_data = self.role_type.value
 
         self.attack_range = self.attack_data['attack_range']
-        self.sight_range = self.attack_range
-        assert self.sight_range == self.attack_range, "Sight range has to be equal to the attack range for now."
+        self.sight_range = self.attack_data['sight_range']
+        assert self.sight_range > self.attack_range, "Sight range has to be greater than the attack range."
         self.attack_damage = self.role_data['attack_damage']
 
         self.state = AgentState()
@@ -265,7 +266,9 @@ class World(object):
         self.attack_target_mask = np.zeros_like(self.avail_target_actions).astype(bool)
 
         # Holds each agents sight range
-        self.ranges = np.zeros((n_agents,), dtype=float)
+        self.sight_ranges = np.zeros((n_agents,), dtype=float)
+        # Holds each agents attack range
+        self.attack_ranges = np.zeros((n_agents,), dtype=float)
         # Holds each agents unit representation encoded as bit array
         self.unit_bits_obs = np.zeros((n_agents, UNIT_BITS_NEEDED), dtype=float)
         # Holds each agents position in real and complex space
@@ -277,6 +280,8 @@ class World(object):
         self.distances = np.full((n_agents, n_agents), fill_value=np.inf)
         # Holds each agents visibility of other agents (and himself on diag = always True)
         self.visibility = np.zeros((n_agents, n_agents))
+        # Holds each agents visibility of other agents (and himself on diag = always True)
+        self.reachability = np.zeros((n_agents, n_agents))
         # Holds each agents observation of all other agents
         self.obs = np.zeros((n_agents, n_agents, self.obs_dims))
 
@@ -365,7 +370,8 @@ class World(object):
             return False
         if target.tid == agent.tid:
             raise IllegalTargetError(agent)
-        return self.visibility[agent.id][target.id]  # WARNING! This only works as long as attack range == sight range
+
+        return self.reachability[agent.id][target.id]
 
     def step(self):
         """
@@ -379,8 +385,6 @@ class World(object):
             self.scripted_ai.act(scripted_agent, self)
 
         # Shuffle randomly to prevent favoring
-        import random
-
         # Calculate influence actions BEFORE updating positions to prevent moving out of range after action was set
         for agent in random.sample(self.alive_agents, len(self.alive_agents)):
             # Influence entity if target set f.e with attack, heal etc
@@ -412,6 +416,8 @@ class World(object):
         # End of state transition - Calculate observations
         #
         self._update_visibility()  # Used for obs-calculation
+
+        self._update_reachability()
 
         self._update_dist_matrix()  # Used for obs-calculation
 
@@ -456,12 +462,22 @@ class World(object):
     def _update_visibility(self):
         self.kd_tree = scipy.spatial.cKDTree(data=self.positions)
         self.visibility[:, :] = False  # Reset
-        query = self.kd_tree.query_ball_point(self.positions, self.ranges)
+        query = self.kd_tree.query_ball_point(self.positions, self.sight_ranges)
         visible = [[(agent, other, self.alive[agent]) for other in visibles] for agent, visibles in enumerate(query)]
         visible = np.array([item for sublist in visible for item in sublist])  # flatten
         xs, ys, alives = list(zip(*visible))  # Matrix coordinates and their corresponding value
         self.visibility[xs, ys] = alives  # If the agent is alive set its visible indices to True else False
         self.visibility[:, self.alive == 0] = False  # Set the visibility of all dead agents to False
+
+    def _update_reachability(self):
+        self.kd_tree = scipy.spatial.cKDTree(data=self.positions)
+        self.reachability[:, :] = False  # Reset
+        query = self.kd_tree.query_ball_point(self.positions, self.attack_ranges)
+        visible = [[(agent, other, self.alive[agent]) for other in visibles] for agent, visibles in enumerate(query)]
+        visible = np.array([item for sublist in visible for item in sublist])  # flatten
+        xs, ys, alives = list(zip(*visible))  # Matrix coordinates and their corresponding value
+        self.reachability[xs, ys] = alives  # If the agent is alive set its visible indices to True else False
+        self.reachability[:, self.alive == 0] = False  # Set the visibility of all dead agents to False
 
     def _update_dist_matrix(self):
         self.distances = abs(self.positions_c.T - self.positions_c)  # abs in complex space is distance in real space
@@ -469,7 +485,7 @@ class World(object):
     def _calculate_obs(self):
         not_visible_mask = self.visibility == 0
 
-        ranges = self.ranges[:, np.newaxis]
+        ranges = self.sight_ranges[:, np.newaxis]
         range_matrix = np.repeat(ranges, self.agents_n, axis=1)[:, :, np.newaxis]
         position_differences = (self.positions - self.positions[:, None])[..., :]
 
@@ -519,7 +535,8 @@ class World(object):
         self.alive[agent.id] = agent.is_alive()  # Set initial alive status - agents assumed to be dead in the beginning
 
         # Static data
-        self.ranges[agent.id] = agent.sight_range * self.grid_size
+        self.sight_ranges[agent.id] = agent.sight_range * self.grid_size
+        self.attack_ranges[agent.id] = agent.attack_range * self.grid_size
         self.max_health[agent.id] = agent.state.max_health
         self.unit_bits_obs[agent.id] = agent.unit_type_bits
         team_mates = [mate.id for mate in self.agents if mate.tid == agent.tid]

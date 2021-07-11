@@ -29,9 +29,9 @@ class BasicAgentActTestCases(unittest.TestCase):
         result = self.ai.act(self.b, self.world)
         np.testing.assert_array_equal(result.u, [0, 0, self.d.id])
 
-    def test_c_should_not_attack(self):
+    def test_c_should_attack_b(self):
         result = self.ai.act(self.c, self.world)
-        np.testing.assert_array_equal(result.u, [0, -10, -1])
+        np.testing.assert_array_equal(result.u, [0, 0, self.b.id])
 
     def test_d_should_attack_a(self):
         result = self.ai.act(self.d, self.world)

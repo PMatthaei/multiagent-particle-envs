@@ -11,67 +11,37 @@ N_AGENTS = 2
 
 class WorldVisibilityTestCases(unittest.TestCase):
     def setUp(self):
-        self.a = mock_agent(id=0)
+        self.aid = 0
+        self.a = mock_agent(id=self.aid)
         self.b = mock_agent(id=1, tid=1, sight_range=3)
-        self.a_spawn = np.array([1, 1])
-        self.b_spawn = np.array([1, 0])
+        attack_range_a = 1
+        attack_range_b = 1
 
-        self.world = World(grid_size=10, n_teams=2, n_agents=N_AGENTS)
-        self.world.agents = [self.a, self.b]
+        self.grid_size = 10
+        self.world = World(grid_size=self.grid_size, n_teams=2, n_agents=N_AGENTS)
+        self.world.positions = np.array([[10, 10], [10, 0]])
+        self.world.sight_ranges = np.array([attack_range_a * self.grid_size, attack_range_b * self.grid_size])
+        self.world.alive = np.array([1, 1])
 
-        self.world.connect(self.a, self.a_spawn)
-        self.world.connect(self.b, self.b_spawn)
-
-    def test_can_attack(self):
+    def test_a_can_see_b(self):
         self.world._update_visibility()
+        np.testing.assert_array_equal([1, 1], self.world.visibility[self.aid])
 
-        result = self.world.can_attack(self.a, self.b)
-        self.assertEqual(True, result)
-
-    def test_visibility_for_in_range_and_alive(self):
+    def test_a_can_not_see_b_because_out_of_range(self):
+        self.world.positions[1] = [100, 0]  # move b out of range
         self.world._update_visibility()
+        np.testing.assert_array_equal([1, 0], self.world.visibility[self.aid])
 
-        np.testing.assert_array_equal(self.world.visibility[self.a.id], [True, True])
-        np.testing.assert_array_equal(self.world.visibility[self.b.id], [True, True])
-
-        result = self.world.can_attack(self.a, self.b)
-        self.assertEqual(True, result)
-
-    def test_no_visibility_for_in_range_and_dead(self):
-        self.b.is_alive = MagicMock(return_value=False)  # declare dead
-
-        self.world.connect(self.b, self.b_spawn)
-
+    def test_a_can_not_see_b_because_not_alive(self):
+        self.world.alive[1] = 0  # b dead
         self.world._update_visibility()
+        np.testing.assert_array_equal([1, 0], self.world.visibility[self.aid])
 
-        np.testing.assert_array_equal(self.world.visibility[self.a.id], [True, False])
-        np.testing.assert_array_equal(self.world.visibility[self.b.id], [False, False])
-
-        result = self.world.can_attack(self.a, self.b)
-        self.assertEqual(False, result)
-
-    def test_no_visibility_for_not_in_range_and_alive(self):
-        self.world.connect(self.b, np.array([30, 30]))  # move out of range
-
+    def test_a_can_not_see_b_because_not_alive_and_out_of_range(self):
+        self.world.alive[1] = 0  # b dead
+        self.world.positions[1] = [100, 0]  # move b out of range
         self.world._update_visibility()
-
-        np.testing.assert_array_equal(self.world.visibility[self.a.id], [True, False])
-        np.testing.assert_array_equal(self.world.visibility[self.b.id], [False, True])
-
-        result = self.world.can_attack(self.a, self.b)
-        self.assertEqual(False, result)
-
-    def test_no_visibility_for_not_in_range_and_dead(self):
-        self.b.is_alive = MagicMock(return_value=False)  # declare dead
-        self.world.connect(self.b, np.array([30, 30]))  # move out of range
-
-        self.world._update_visibility()
-
-        np.testing.assert_array_equal(self.world.visibility[self.a.id], [True, False])
-        np.testing.assert_array_equal(self.world.visibility[self.b.id], [False, False])
-
-        result = self.world.can_attack(self.a, self.b)
-        self.assertEqual(False, result)
+        np.testing.assert_array_equal([1, 0], self.world.visibility[self.aid])
 
 
 if __name__ == '__main__':

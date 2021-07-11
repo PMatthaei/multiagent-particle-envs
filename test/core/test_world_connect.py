@@ -43,7 +43,7 @@ class WorldInitializationTestCases(unittest.TestCase):
     def test_connects_range(self):
         self.world.connect(self.agent, None)
 
-        np.testing.assert_array_equal(self.world.ranges[0], self.agent.sight_range * self.grid_size)
+        np.testing.assert_array_equal(self.world.sight_ranges[0], self.agent.sight_range * self.grid_size)
 
     def test_connects_attack_target_mask(self):
         self.world.connect(self.agent, None)

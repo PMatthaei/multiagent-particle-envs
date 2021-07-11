@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, Mock
 import numpy as np
 
 
-def mock_agent(id: int, tid: int = 0, sight_range=1, pos=np.array([0, 0])):
+def mock_agent(id: int, tid: int = 0, sight_range=2, attack_range=1, pos=np.array([0, 0])):
     agent = Mock()
     agent.id = id
     agent.tid = tid
@@ -14,6 +14,7 @@ def mock_agent(id: int, tid: int = 0, sight_range=1, pos=np.array([0, 0])):
     agent.state.health = MagicMock(return_value=agent.state._health[0])
     agent.is_alive = MagicMock(return_value=True)
     agent.sight_range = sight_range
+    agent.attack_range = attack_range
     agent.has_heal = MagicMock(return_value=False)
     agent.action.u = np.zeros((2,))
     agent.unit_type_bits = [0, 0, 1]
