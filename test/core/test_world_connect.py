@@ -40,10 +40,17 @@ class WorldInitializationTestCases(unittest.TestCase):
 
         np.testing.assert_array_equal(self.world.max_health[0], 100)
 
-    def test_connects_range(self):
+    def test_connects_range_with_attack_range_only_env(self):
+        self.world.attack_range_only = False
         self.world.connect(self.agent, None)
-
         np.testing.assert_array_equal(self.world.sight_ranges[0], self.agent.sight_range * self.grid_size)
+        np.testing.assert_array_equal(self.world.attack_ranges[0], self.agent.attack_range * self.grid_size)
+
+    def test_connects_range_with_sight_and_attack_range_env(self):
+        self.world.attack_range_only = True
+        self.world.connect(self.agent, None)
+        np.testing.assert_array_equal(self.world.sight_ranges[0], self.agent.attack_range * self.grid_size)
+        np.testing.assert_array_equal(self.world.attack_ranges[0], self.agent.attack_range * self.grid_size)
 
     def test_connects_attack_target_mask(self):
         self.world.connect(self.agent, None)

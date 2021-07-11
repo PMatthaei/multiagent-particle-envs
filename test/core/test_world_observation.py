@@ -7,58 +7,60 @@ from maenv.core import World
 from test.mock import mock_agent
 
 N_AGENTS = 2
+HEALTH = 40.0
+SIGHT_RANGE_A = 20.0
+SIGHT_RANGE_B = 10.0
+DISTANCE_TO_B = 10.0
+DISTANCE_TO_A = 10.0
 
 
 class WorldObservationTestCases(unittest.TestCase):
     def setUp(self):
-        self.a = mock_agent(id=0, sight_range=2)
-        self.b = mock_agent(id=1, tid=1)
-        self.b.sight_range = 3
-        self.a_spawn = np.array([0, 0])
-        self.b_spawn = np.array([10, 10])
-
         self.grid_size = 10
         self.world = World(grid_size=self.grid_size, n_teams=2, n_agents=N_AGENTS)
-        self.world.agents = [self.a, self.b]
 
-        self.world.connect(self.a, self.a_spawn)
-        self.world.connect(self.b, self.b_spawn)
-        self.world._update_visibility()
-
-        self.world._update_dist_matrix()
-
-        self.world._calculate_obs()
+        self.world.visibility = np.array([
+            [1, 1],
+            [1, 1]
+        ])
+        self.world.positions = np.array([
+            [0, 0],
+            [10, 10]
+        ])
+        self.world.sight_ranges = np.array([SIGHT_RANGE_A, SIGHT_RANGE_B])
+        self.world.distances = np.array([
+            [0, DISTANCE_TO_B],
+            [DISTANCE_TO_A, 0]
+        ])
+        self.world.health = np.array([HEALTH] * N_AGENTS)
+        self.world.max_health = np.array([HEALTH] * N_AGENTS)
+        self.world.unit_bits_obs = np.array([
+            [0, 0, 1],
+            [0, 0, 1]
+        ])
+        self.world.agents_n = N_AGENTS
 
     def test_a_observes_b_if_visible_and_alive(self):
         #   vis     health    rel x-pos   rel y-pos  rel dist  unit bits
-        r = self.a.sight_range
-        a_obs_of_b = np.array([1.0, 1.0, 1.0 / r, 1.0 / r, np.sqrt(2) / r, 0, 0, 1])
-        np.testing.assert_array_equal(self.world.obs[self.a.id][self.b.id], a_obs_of_b)
+        self.world._calculate_obs()
+        a_obs_of_b = np.array(
+            [1.0, 1.0, 10.0 / SIGHT_RANGE_A, 10.0 / SIGHT_RANGE_A, DISTANCE_TO_B / SIGHT_RANGE_A, 0, 0, 1])
+        np.testing.assert_array_equal(self.world.obs[0][1], a_obs_of_b)  # agent at 0 observes agent at 1
 
     def test_b_observes_a_with_different_sight_range_if_visible_and_alive(self):
-        r = self.b.sight_range
-        b_obs_of_a = np.array([1.0, 1.0, -1.0 / r, -1.0 / r, np.sqrt(2) / r, 0, 0, 1])
-        np.testing.assert_almost_equal(self.world.obs[self.b.id][self.a.id], b_obs_of_a)
-
-    def test_a_cannot_observe_b_if_b_dead(self):
-        self.b.is_alive = MagicMock(return_value=False)
-        self.world.connect(self.b, self.b_spawn)
-        self.world._update_visibility()
-        self.world._update_dist_matrix()
         self.world._calculate_obs()
+        b_obs_of_a = np.array(
+            [1.0, 1.0, -10.0 / SIGHT_RANGE_B, -10.0 / SIGHT_RANGE_B, DISTANCE_TO_A / SIGHT_RANGE_B, 0, 0, 1])
+        np.testing.assert_almost_equal(self.world.obs[1][0], b_obs_of_a)
 
-        a_obs_of_b = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-        np.testing.assert_array_equal(self.world.obs[self.a.id][self.b.id], a_obs_of_b)
-
-    def test_a_cannot_observe_b_if_b_not_visible_and_alive(self):
-        self.b_spawn = np.array([40, 0])
-        self.world.connect(self.b, self.b_spawn)
-        self.world._update_visibility()
-        self.world._update_dist_matrix()
+    def test_a_cannot_observe_b_if_b_not_visible(self):
+        self.world.visibility = np.array([
+            [1, 0],
+            [1, 1]
+        ])
         self.world._calculate_obs()
-
-        a_obs_of_b = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-        np.testing.assert_array_equal(self.world.obs[self.a.id][self.b.id], a_obs_of_b)
+        a_obs_of_b = np.zeros((self.world.obs_dims,))
+        np.testing.assert_array_equal(self.world.obs[0][1], a_obs_of_b)
 
 
 if __name__ == '__main__':
