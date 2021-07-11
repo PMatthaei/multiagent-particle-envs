@@ -376,7 +376,7 @@ class World(object):
         return self.reachability[agent.id][target.id]
 
     def init(self):
-        # Initial KD Tree
+        # Update KDTree after positions-update
         self.kd_tree = scipy.spatial.cKDTree(data=self.positions)
         #
         # End of state transition - Calculate observations
@@ -403,7 +403,7 @@ class World(object):
         """
         Update state of the world.
         """
-        # Calculate stepable positions for AI
+        # Calculate stepable positions for AI --> Used for upcoming act() calls
         self._calculate_stepable_pos()
 
         # Set actions for scripted/heuristic agents BEFORE advancing state
@@ -437,9 +437,6 @@ class World(object):
         # Update positions BEFORE recalculating visibility and observations
         for a in random.sample(self.alive_agents, len(self.alive_agents)):
             self._update_pos(a)
-
-        # Update KDTree after positions-update
-        self.kd_tree = scipy.spatial.cKDTree(data=self.positions)
 
         # Re-Init
         self.init()
