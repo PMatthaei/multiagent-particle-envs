@@ -100,7 +100,7 @@ class TeamsScenario(BaseTeamScenario):
                 spawn = self.agent_spawns[team.tid][team_intern_id]
                 world.connect(agent, spawn)
 
-        #world.init() # Init after all agents added
+        world.init() # Init after all agents added
 
     def reward(self, agent: Agent, world: World):
         reward = 0
