@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('--profile', default=False, help='Profile the example for performance issues.')
     parser.add_argument('--stream_key', default=None, help='Stream Key for Twitch.')
 
-    parser.add_argument('--scenario_args.match_build_plan', default=H2_T2_A1_MELEE, help='Build plan for the teams.')
+    parser.add_argument('--scenario_args.match_build_plan', default=ALL, help='Build plan for the teams.')
     parser.add_argument('--scenario_args.grid_size', default=20, help='Edge length of a grid cell. Step size of a unit.')
     parser.add_argument('--scenario_args.random_spawns', default=False, help='')
     parser.add_argument('--scenario_args.stochastic_spawns', default=True, help='')
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     parser.add_argument('--viewer_args.headless', default=False, help='')
     parser.add_argument('--viewer_args.record', default=False, help='')
     parser.add_argument('--viewer_args.debug_health', default=True, help='')
-    parser.add_argument('--viewer_args.debug_range', default=False, help='')
+    parser.add_argument('--viewer_args.debug_range', default=True, help='')
 
     args = parser.parse_args()
 
@@ -67,6 +67,8 @@ if __name__ == '__main__':
 
             # step environment
             obs_n, reward_n, done_n, _ = env.step(act_n)
+            mask = env.get_mask()
+            entities = env.get_entities()
             print(reward_n)
             state = env.get_state()
             # render all agent views

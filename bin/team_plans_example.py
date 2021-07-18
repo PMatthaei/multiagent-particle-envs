@@ -2,6 +2,43 @@ from copy import deepcopy
 
 from maenv.core import RoleTypes, UnitAttackTypes
 
+ALL = [
+    {
+        "is_scripted": False,
+        "units": [  # Team 1
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+            {
+                "role": RoleTypes.ADC,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+            {
+                "role": RoleTypes.HEALER,
+                "attack_type": UnitAttackTypes.RANGED
+            },
+        ]
+    },
+    {
+        "is_scripted": True,
+        "units": [  # Team 1
+            {
+                "role": RoleTypes.TANK,
+                "attack_type": UnitAttackTypes.MELEE
+            },
+            {
+                "role": RoleTypes.ADC,
+                "attack_type": UnitAttackTypes.MELEE
+            },
+            {
+                "role": RoleTypes.HEALER,
+                "attack_type": UnitAttackTypes.MELEE
+            },
+        ]
+    },
+]
+
 H2_T2_A1 = [
     {
         "is_scripted": False,

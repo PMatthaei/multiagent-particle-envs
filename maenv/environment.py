@@ -135,6 +135,25 @@ class MAEnv(gym.Env):
                                                      debug_health=debug_health)
         self._reset_render()
 
+    def get_mask(self):
+        """
+        @return: Visibility mask for sub group entity recombination algorithms
+        """
+        return self.world.visibility
+
+    def get_entities(self):
+        c = self.world.center
+        all_x = np.sum(self.world.positions[:, 0]) / self.world.agents_n
+        all_y = np.sum(self.world.positions[:, 1]) / self.world.agents_n
+        max_dist = np.max(self.world.distances)
+        avail_actions = self.get_avail_actions()
+
+        for entities in self.world.agents:
+            # add avail actions if user controlled
+            pass
+        # pad enticlearties to fixed number across episodes (for easier batch processing)
+        pass
+
     def get_env_info(self):
         return {
             "state_shape": self.state_n,
@@ -278,7 +297,7 @@ class MAEnv(gym.Env):
 
         winner_id = np.where(done_n)[0]
         if len(winner_id) == 1:
-            self.logger.info("------ Episode {} done - Team with id {} won the battle.".format(self.episode, winner_id))
+            self.logger.info(f"------ Episode {self.episode} done - Team with id {winner_id} won the battle.")
             self.episode += 1
 
         # All teams won (in case of draw = both teams wiped in same step)
@@ -288,7 +307,7 @@ class MAEnv(gym.Env):
         # Episode limit reached - Place this code block after winner check !
         if self.episode_limit is not None and self.episode_limit == self.t:
             info_n["draw"] = True
-            self.logger.info("------ Episode {} done - Step limit reached.".format(self.episode))
+            self.logger.info(f"------ Episode {self.episode} done - Step limit reached.")
             self.episode += 1
             done_n = [True] * len(done_n)
 
