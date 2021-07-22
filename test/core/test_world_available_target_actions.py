@@ -1,10 +1,8 @@
 import unittest
-from unittest.mock import MagicMock
 
 import numpy as np
 
 from maenv.core import World
-from test.mock import mock_agent
 
 N_AGENTS = 6
 
@@ -56,6 +54,10 @@ class WorldAvailableTargetActionsTestCases(unittest.TestCase):
         self.world.calculate_avail_target_actions()
         np.testing.assert_array_equal(self.world.avail_target_actions[0], [0, 0, 1, 1])
 
+    def test_only_enemy_targets_available_if_alive_and_some_enemy_reachable_and_attacker(self):
+        self.world.reachability[0] = [0, 0, 0, 1]
+        self.world.calculate_avail_target_actions()
+        np.testing.assert_array_equal(self.world.avail_target_actions[0], [0, 0, 0, 1])
 
 if __name__ == '__main__':
     unittest.main()
