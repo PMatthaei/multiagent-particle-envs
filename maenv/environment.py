@@ -346,8 +346,6 @@ class MAEnv(gym.Env):
             agent_obs = (agent.state.pos - self.world.center) / self.world.bounds
             state = np.concatenate((state, agent_obs, agent.self_observation))
         self.logger.debug(f"State: {state if self.log else None}")
-        # TOD: test instead of assertion in running code
-        # assert self.state_n == len(state), "State not matching underlying dimension."
         return state
 
     def get_obs(self):

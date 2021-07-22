@@ -16,6 +16,10 @@ class EnvironmentStateTestCases(unittest.TestCase):
         self.world = mock_world(agents_n=2, teams=[self.at, self.bt])
         self.env = MAEnv(self.world, headless=True, observation_callback=lambda x,y: [])
 
+    def test_get_state_returns_correct_dimension(self):
+        result = self.env.get_state()
+        self.assertEqual(self.env.state_n, len(result))
+
     def test_get_state_returns_both_in_top_left_corner_relative_to_world_center(self):
         result = self.env.get_state()
         np.testing.assert_array_equal(result, [-0.5, -0.5, 1., 0., 0., 1., -0.5, -0.5, 1., 0., 0., 1.])
