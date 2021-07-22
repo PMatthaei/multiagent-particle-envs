@@ -541,7 +541,7 @@ class World(object):
         self.alive[agent.id] = agent.is_alive()  # Set initial alive status - agents assumed to be dead in the beginning
 
         # Static data
-        self.sight_ranges[agent.id] = (agent.attack_range if self.attack_range_only else agent.sight_range)* self.grid_size
+        self.sight_ranges[agent.id] = (agent.attack_range if self.attack_range_only else agent.sight_range) * self.grid_size
         self.attack_ranges[agent.id] = agent.attack_range * self.grid_size
         self.max_health[agent.id] = agent.state.max_health
         self.unit_bits_obs[agent.id] = agent.unit_type_bits
@@ -584,8 +584,6 @@ class World(object):
 
     def calculate_avail_target_actions(self):
         self.avail_target_actions[:, :] = 0.0  # Reset
-        target_mask = (self.attack_target_mask | self.heal_target_mask)
-        mask = (self.visibility == 1) & self.alive & self.self_target_mask & target_mask
-        self.avail_target_actions[mask] = 1.0
-
-
+        target_mask = self.attack_target_mask | self.heal_target_mask
+        alive = np.expand_dims(self.alive, axis=1)
+        self.avail_target_actions = (self.reachability == 1) & alive & self.self_target_mask & target_mask
