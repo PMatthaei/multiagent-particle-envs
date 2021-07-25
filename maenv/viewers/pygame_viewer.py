@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import logging
 import math
 import os
@@ -119,6 +120,8 @@ class PyGameViewer(object):
 
         if self.record and self.check_ffmpeg():
             width, height = self.env.world.bounds
+            unique_token = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
             self.proc = sp.Popen(['ffmpeg',
                                   '-hide_banner',
                                   '-loglevel', 'error',
@@ -130,7 +133,7 @@ class PyGameViewer(object):
                                   '-r', str(self.fps),
                                   '-i', '-',
                                   '-an',
-                                  f'{self.record_dir}/env-recording.mov'], stdin=sp.PIPE)
+                                  f'{self.record_dir}/env-recording-{unique_token}.mov'], stdin=sp.PIPE)
         elif self.stream and self.check_ffmpeg():
             width, height = self.env.world.bounds
             self.twitch = TwitchViewer(stream_key=stream_key, width=width, height=height)
