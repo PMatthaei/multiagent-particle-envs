@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 import os
 
@@ -20,23 +21,6 @@ HEALTH_BAR_COLOR = tuple(c / 255.0 for c in [102, 171, 79])
 MISSING_HEALTH_BAR_COLOR = (61, 61, 61)
 HEALTH_BAR_COLOR_RANGE = list(Color(rgb=HEALTH_BAR_COLOR).range_to(Color("red"), 3))
 HEALTH_BAR_COLOR_RANGE_N = len(HEALTH_BAR_COLOR_RANGE)
-
-
-def check_ffmpeg():
-    ffmpeg_available = True
-    print('Check if ffmpeg is installed...')
-    try:
-        print(sp.check_output(['which', 'ffmpeg']))
-    except Exception as e:
-        print(e)
-        ffmpeg_available = False
-    if not ffmpeg_available:
-        print("Could not find ffmpeg. Please run 'sudo apt-get install ffmpeg'.")
-    else:
-        print('ffmpeg is installed.')
-
-    return ffmpeg_available
-
 
 class _Grid:
     def __init__(self, screen, cell_size):
@@ -133,7 +117,7 @@ class PyGameViewer(object):
         self.infos = infos
         self.clear()
 
-        if self.record and check_ffmpeg():
+        if self.record and self.check_ffmpeg():
             width, height = self.env.world.bounds
             self.proc = sp.Popen(['ffmpeg',
                                   '-hide_banner',
@@ -147,10 +131,22 @@ class PyGameViewer(object):
                                   '-i', '-',
                                   '-an',
                                   f'{self.record_dir}/env-recording.mov'], stdin=sp.PIPE)
-        elif self.stream and check_ffmpeg():
+        elif self.stream and self.check_ffmpeg():
             width, height = self.env.world.bounds
             self.twitch = TwitchViewer(stream_key=stream_key, width=width, height=height)
         pass
+
+    def check_ffmpeg(self):
+        ffmpeg_available = True
+        try:
+            sp.check_output(['which', 'ffmpeg'])
+        except Exception as e:
+            logging.error(e)
+            ffmpeg_available = False
+        if not ffmpeg_available:
+            logging.error("Could not find ffmpeg. Please run 'sudo apt-get install ffmpeg'.")
+
+        return ffmpeg_available
 
     def update(self):
         """

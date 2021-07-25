@@ -450,7 +450,8 @@ class MAEnv(gym.Env):
         @return:
         """
 
-        if self.record or not self.headless:
+        if self.record or not self.headless: # Only perform the rendering step if we record or the env runs not headless
+            # Initial setup on first render call
             if self.viewer is None:
                 # import rendering only if we need it (and don't import for headless machines)
                 from maenv.viewers import pygame_viewer

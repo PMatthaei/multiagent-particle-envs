@@ -84,6 +84,7 @@ if __name__ == '__main__':
             if any(done_n):
                 env.reset()
     except KeyboardInterrupt:
+        env.close()
         controls.stop()
         controls.join()
         sys.exit()
