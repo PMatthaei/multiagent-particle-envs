@@ -2,6 +2,7 @@ import cProfile
 import io
 import pstats
 import sys
+from os.path import abspath, dirname
 from pstats import SortKey
 
 from bin.controls.headless_controls import HeadlessControls
@@ -30,7 +31,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--viewer_args.fps', default=60, help='')
     parser.add_argument('--viewer_args.headless', default=False, help='')
-    parser.add_argument('--viewer_args.record', default=False, help='')
+    parser.add_argument('--viewer_args.record', default=dirname(abspath(__file__)), help='')
     parser.add_argument('--viewer_args.debug_health', default=True, help='')
     parser.add_argument('--viewer_args.debug_range', default=True, help='')
 

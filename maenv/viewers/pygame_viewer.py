@@ -103,7 +103,8 @@ class PyGameViewer(object):
         self.entities = None
         self.factory = _EntityFactory(self.env.world.grid_size, debug_health=debug_health, debug_range=debug_range)
         self.draw_grid = draw_grid
-        self.record = record
+        self.record_dir = record
+        self.record = record is not None and record != ""
         self.stream = stream_key is not None
         self.proc = None
         self.headless = headless
@@ -145,7 +146,7 @@ class PyGameViewer(object):
                                   '-r', str(self.fps),
                                   '-i', '-',
                                   '-an',
-                                  'env-recording.mov'], stdin=sp.PIPE)
+                                  f'{self.record_dir}/env-recording.mov'], stdin=sp.PIPE)
         elif self.stream and check_ffmpeg():
             width, height = self.env.world.bounds
             self.twitch = TwitchViewer(stream_key=stream_key, width=width, height=height)
