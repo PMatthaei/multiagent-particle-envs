@@ -30,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--scenario_args.attack_range_only', default=False, help='')
 
     parser.add_argument('--viewer_args.fps', default=60, help='')
-    parser.add_argument('--viewer_args.headless', default=False, help='')
+    parser.add_argument('--viewer_args.headless', default=True, help='')
     parser.add_argument('--viewer_args.record', default=dirname(abspath(__file__)), help='')
     parser.add_argument('--viewer_args.debug_health', default=True, help='')
     parser.add_argument('--viewer_args.debug_range', default=True, help='')

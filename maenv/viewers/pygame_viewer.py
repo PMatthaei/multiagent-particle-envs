@@ -207,7 +207,7 @@ class PyGameViewer(object):
                     pygame.quit()
                     exit()
 
-        if not self.headless:
+        if self.record or not self.headless:
             pygame.display.flip()
 
             if self.record:

@@ -125,8 +125,9 @@ class MAEnv(gym.Env):
 
         # rendering
         self.headless = headless
+        self.record = record
         self.viewer = None
-        if not headless:  # import rendering only if we need it (and don't import for headless machines)
+        if record or not headless:  # import rendering only if we need it (and don't import for headless machines)
             from maenv.viewers import pygame_viewer
             self.viewer = pygame_viewer.PyGameViewer(self, fps=fps, infos=infos, draw_grid=draw_grid, record=record,
                                                      stream_key=stream_key,
@@ -449,7 +450,7 @@ class MAEnv(gym.Env):
         @return:
         """
 
-        if not self.headless:
+        if self.record or not self.headless:
             if self.viewer is None:
                 # import rendering only if we need it (and don't import for headless machines)
                 from maenv.viewers import pygame_viewer
