@@ -1,5 +1,5 @@
 from gym.envs.registration import register
-
+from .make_env import make_env
 # Multiagent envs
 # ----------------------------------------
 
