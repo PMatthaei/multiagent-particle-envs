@@ -1,6 +1,6 @@
 import random
 
-from core import Agent
+from maenv.core import Agent
 from maenv.environment import MAEnv
 
 
