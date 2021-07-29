@@ -19,7 +19,8 @@ class MAEnv(gym.Env):
                  global_reward=True,
                  log=False, log_level=logging.ERROR,
                  fps=None, infos=True, draw_grid=True,
-                 record=False, headless=False, stream_key=None, seed=None, debug_range=False, debug_health=True, **kwargs):
+                 record=False, headless=False, stream_key=None, seed=None, debug_range=False, debug_health=True,
+                 **kwargs):
         """
         Multi-Agent extension of gym.Env
 
@@ -135,6 +136,14 @@ class MAEnv(gym.Env):
                                                      debug_range=debug_range,
                                                      debug_health=debug_health)
         self._reset_render()
+
+    def swap_team(self, idx, team: Team):
+        old_team: Team = self.world.teams[idx]
+        old_agents = old_team.members
+        self.world.agents.remove(old_agents)
+
+        self.world.teams[idx] = team
+        self.world.agents += team.members
 
     def get_mask(self):
         """
@@ -450,7 +459,7 @@ class MAEnv(gym.Env):
         @return:
         """
 
-        if self.record or not self.headless: # Only perform the rendering step if we record or the env runs not headless
+        if self.record or not self.headless:  # Only perform the rendering step if we record or the env runs not headless
             # Initial setup on first render call
             if self.viewer is None:
                 # import rendering only if we need it (and don't import for headless machines)

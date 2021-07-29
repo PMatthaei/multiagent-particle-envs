@@ -7,7 +7,6 @@ from pstats import SortKey
 
 from bin.controls.headless_controls import HeadlessControls
 from bin.team_plans_example import *
-from core import RoleTypes
 from make_env import make_env
 from maenv.interfaces.policy import RandomPolicy
 import nestargs
