@@ -153,8 +153,8 @@ class MAEnv(gym.Env):
 
     def get_entities(self):
         c = self.world.center
-        all_x = np.sum(self.world.positions[:, 0]) / self.world.agents_n
-        all_y = np.sum(self.world.positions[:, 1]) / self.world.agents_n
+        all_x = np.sum(self.world.positions[:, 0]) / self.world.n_agents
+        all_y = np.sum(self.world.positions[:, 1]) / self.world.n_agents
         max_dist = np.max(self.world.distances)
         avail_actions = self.get_avail_actions()
 

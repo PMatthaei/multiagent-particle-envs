@@ -38,7 +38,7 @@ class WorldObservationTestCases(unittest.TestCase):
             [0, 0, 1],
             [0, 0, 1]
         ])
-        self.world.agents_n = N_AGENTS
+        self.world.n_agents = N_AGENTS
 
     def test_a_observes_b_if_visible_and_alive(self):
         #   vis     health    rel x-pos   rel y-pos  rel dist  unit bits
