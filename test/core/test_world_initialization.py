@@ -26,7 +26,7 @@ class WorldInitializationTestCases(unittest.TestCase):
         self.assertEqual(ds_shape, (N_AGENTS, N_AGENTS))
 
     def test_visibility_matrix_init(self):
-        vs_shape = self.world.visibility.shape
+        vs_shape = self.world.visible.shape
         self.assertEqual(vs_shape, (N_AGENTS, N_AGENTS))
 
 

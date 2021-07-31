@@ -19,7 +19,7 @@ class WorldObservationTestCases(unittest.TestCase):
         self.grid_size = 10
         self.world = World(grid_size=self.grid_size, n_teams=2, n_agents=N_AGENTS)
 
-        self.world.visibility = np.array([
+        self.world.visible = np.array([
             [1, 1],
             [1, 1]
         ])
@@ -54,7 +54,7 @@ class WorldObservationTestCases(unittest.TestCase):
         np.testing.assert_almost_equal(self.world.obs[1][0], b_obs_of_a)
 
     def test_a_cannot_observe_b_if_b_not_visible(self):
-        self.world.visibility = np.array([
+        self.world.visible = np.array([
             [1, 0],
             [1, 1]
         ])

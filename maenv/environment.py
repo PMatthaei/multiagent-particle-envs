@@ -149,7 +149,7 @@ class MAEnv(gym.Env):
         """
         @return: Visibility mask for sub group entity recombination algorithms
         """
-        return self.world.visibility
+        return self.world.visible
 
     def get_entities(self):
         c = self.world.center

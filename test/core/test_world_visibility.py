@@ -28,24 +28,24 @@ class WorldVisibilityTestCases(unittest.TestCase):
 
     def test_a_can_see_b(self):
         self.world._update_visibility()
-        np.testing.assert_array_equal([1, 1], self.world.visibility[self.aid])
+        np.testing.assert_array_equal([1, 1], self.world.visible[self.aid])
 
     def test_a_can_not_see_b_because_out_of_range(self):
         self.world.positions[self.bid] = [100, 0]  # move b out of range
         self.world.kd_tree = scipy.spatial.cKDTree(data=self.world.positions)
         self.world._update_visibility()
-        np.testing.assert_array_equal([1, 0], self.world.visibility[self.aid])
+        np.testing.assert_array_equal([1, 0], self.world.visible[self.aid])
 
     def test_a_can_not_see_b_because_not_alive(self):
         self.world.alive[self.bid] = 0  # b dead
         self.world._update_visibility()
-        np.testing.assert_array_equal([1, 0], self.world.visibility[self.aid])
+        np.testing.assert_array_equal([1, 0], self.world.visible[self.aid])
 
     def test_a_can_not_see_b_because_not_alive_and_out_of_range(self):
         self.world.alive[self.bid] = 0  # b dead
         self.world.positions[self.bid] = [100, 0]  # move b out of range
         self.world._update_visibility()
-        np.testing.assert_array_equal([1, 0], self.world.visibility[self.aid])
+        np.testing.assert_array_equal([1, 0], self.world.visible[self.aid])
 
 
 if __name__ == '__main__':
