@@ -207,20 +207,22 @@ class MultiAgentEnv(gym.Env):
         # Revert illegal positions randomly
         self.agents[revert_mask, [AF.x, AF.y]] -= self.agents[revert_mask, [AF.x_move, AF.y_move]]
 
-        # TODO: Update visibility
+        # TODO: Update visibility, distance
         self.visible[:] = False
 
-        target_mask = th.clamp(self.agents[revert_mask, [AF.target]] - self.fixed_actions, min=0)
+        target_mask = th.clamp(self.agents[:, [AF.target]] - self.fixed_actions, min=0)
         target_mask = target_mask.squeeze().to(dtype=th.int)
 
         # Apply attack
         attack_mask = th.bincount(target_mask)
         attack_mask = th.cat((attack_mask, th.zeros(self.n - attack_mask.shape[0], device=self.device)), dim=0)
         attack_mask = attack_mask.view(-1, 1)  # How many attacks against which id have been issued
-        # TODO: Detect denied attacks because enemy already dead -> Detect overkill, how much overkill, deny random agents
+        # TODO: Detect if in attack range
+        # TODO: Detect denied attacks because enemy already dead -> Detect overkill, which agents contributed to overkill, deny random agents
         self.agents[:, [AF.health]] -= (attack_mask * self.agents[:, [AF.damage]])
 
         # Apply heal
+        heal_mask = th.bincount(target_mask)
         # TODO: How many heals have been issued against an agent
         self.agents[:, [AF.health]] += (attack_mask * self.agents[:, [AF.damage]])
 
