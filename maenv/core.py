@@ -214,7 +214,7 @@ class Agent(Entity):
 
 
 class World(object):
-    def __init__(self, grid_size: int, n_agents: int, n_teams: int, bounds=np.array([1280, 720]),
+    def __init__(self, grid_size: int, n_agents: int, n_teams: int, bounds=np.array([320, 180]),
                  ai="basic", ai_config=None,
                  attack_range_only=True,
                  log=False):

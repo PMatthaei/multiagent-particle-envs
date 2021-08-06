@@ -20,8 +20,9 @@ if __name__ == '__main__':
     parser.add_argument('--profile', default=False, help='Profile the example for performance issues.')
     parser.add_argument('--stream_key', default=None, help='Stream Key for Twitch.')
 
-    parser.add_argument('--scenario_args.match_build_plan', default=ALL, help='Build plan for the teams.')
+    parser.add_argument('--scenario_args.match_build_plan', default=AI_SMALL, help='Build plan for the teams.')
     parser.add_argument('--scenario_args.grid_size', default=20, help='Edge length of a grid cell. Step size of a unit.')
+    parser.add_argument('--scenario_args.bounds', default=(200, 200), help='Extends of the map.')
     parser.add_argument('--scenario_args.random_spawns', default=False, help='')
     parser.add_argument('--scenario_args.stochastic_spawns', default=True, help='')
     parser.add_argument('--scenario_args.ai', default='basic', help='')
@@ -29,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--scenario_args.attack_range_only', default=False, help='')
 
     parser.add_argument('--viewer_args.fps', default=60, help='')
-    parser.add_argument('--viewer_args.headless', default=True, help='')
+    parser.add_argument('--viewer_args.headless', default=False, help='')
     parser.add_argument('--viewer_args.record', default=dirname(abspath(__file__)), help='')
     parser.add_argument('--viewer_args.debug_health', default=True, help='')
     parser.add_argument('--viewer_args.debug_range', default=True, help='')

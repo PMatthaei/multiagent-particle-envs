@@ -1,4 +1,5 @@
 import random
+from typing import Tuple
 
 import numpy as np
 from maenv.core import World, Agent, Team
@@ -11,6 +12,7 @@ class TeamsScenario(BaseTeamScenario):
     def __init__(self,
                  match_build_plan: dict,
                  grid_size: int = 10,
+                 bounds: Tuple[int,int] = (1280, 720),
                  ai="basic", ai_config=None,
                  random_spawns: bool = False,
                  stochastic_spawns: bool = False,
@@ -25,6 +27,7 @@ class TeamsScenario(BaseTeamScenario):
         self.match_build_plan = match_build_plan
         assert match_build_plan is not None, "Cannot build scenario from empty build plan."
         self.grid_size = grid_size
+        self.bounds = np.array(bounds)
         self.random_spawns = random_spawns
         self.stochastic_spawns = stochastic_spawns
         self.ai = ai
@@ -53,7 +56,7 @@ class TeamsScenario(BaseTeamScenario):
         total_n_agents = sum(self.agents_n)
 
         world = World(n_agents=total_n_agents, n_teams=self.teams_n, grid_size=self.grid_size, ai=self.ai,
-                      ai_config=self.ai_config, attack_range_only=self.attack_range_only)
+                      ai_config=self.ai_config, attack_range_only=self.attack_range_only, bounds=self.bounds)
 
         colors = generate_colors(self.teams_n)
         agent_count = 0
