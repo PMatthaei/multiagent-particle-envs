@@ -23,7 +23,9 @@ Look at the [example](https://github.com/PMatthaei/ma-env/blob/master/bin/team_e
 
 - To start a simple example run: `bin/team_example.py`
 
-- To use recording, install ffmpeg: `sudo apt-get install ffmpeg`
+- To use recording _(default=true)_, install ffmpeg: 
+  - Linux: `sudo apt-get install ffmpeg`
+  - Windows: [Download Binaries](https://github.com/BtbN/FFmpeg-Builds/releases) and set in `PATH`.
 
 The following ffmpeg version was used:
 ```

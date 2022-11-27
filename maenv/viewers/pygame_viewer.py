@@ -6,6 +6,7 @@ import math
 import os
 
 import subprocess as sp
+import sys
 
 import numpy as np
 import pygame
@@ -142,7 +143,10 @@ class PyGameViewer(object):
     def check_ffmpeg(self):
         ffmpeg_available = True
         try:
-            sp.check_output(['which', 'ffmpeg'])
+            if sys.platform == 'win32':
+                sp.check_output(['where', 'ffmpeg'])
+            elif sys.platform == 'linux':
+                sp.check_output(['which', 'ffmpeg'])
         except Exception as e:
             logging.error(e)
             ffmpeg_available = False
